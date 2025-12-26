@@ -51,13 +51,13 @@ export default function Navbar() {
                         ))}
                         <div className="flex items-center gap-4 pl-4 border-l border-gray-100">
                             <Link
-                                to="/contact"
+                                to="/auth/login"
                                 className="text-sm font-bold text-gray-500 hover:text-[#00B4D8] transition-colors"
                             >
                                 Sign In
                             </Link>
                             <Link
-                                to="/contact"
+                                to="/auth/get-started"
                                 className="bg-[#00B4D8] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[#0096B4] transition-all shadow-lg hover:shadow-[#00B4D8]/30 hover:-translate-y-0.5"
                             >
                                 Get Started
