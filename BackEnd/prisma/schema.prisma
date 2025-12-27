@@ -1,0 +1,349 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+////////////////////
+// ENUMS
+////////////////////
+
+enum RoleName {
+  admin
+  teacher
+  student
+  parent
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum EnrollmentStatus {
+  active
+  completed
+}
+
+enum SubmissionType {
+  file
+  link
+  text
+}
+
+enum SubmissionStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ResultStatus {
+  pass
+  fail
+}
+
+enum NotificationType {
+  assignment
+  grade
+  event
+  suggestion
+  system
+}
+
+////////////////////
+// ROLES & USERS
+////////////////////
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
+
+  users User[]
+}
+
+model User {
+  id           BigInt   @id @default(autoincrement())
+  fullName     String
+  gender       String?
+
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+
+  phoneNumber  String?
+  parentPhone  String?
+  address      String?
+
+  roleId       Int
+  role         Role     @relation(fields: [roleId], references: [id])
+
+  student      Student?
+  parent       Parent?
+
+  notifications Notification[]
+  blogs         Blog[]
+  aiChats       AIChatLog[]
+  teacherCourses TeacherCourse[]
+
+  createdAt    DateTime @default(now())
+}
+
+////////////////////
+// STUDENTS & PARENTS
+////////////////////
+
+model Student {
+  id                BigInt   @id @default(autoincrement())
+  userId            BigInt   @unique
+  user              User     @relation(fields: [userId], references: [id])
+
+  isCurrentStudent  Boolean
+  classLevel        String?
+  educationLevel    String?
+  schoolName        String?
+
+  courseLevel       CourseLevel
+
+  parentEmail       String?
+  referralCode      String?  @unique
+
+  enrollments       Enrollment[]
+  lessonProgress    LessonProgress[]
+  quizAttempts      QuizAttempt[]
+  assignmentSubs    AssignmentSubmission[]
+
+  parents           ParentStudent[]
+}
+
+model Parent {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @unique
+  user      User     @relation(fields: [userId], references: [id])
+
+  students  ParentStudent[]
+}
+
+model ParentStudent {
+  id        BigInt   @id @default(autoincrement())
+  parentId  BigInt
+  studentId BigInt
+
+  parent    Parent   @relation(fields: [parentId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
+}
+
+////////////////////
+// COURSES & TEACHERS
+////////////////////
+
+model Course {
+  id          BigInt      @id @default(autoincrement())
+  name        String
+  category    String
+  level       CourseLevel
+
+  youtubeLink String
+  image       String?
+  description String?
+
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  assignments Assignment[]
+  teacherCourses TeacherCourse[]
+
+  createdAt   DateTime @default(now())
+}
+
+model TeacherCourse {
+  id        BigInt @id @default(autoincrement())
+  teacherId BigInt
+  courseId  BigInt
+
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  course    Course @relation(fields: [courseId], references: [id])
+}
+
+////////////////////
+// ENROLLMENT & PROGRESS
+////////////////////
+
+model Enrollment {
+  id                 BigInt           @id @default(autoincrement())
+  studentId          BigInt
+  courseId           BigInt
+
+  progressPercentage Float            @default(0)
+  status             EnrollmentStatus @default(active)
+
+  student            Student @relation(fields: [studentId], references: [id])
+  course             Course  @relation(fields: [courseId], references: [id])
+
+  enrolledAt         DateTime @default(now())
+}
+
+model Lesson {
+  id          BigInt @id @default(autoincrement())
+  courseId    BigInt
+  title       String
+  description String
+  summaryText String?
+  orderNumber Int
+
+  course      Course @relation(fields: [courseId], references: [id])
+
+  progress    LessonProgress[]
+  quizzes     LessonQuiz[]
+  aiSummary   LessonAISummary?
+  aiChatLogs  AIChatLog[]
+}
+
+model LessonProgress {
+  id         BigInt   @id @default(autoincrement())
+  studentId  BigInt
+  lessonId   BigInt
+
+  completed  Boolean @default(false)
+  completedAt DateTime?
+
+  student    Student @relation(fields: [studentId], references: [id])
+  lesson     Lesson  @relation(fields: [lessonId], references: [id])
+}
+
+////////////////////
+// QUIZZES
+////////////////////
+
+model LessonQuiz {
+  id            BigInt @id @default(autoincrement())
+  lessonId      BigInt
+  question      String
+
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+
+  correctOption String
+  maxAttempts   Int    @default(2)
+
+  lesson        Lesson @relation(fields: [lessonId], references: [id])
+  attempts      QuizAttempt[]
+}
+
+model QuizAttempt {
+  id            BigInt       @id @default(autoincrement())
+  studentId     BigInt
+  quizId        BigInt
+
+  selectedOption String
+  isCorrect      Boolean
+  attemptNumber  Int
+  result         ResultStatus
+
+  student        Student    @relation(fields: [studentId], references: [id])
+  quiz           LessonQuiz @relation(fields: [quizId], references: [id])
+
+  attemptedAt    DateTime @default(now())
+}
+
+////////////////////
+// ASSIGNMENTS
+////////////////////
+
+model Assignment {
+  id               BigInt @id @default(autoincrement())
+  courseId         BigInt
+  title            String
+  description      String
+  dueDate          DateTime?
+  requiresApproval Boolean @default(true)
+
+  course           Course @relation(fields: [courseId], references: [id])
+  submissions      AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id               BigInt @id @default(autoincrement())
+  assignmentId     BigInt
+  studentId        BigInt
+
+  submissionType   SubmissionType
+  submissionContent String
+
+  status           SubmissionStatus @default(pending)
+  result           ResultStatus?
+  feedback         String?
+
+  assignment       Assignment @relation(fields: [assignmentId], references: [id])
+  student          Student    @relation(fields: [studentId], references: [id])
+
+  submittedAt      DateTime @default(now())
+}
+
+////////////////////
+// AI FEATURES
+////////////////////
+
+model LessonAISummary {
+  id        BigInt @id @default(autoincrement())
+  lessonId  BigInt @unique
+  aiSummary String
+
+  lesson    Lesson @relation(fields: [lessonId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model AIChatLog {
+  id          BigInt @id @default(autoincrement())
+  userId      BigInt
+  lessonId    BigInt?
+
+  userMessage String
+  aiResponse  String
+
+  user        User    @relation(fields: [userId], references: [id])
+  lesson      Lesson? @relation(fields: [lessonId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+////////////////////
+// NOTIFICATIONS
+////////////////////
+
+model Notification {
+  id        BigInt @id @default(autoincrement())
+  userId    BigInt
+
+  title     String
+  message   String
+  type      NotificationType @default(system)
+
+  isRead    Boolean @default(false)
+
+  user      User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+////////////////////
+// BLOGS
+////////////////////
+
+model Blog {
+  id          BigInt @id @default(autoincrement())
+  title       String
+  content     String
+  coverImage  String?
+  isPublished Boolean @default(true)
+
+  createdBy   BigInt
+  author      User @relation(fields: [createdBy], references: [id])
+
+  createdAt   DateTime @default(now())
+}
