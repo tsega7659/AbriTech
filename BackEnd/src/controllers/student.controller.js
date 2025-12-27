@@ -1,6 +1,9 @@
+const { ensureTablesExist } = require('../utils/dbInit');
+
 // Student controller functions will be defined here
 
 const getStudents = async (req, res) => {
+  await ensureTablesExist();
   // Implementation
 };
 
