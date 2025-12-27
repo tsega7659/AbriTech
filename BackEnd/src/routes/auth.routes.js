@@ -1,26 +1,13 @@
 const express = require('express');
-const mysql = require('mysql2/promise');  // Use promise-based API
 const router = express.Router();
+const authController = require('../controllers/auth.controller');
 
-// Create a connection pool (configure with your .env values)
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'your_database',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+const { authenticateToken, authorizeRole } = require('../middleware/auth.middleware');
 
-router.get('/users', async (req, res) => {
-  try {
-    const [rows] = await pool.execute('SELECT * FROM user');  // Adjust table name as needed
-    res.json(rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Database query failed' });
-  }
-});
+router.post('/login', authController.login);
+router.post('/logout', authController.logout);
+router.post('/register/student', authController.registerStudent);
+router.post('/register/parent', authController.registerParent);
+router.post('/register/teacher', authenticateToken, authorizeRole('admin'), authController.registerTeacher);
 
 module.exports = router;
