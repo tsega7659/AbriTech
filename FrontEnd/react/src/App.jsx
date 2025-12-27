@@ -13,6 +13,9 @@ import RegisterParent from "./pages/auth/RegisterParent";
 import Login from "./pages/auth/Login";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
+import StudentCourses from "./pages/dashboard/StudentCourses";
+import CourseDetail from "./pages/dashboard/CourseDetail";
+import LessonPlayer from "./pages/dashboard/LessonPlayer";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
 import './index.css'
 
