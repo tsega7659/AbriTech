@@ -13,10 +13,8 @@ import RegisterParent from "./pages/auth/RegisterParent";
 import Login from "./pages/auth/Login";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
-import StudentCourses from "./pages/dashboard/StudentCourses";
-import CourseDetail from "./pages/dashboard/CourseDetail";
-import LessonPlayer from "./pages/dashboard/LessonPlayer";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
+import { AuthProvider } from "./context/AuthContext";
 import './index.css'
 
 
@@ -32,37 +30,37 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="courses" element={<Courses />} />
-          <Route path="about" element={<About />} />
-          <Route path="blog" element={<Blog />} />
-          <Route path="contact" element={<Contact />} />
-        </Route>
+    <AuthProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="courses" element={<Courses />} />
+            <Route path="about" element={<About />} />
+            <Route path="blog" element={<Blog />} />
+            <Route path="contact" element={<Contact />} />
+          </Route>
 
-        {/* Auth Routes */}
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route path="get-started" element={<GetStarted />} />
-          <Route path="register/student" element={<RegisterStudent />} />
-          <Route path="register/parent" element={<RegisterParent />} />
-          <Route path="login" element={<Login />} />
-        </Route>
+          {/* Auth Routes */}
+          <Route path="/auth" element={<AuthLayout />}>
+            <Route path="get-started" element={<GetStarted />} />
+            <Route path="register/student" element={<RegisterStudent />} />
+            <Route path="register/parent" element={<RegisterParent />} />
+            <Route path="login" element={<Login />} />
+          </Route>
 
-        {/* Dashboard Routes */}
-        <Route path="/dashboard/student" element={<DashboardLayout role="student" />}>
-          <Route index element={<StudentDashboard />} />
-          {/* Add sub-routes like courses, progress here later */}
-        </Route>
+          {/* Dashboard Routes */}
+          <Route path="/dashboard/student" element={<DashboardLayout role="student" />}>
+            <Route index element={<StudentDashboard />} />
+          </Route>
 
-        <Route path="/dashboard/parent" element={<DashboardLayout role="parent" />}>
-          <Route index element={<ParentDashboard />} />
-          {/* Add sub-routes like children, reports here later */}
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          <Route path="/dashboard/parent" element={<DashboardLayout role="parent" />}>
+            <Route index element={<ParentDashboard />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

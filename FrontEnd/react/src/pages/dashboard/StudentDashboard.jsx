@@ -1,12 +1,15 @@
 import { BookOpen, Trophy, TrendingUp, Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function StudentDashboard() {
+    const { user } = useAuth();
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Welcome back, Abebe!</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.fullName?.split(' ')[0] || 'Student'}!</h1>
                     <p className="text-gray-600 mt-1">Continue your learning journey</p>
                 </div>
             </div>

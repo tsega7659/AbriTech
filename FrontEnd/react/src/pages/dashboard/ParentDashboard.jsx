@@ -1,11 +1,20 @@
 import { Users, BookOpen, Trophy, TrendingUp, Lightbulb } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import LinkStudentForm from "../../components/LinkStudentForm";
 
 export default function ParentDashboard() {
+    const { user } = useAuth();
+
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Welcome, Kebede!</h1>
-                <p className="text-gray-600 mt-1">Monitor your children's learning progress</p>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.fullName?.split(' ')[0] || 'User'}!</h1>
+                    <p className="text-gray-600 mt-1">Monitor your children's learning progress</p>
+                </div>
+                <div className="w-full lg:w-96">
+                    <LinkStudentForm />
+                </div>
             </div>
 
             {/* Monthly Recognition Alert */}
@@ -16,7 +25,7 @@ export default function ParentDashboard() {
                 <div>
                     <h3 className="text-[#FDB813] font-bold mb-1">Monthly Recognition</h3>
                     <p className="text-yellow-800 text-sm leading-relaxed mb-2">
-                        Dear Kebede Alemu, thank you for your unwavering commitment to quality education. Your dedication to your children's learning journey is transforming their future. Together, we are shaping Ethiopia's next generation of innovators!
+                        Dear {user?.fullName || 'Valued Parent'}, thank you for your unwavering commitment to quality education. Your dedication to your children's learning journey is transforming their future. Together, we are shaping Ethiopia's next generation of innovators!
                     </p>
                     <p className="text-xs text-yellow-600 italic">— With gratitude, The AbriTech Team</p>
                 </div>
