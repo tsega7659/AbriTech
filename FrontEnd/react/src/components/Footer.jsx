@@ -14,7 +14,7 @@ export default function Footer() {
                             <span className="font-bold text-2xl tracking-tight text-white">AbriTech</span>
                         </Link>
                         <p className="text-gray-400 mb-8 leading-relaxed">
-                            Making high-quality STEM education accessible, affordable, and relevant for Ethiopian youth.
+                            Making high-quality STEM education accessible, affordable and relevant for Ethiopian youth.
                         </p>
                         <div className="flex space-x-4">
                             <a href="#" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
