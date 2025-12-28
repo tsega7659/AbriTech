@@ -13,11 +13,12 @@ import {
     Download
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LessonPlayer() {
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showAISummary, setShowAISummary] = useState(false);
 
     // Mock Lesson Data (would fetch based on IDs)
@@ -42,32 +43,35 @@ else:
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] -m-4 sm:-m-6 lg:-m-8">
+        <div className="flex flex-col h-[calc(100vh-theme(spacing.20))] -m-4 sm:-m-6 lg:-m-10">
             {/* Player Header */}
-            <div className="bg-gray-900 text-white h-16 flex items-center justify-between px-4 shrink-0">
+            <div className="bg-gray-900 text-white h-20 flex items-center justify-between px-6 shrink-0 z-20">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(`/dashboard/student/courses/${courseId}`)}
-                        className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-800 rounded-xl transition-colors bg-gray-800/50"
                     >
                         <ChevronLeft className="h-6 w-6" />
                     </button>
-                    <div>
-                        <h1 className="font-bold text-sm md:text-base truncate max-w-[200px] md:max-w-md">{lesson.title}</h1>
-                        <p className="text-xs text-gray-400 hidden md:block">Module 2: Control Flow • Lesson 4/12</p>
+                    <div className="min-w-0">
+                        <h1 className="font-black text-sm md:text-lg truncate max-w-[150px] sm:max-w-md tracking-tight">{lesson.title}</h1>
+                        <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest hidden xs:block">Module 2 • Lesson 4/12</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setShowAISummary(!showAISummary)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${showAISummary ? 'bg-[#00B4D8] text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all",
+                            showAISummary ? 'bg-[#00B4D8] text-white shadow-lg shadow-blue-500/20' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                        )}
                     >
                         <MessageSquare className="h-4 w-4" />
-                        <span className="hidden sm:inline">AI Summary</span>
+                        <span className="hidden md:inline uppercase tracking-tighter">AI Analysis</span>
                     </button>
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-2 hover:bg-gray-800 rounded-full transition-colors lg:hidden"
+                        className="p-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors lg:hidden"
                     >
                         <Menu className="h-6 w-6" />
                     </button>
@@ -76,10 +80,10 @@ else:
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6 lg:p-8">
-                    <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-8 lg:p-12">
+                    <div className="max-w-5xl mx-auto space-y-8">
                         {/* Video Player Wrapper */}
-                        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+                        <div className="aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-white/10 relative group">
                             <iframe
                                 width="100%"
                                 height="100%"
@@ -92,84 +96,135 @@ else:
                         </div>
 
                         {/* Lesson Controls */}
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 py-4 border-b border-gray-200">
-                            <div className="flex items-center gap-4">
-                                <button className="flex items-center gap-2 text-gray-600 hover:text-[#00B4D8] font-bold text-sm transition-colors">
-                                    <ThumbsUp className="h-5 w-5" /> Like
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-6 py-6 border-b border-gray-200">
+                            <div className="flex items-center gap-6">
+                                <button className="flex items-center gap-2 text-gray-500 hover:text-[#00B4D8] font-black text-xs uppercase tracking-widest transition-colors group">
+                                    <ThumbsUp className="h-5 w-5 group-hover:scale-110 transition-transform" /> Like
                                 </button>
-                                <button className="flex items-center gap-2 text-gray-600 hover:text-[#00B4D8] font-bold text-sm transition-colors">
-                                    <Download className="h-5 w-5" /> Resources
+                                <button className="flex items-center gap-2 text-gray-500 hover:text-[#00B4D8] font-black text-xs uppercase tracking-widest transition-colors group">
+                                    <Download className="h-5 w-5 group-hover:scale-110 transition-transform" /> Resources
                                 </button>
                             </div>
-                            <button className="bg-[#00B4D8] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#0096B4] transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
+                            <button className="w-full sm:w-auto bg-[#00B4D8] text-white px-8 py-4 rounded-[1.25rem] font-black text-sm uppercase tracking-widest hover:bg-[#0096B4] transition-all shadow-xl shadow-blue-500/20 hover:-translate-y-0.5 flex items-center justify-center gap-3">
                                 <CheckCircle className="h-5 w-5" /> Mark as Complete
                             </button>
                         </div>
 
                         {/* Text Content */}
-                        <div className="prose prose-blue max-w-none text-gray-600">
+                        <div className="prose prose-blue max-w-none text-gray-600 font-medium leading-relaxed prose-headings:font-black prose-headings:tracking-tight prose-pre:rounded-3xl prose-pre:p-6">
                             <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
                         </div>
                     </div>
                 </div>
 
                 {/* AI Summary Sidebar (Overlay) */}
-                <div className={cn(
-                    "absolute top-0 right-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 z-20 border-l border-gray-100 p-6 overflow-y-auto",
-                    showAISummary ? "translate-x-0" : "translate-x-full"
-                )}>
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#00B4D8]">
-                                <MessageSquare className="h-4 w-4" />
-                            </div>
-                            AI Helper
-                        </h3>
-                        <button onClick={() => setShowAISummary(false)} className="text-gray-400 hover:text-gray-600">
-                            <X className="h-5 w-5" />
-                        </button>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-900 leading-relaxed border border-blue-100">
-                            <strong>Lesson Summary:</strong><br />
-                            This lesson introduces Python's `if`, `elif`, and `else` statements for decision making. You learned syntax structure and indentation rules critical for running code without errors.
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-xl text-sm text-gray-600 border border-gray-100">
-                            <strong>Key Concept:</strong><br />
-                            Indentation in Python is not just for readability; it defines the block of code to be executed.
-                        </div>
-                    </div>
-                </div>
-
-                {/* Course Sidebar (Right Side on Desktop) */}
-                <div className={cn(
-                    "fixed inset-y-0 right-0 lg:static lg:block w-80 bg-white border-l border-gray-200 transform transition-transform duration-200 z-10 flex flex-col",
-                    isSidebarOpen ? "translate-x-0" : "translate-x-full",
-                    // On mobile, this covers entire screen or pushes differently, simplified here for desktop-first layout within constraints
-                    "lg:translate-x-0"
-                )}>
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center lg:hidden">
-                        <span className="font-bold">Course Content</span>
-                        <button onClick={() => setIsSidebarOpen(false)}><X className="h-5 w-5" /></button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {/* Mock Module List */}
-                        {[1, 2, 3].map(module => (
-                            <div key={module} className="space-y-2">
-                                <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">Module {module}</h4>
-                                <div className="space-y-1">
-                                    {[1, 2, 3].map(l => (
-                                        <button key={l} className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${l === 1 && module === 2 ? 'bg-[#00B4D8]/10 text-[#00B4D8] font-bold' : 'hover:bg-gray-50 text-gray-600'}`}>
-                                            {l < 2 ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlayCircle className="h-4 w-4" />}
-                                            <span className="text-sm truncate flex-1">Lesson Title Here</span>
-                                            <span className="text-xs opacity-50">10m</span>
+                <AnimatePresence>
+                    {showAISummary && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowAISummary(false)}
+                                className="absolute inset-0 bg-black/20 backdrop-blur-sm z-30"
+                            />
+                            <motion.div
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
+                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                className="absolute top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-40 border-l border-gray-100 p-8 overflow-y-auto"
+                            >
+                                <div className="flex justify-between items-center mb-10">
+                                    <h3 className="font-black text-xl text-gray-900 flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-[#00B4D8] shadow-sm">
+                                            <MessageSquare className="h-5 w-5" />
+                                        </div>
+                                        AI Insights
+                                    </h3>
+                                    <button onClick={() => setShowAISummary(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors">
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="bg-blue-50/50 p-6 rounded-3xl text-sm text-blue-900 leading-relaxed border border-blue-100/50">
+                                        <p className="font-black uppercase tracking-widest text-[10px] text-blue-400 mb-2">Lesson Summary</p>
+                                        This lesson introduces Python's `if`, `elif`, and `else` statements for decision making. You learned syntax structure and indentation rules critical for running code without errors.
+                                    </div>
+                                    <div className="bg-gray-50 p-6 rounded-3xl text-sm text-gray-600 border border-gray-100 font-medium">
+                                        <p className="font-black uppercase tracking-widest text-[10px] text-gray-400 mb-2">Key Concept</p>
+                                        Indentation in Python is not just for readability; it defines the block of code to be executed.
+                                    </div>
+                                    <div className="pt-6">
+                                        <button className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors shadow-xl shadow-gray-200">
+                                            Ask me a question
                                         </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* Course Sidebar (Right Side) */}
+                <AnimatePresence>
+                    {(isSidebarOpen || window.innerWidth >= 1024) && (
+                        <>
+                            {isSidebarOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+                                />
+                            )}
+                            <motion.div
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
+                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                className={cn(
+                                    "fixed inset-y-0 right-0 lg:static w-full sm:w-80 bg-white border-l border-gray-100 z-50 lg:z-10 flex flex-col",
+                                    !isSidebarOpen && "hidden lg:flex"
+                                )}
+                            >
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center h-20">
+                                    <span className="font-black uppercase tracking-widest text-xs text-gray-400">Course Content</span>
+                                    <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl lg:hidden">
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-8">
+                                    {[1, 2, 3].map(module => (
+                                        <div key={module} className="space-y-3">
+                                            <h4 className="font-black text-[10px] text-gray-400 uppercase tracking-[0.2em] px-4">Module {module}</h4>
+                                            <div className="space-y-1 px-2">
+                                                {[1, 2, 3].map(l => (
+                                                    <button key={l} className={cn(
+                                                        "w-full text-left p-3.5 rounded-2xl flex items-center gap-4 transition-all duration-200 group",
+                                                        l === 1 && module === 2 ? 'bg-blue-50/50 text-[#00B4D8]' : 'hover:bg-gray-50 text-gray-600'
+                                                    )}>
+                                                        <div className={cn(
+                                                            "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors",
+                                                            l < 2 ? 'bg-green-100 text-green-500' : 'bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-[#00B4D8]'
+                                                        )}>
+                                                            {l < 2 ? <CheckCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-bold truncate">Lesson Title Here</p>
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">10 min video</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
