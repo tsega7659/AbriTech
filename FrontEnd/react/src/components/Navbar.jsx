@@ -96,14 +96,14 @@ export default function Navbar() {
                     ))}
                     <div className="pt-4 flex flex-col gap-3">
                         <Link
-                            to="/contact"
+                            to="/auth/login"
                             className="block w-full text-center text-gray-600 font-bold py-2 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all"
                             onClick={() => setIsOpen(false)}
                         >
                             Sign In
                         </Link>
                         <Link
-                            to="/contact"
+                            to="/auth/get-started"
                             className="block w-full text-center bg-[#00B4D8] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all shadow-lg"
                             onClick={() => setIsOpen(false)}
                         >

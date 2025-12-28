@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { generateReferralCode } = require('../utils/codeGenerator');
 const { sendEmail } = require('../utils/emailUtils');
-const { ensureTablesExist } = require('../utils/dbInit');
 require('dotenv').config();
 
 const SALT_ROUNDS = 10;
@@ -20,7 +19,6 @@ const getRoleId = async (conn, roleName) => {
 };
 
 const login = async (req, res) => {
-  await ensureTablesExist();
   const { username, email, usernameOrEmail: paramIdentifier, password } = req.body;
 
   // Use whichever field was provided
@@ -72,7 +70,6 @@ const login = async (req, res) => {
 };
 
 const registerStudent = async (req, res) => {
-  await ensureTablesExist();
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -194,7 +191,6 @@ const registerStudent = async (req, res) => {
 };
 
 const registerParent = async (req, res) => {
-  await ensureTablesExist();
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -270,7 +266,6 @@ const registerParent = async (req, res) => {
 };
 
 const registerTeacher = async (req, res) => {
-  await ensureTablesExist();
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();

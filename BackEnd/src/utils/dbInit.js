@@ -2,32 +2,51 @@
 const pool = require('../config/db');
 const schema = require('./schema');
 
-let isInitialized = false;
+let initPromise = null;
 
 /**
- * Ensures all required tables exist in the database.
- * This can be called at the start of any database operation.
- * It uses a local flag to ensure the check only runs once per server instance lifecycle.
+ * Ensures that all tables defined in the schema exist in the database.
+ * This runs lazily and only once per server lifecycle.
+ * It includes retry logic for cloud environments where the DB might be
+ * temporarily unavailable during initial requests.
  */
-const ensureTablesExist = async () => {
-    if (isInitialized) return;
+const ensureTablesExist = async (retries = 3, delay = 2000) => {
+  // If already initializing or initialized, return the existing promise
+  if (initPromise) return initPromise;
 
-    console.log('--- Initializing Database Schema ---');
-    const conn = await pool.getConnection();
-    try {
+  initPromise = (async () => {
+    console.log('--- Initializing Database Schema (Lazy) ---');
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      let conn;
+      try {
+        conn = await pool.getConnection();
+
+        // Execute schema creations sequentially
         for (const item of schema) {
-            // console.log(`Ensuring table exists: ${item.table}`);
-            await conn.execute(item.sql);
+          await conn.execute(item.sql);
         }
-        isInitialized = true;
+
         console.log('--- Database Schema Initialized Successfully ---');
-    } catch (error) {
-        console.error('Database Initialization Error:', error);
-        // We don't throw here to allow subsequent attempts, 
-        // but ideally the app should handle this.
-    } finally {
-        conn.release();
+        return true;
+      } catch (error) {
+        console.error(`Database Initialization Attempt ${attempt} failed:`, error.message);
+
+        if (attempt === retries) {
+          console.error('Max retries reached. Database initialization failed.');
+          initPromise = null; // Allow a future request to try again
+          return false;
+        }
+
+        console.log(`Retrying in ${delay / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } finally {
+        if (conn) conn.release();
+      }
     }
+  })();
+
+  return initPromise;
 };
 
 module.exports = { ensureTablesExist };

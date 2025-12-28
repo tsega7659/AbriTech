@@ -1,9 +1,7 @@
 const pool = require('../config/db');
-const { ensureTablesExist } = require('../utils/dbInit');
 
 // Link a parent to a student using a referral code
 const linkStudent = async (req, res) => {
-  await ensureTablesExist();
   // Ensure req.body exists (in case middleware didn't parse it)
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing. Ensure you are sending JSON and Content-Type: application/json header." });

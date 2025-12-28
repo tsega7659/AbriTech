@@ -2,6 +2,7 @@ import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { Link } from "react-router-dom";
 
 const allCourses = [
     {
@@ -199,9 +200,9 @@ export default function Courses() {
                                             <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
                                                 {course.level}
                                             </div>
-                                            <button className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
+                                            <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
                                                 Enroll Now
-                                            </button>
+                                            </Link>
                                         </div>
                                     </div>
                                 </motion.div>

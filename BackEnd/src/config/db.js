@@ -6,9 +6,16 @@ const pool = mysql.createPool({
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'abritech_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    port: process.env.DB_PORT || 3306,
+    ssl: {
+    rejectUnauthorized: false,
+  },
+
+  connectTimeout: 20000,
+  waitForConnections: true,
+  connectionLimit: 5,
+  queueLimit: 0,
 });
+
 
 module.exports = pool;
