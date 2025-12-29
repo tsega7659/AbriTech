@@ -31,7 +31,7 @@ export default function Contact() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-2">Email Us</h3>
                         <p className="text-sm text-gray-500 mb-4">Send us an email anytime</p>
-                        <p className="text-primary font-medium">info@abritech.io</p>
+                        <p className="text-primary font-medium">abritechet@gmail.com</p>
                     </div>
 
                     {/* Phone Card */}
@@ -41,7 +41,7 @@ export default function Contact() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-2">Call Us</h3>
                         <p className="text-sm text-gray-500 mb-4">Mon-Fri from 8am to 6pm</p>
-                        <p className="text-primary font-medium">+251 911 123 456</p>
+                        <p className="text-primary font-medium">+251-961-701470</p>
                     </div>
 
                     {/* Visit Card */}

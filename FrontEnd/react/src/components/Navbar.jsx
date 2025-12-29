@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "../lib/utils";
 import logo from "../assets/logo.png";
 
+
 const navigation = [
     { name: "Home", href: "/" },
     { name: "Courses", href: "/courses" },
@@ -29,6 +30,7 @@ export default function Navbar() {
                         <Link to="/" className="flex items-center gap-2 group">
                             <img src={logo} alt="AbriTech Solutions" className="h-10 w-auto" />
                         </Link>
+                        <span className="text-xl font-bold text-gray-800">AbriTech Solutions</span>
                     </div>
 
                     <div className="hidden md:flex items-center space-x-8">

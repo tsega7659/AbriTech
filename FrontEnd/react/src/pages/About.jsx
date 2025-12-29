@@ -1,4 +1,8 @@
 import { Target, Eye, Users, Globe, Lightbulb, Handshake, Heart } from "lucide-react";
+import lela from "../assets/lela.jpg";
+import addis from "../assets/Addisbike.png";
+import mint from "../assets/mint.jpg";
+import innobiz from "../assets/Innobiz.jpg";
 
 const values = [
     { title: "Innovation", desc: "Always seeking better ways to educate and inspire our students through cutting-edge technology.", icon: Lightbulb },
@@ -94,17 +98,40 @@ export default function About() {
 
                 {/* Partnerships */}
                 <section className="text-center bg-gray-900 text-white rounded-3xl p-12">
-                    <h2 className="text-2xl font-bold mb-8">Our Partnerships</h2>
-                    <p className="max-w-2xl mx-auto mb-10 text-gray-400">
-                        We are proud to work with organizations like Lela Learning Center, Innobiz-K, and MinT to enhance our credibility and reach.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-6 opacity-70">
-                        {['Lela Learning Center', 'Innobiz-K', 'MinT', 'Addis Bike', 'Addis Technology Solutions'].map((partner) => (
-                            <span key={partner} className="border border-white/20 px-6 py-2 rounded-full text-sm">
-                                {partner}
-                            </span>
-                        ))}
-                    </div>
+  <h2 className="text-2xl font-bold mb-8">Our Partnerships</h2>
+
+  <p className="max-w-2xl mx-auto mb-12 text-gray-400">
+    We are proud to work with organizations like Lela Learning Center, Innobiz-K, and MinT
+    to enhance our credibility and reach.
+  </p>
+
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 place-items-center lg:ml-42">
+    {[
+      { name: "Lela Learning Center", logo: lela },
+      { name: "Innobiz-K", logo: innobiz },
+      { name: "MinT", logo: mint },
+      { name: "Addis Bike", logo: addis },
+    ].map((partner) => (
+      <div
+        key={partner.name}
+        className="flex flex-col items-center gap-3 opacity-80 hover:opacity-100 transition"
+      >
+        <div className="w-20 h-20  flex items-center justify-center bg-white/5 rounded-xl">
+          <img
+            src={partner.logo}
+            alt={partner.name}
+            className="max-h-12 object-contain rounded-xl"
+          />
+        </div>
+
+        <span className="text-sm text-gray-300 text-center">
+          {partner.name}
+        </span>
+      </div>
+    ))}
+  </div>
+
+
                 </section>
             </div>
         </div>

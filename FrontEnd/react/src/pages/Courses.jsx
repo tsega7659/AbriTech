@@ -254,9 +254,9 @@ export default function Courses() {
                         <p className="text-gray-300 max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
                             Our team of skilled engineers creates, innovates, and delivers engineering solutions across various sectors. We combine theoretical knowledge with practical application to solve real-world challenges.
                         </p>
-                        <button className="bg-white text-gray-900 px-10 py-4 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-xl hover:-translate-y-1">
+                        {/* <Link to="/courses" className="bg-white text-gray-900 px-10 py-4 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-xl hover:-translate-y-1">
                             Learn More About Our Projects
-                        </button>
+                        </Link> */}
                     </div>
                 </div>
             </div>

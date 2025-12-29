@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { Lightbulb, Instagram, Linkedin, Send, Facebook, Twitter } from "lucide-react";
+import { Lightbulb, Instagram, Linkedin, Send } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
+
 
 export default function Footer() {
     return (
@@ -17,7 +19,7 @@ export default function Footer() {
                             Making high-quality STEM education accessible, affordable and relevant for Ethiopian youth.
                         </p>
                         <div className="flex space-x-4">
-                            <a href="#" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
+                            <a href="https://www.instagram.com/abritech_solutions?igsh=MW9mcnYwYjgwcDBqNw%3D%3D&utm_source=qr" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <Instagram className="h-5 w-5" />
                             </a>
                             <a href="https://t.me/abritechsolutions" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
@@ -26,13 +28,17 @@ export default function Footer() {
                             <a href="#" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <Linkedin className="h-5 w-5" />
                             </a>
+                            <a href="https://www.tiktok.com/@abritech_solutions?is_from_webapp=1&sender_device=pc" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
+                                <FaTiktok className="h-5 w-5" />
+                            </a>
+                            
                         </div>
                     </div>
 
                     <div>
                         <h3 className="font-bold text-white text-lg mb-6">Quick Links</h3>
                         <ul className="space-y-4">
-                            {['Home', 'Programs', 'Courses', 'Blog', 'About', 'Contact'].map((item) => (
+                            {['Home',  'Courses', 'Blog', 'About', 'Contact'].map((item) => (
                                 <li key={item}>
                                     <Link to={item === 'Home' ? '/' : `/${item.toLowerCase()}`} className="text-gray-400 hover:text-[#00B4D8] transition-colors flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[#00B4D8] opacity-0 group-hover:opacity-100"></div>
@@ -62,17 +68,13 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h3 className="font-bold text-white text-lg mb-6">Newsletter</h3>
+                        <h3 className="font-bold text-white text-lg mb-6">Blogs</h3>
                         <p className="text-gray-400 mb-6 text-sm">Subscribe to get the latest updates and news.</p>
                         <form className="flex gap-2">
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/50 focus:border-[#00B4D8] transition-all placeholder:text-gray-500"
-                            />
-                            <button className="bg-[#00B4D8] text-white p-3 rounded-lg hover:bg-[#0096B4] transition-colors shadow-lg shadow-[#00B4D8]/20">
-                                <Send className="h-5 w-5" />
-                            </button>
+                            
+                            <Link to= "/blog" className="bg-[#00B4D8] text-white p-3 rounded-lg hover:bg-[#0096B4] transition-colors shadow-lg shadow-[#00B4D8]/20">
+                               Read Blog
+                            </Link>
                         </form>
                     </div>
                 </div>

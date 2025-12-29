@@ -231,10 +231,10 @@ export default function Home() {
                         Join thousands of Ethiopian students discovering their potential through our hands-on STEM education programs.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-6">
-                        <Link to="/contact" className="bg-white text-[#00B4D8] font-bold px-10 py-4 rounded-xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-3">
+                        <Link to="/auth/login" className="bg-white text-[#00B4D8] font-bold px-10 py-4 rounded-xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-3">
                             <Users className="h-5 w-5" /> Student Portal
                         </Link>
-                        <Link to="/contact" className="bg-transparent border-2 border-white text-white font-bold px-10 py-4 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-3">
+                        <Link to="/auth/login" className="bg-transparent border-2 border-white text-white font-bold px-10 py-4 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-3">
                             <Shield className="h-5 w-5" /> Parent Portal
                         </Link>
                     </div>
