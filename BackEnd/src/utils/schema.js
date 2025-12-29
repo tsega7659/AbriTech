@@ -1,16 +1,16 @@
 // src/utils/schema.js
 
 const schema = [
-    {
-        table: 'role',
-        sql: `CREATE TABLE IF NOT EXISTS role (
+  {
+    table: 'role',
+    sql: `CREATE TABLE IF NOT EXISTS role (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name ENUM('admin', 'teacher', 'student', 'parent') UNIQUE NOT NULL
     )`
-    },
-    {
-        table: 'user',
-        sql: `CREATE TABLE IF NOT EXISTS user (
+  },
+  {
+    table: 'user',
+    sql: `CREATE TABLE IF NOT EXISTS user (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       fullName VARCHAR(255) NOT NULL,
       gender VARCHAR(255),
@@ -24,10 +24,10 @@ const schema = [
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (roleId) REFERENCES role(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'student',
-        sql: `CREATE TABLE IF NOT EXISTS student (
+  },
+  {
+    table: 'student',
+    sql: `CREATE TABLE IF NOT EXISTS student (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       userId BIGINT UNIQUE NOT NULL,
       isCurrentStudent TINYINT(1) NOT NULL,
@@ -39,28 +39,28 @@ const schema = [
       referralCode VARCHAR(255) UNIQUE,
       FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'parent',
-        sql: `CREATE TABLE IF NOT EXISTS parent (
+  },
+  {
+    table: 'parent',
+    sql: `CREATE TABLE IF NOT EXISTS parent (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       userId BIGINT UNIQUE NOT NULL,
       FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'parent_student',
-        sql: `CREATE TABLE IF NOT EXISTS parent_student (
+  },
+  {
+    table: 'parentstudent',
+    sql: `CREATE TABLE IF NOT EXISTS parentstudent (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       parentId BIGINT NOT NULL,
       studentId BIGINT NOT NULL,
       FOREIGN KEY (parentId) REFERENCES parent(id) ON DELETE CASCADE,
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'course',
-        sql: `CREATE TABLE IF NOT EXISTS course (
+  },
+  {
+    table: 'course',
+    sql: `CREATE TABLE IF NOT EXISTS course (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       category VARCHAR(255) NOT NULL,
@@ -70,20 +70,20 @@ const schema = [
       description TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
-    },
-    {
-        table: 'teacher_course',
-        sql: `CREATE TABLE IF NOT EXISTS teacher_course (
+  },
+  {
+    table: 'teachercourse',
+    sql: `CREATE TABLE IF NOT EXISTS teachercourse (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       teacherId BIGINT NOT NULL,
       courseId BIGINT NOT NULL,
       FOREIGN KEY (teacherId) REFERENCES user(id) ON DELETE CASCADE,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'enrollment',
-        sql: `CREATE TABLE IF NOT EXISTS enrollment (
+  },
+  {
+    table: 'enrollment',
+    sql: `CREATE TABLE IF NOT EXISTS enrollment (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       studentId BIGINT NOT NULL,
       courseId BIGINT NOT NULL,
@@ -93,10 +93,10 @@ const schema = [
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'lesson',
-        sql: `CREATE TABLE IF NOT EXISTS lesson (
+  },
+  {
+    table: 'lesson',
+    sql: `CREATE TABLE IF NOT EXISTS lesson (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       courseId BIGINT NOT NULL,
       title VARCHAR(255) NOT NULL,
@@ -105,10 +105,10 @@ const schema = [
       orderNumber INT NOT NULL,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'lesson_progress',
-        sql: `CREATE TABLE IF NOT EXISTS lesson_progress (
+  },
+  {
+    table: 'lessonprogress',
+    sql: `CREATE TABLE IF NOT EXISTS lessonprogress (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       studentId BIGINT NOT NULL,
       lessonId BIGINT NOT NULL,
@@ -117,10 +117,10 @@ const schema = [
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
       FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'lesson_quiz',
-        sql: `CREATE TABLE IF NOT EXISTS lesson_quiz (
+  },
+  {
+    table: 'lessonquiz',
+    sql: `CREATE TABLE IF NOT EXISTS lessonquiz (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       lessonId BIGINT NOT NULL,
       question TEXT NOT NULL,
@@ -132,10 +132,10 @@ const schema = [
       maxAttempts INT DEFAULT 2,
       FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'quiz_attempt',
-        sql: `CREATE TABLE IF NOT EXISTS quiz_attempt (
+  },
+  {
+    table: 'quizattempt',
+    sql: `CREATE TABLE IF NOT EXISTS quizattempt (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       studentId BIGINT NOT NULL,
       quizId BIGINT NOT NULL,
@@ -147,10 +147,10 @@ const schema = [
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
       FOREIGN KEY (quizId) REFERENCES lesson_quiz(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'assignment',
-        sql: `CREATE TABLE IF NOT EXISTS assignment (
+  },
+  {
+    table: 'assignment',
+    sql: `CREATE TABLE IF NOT EXISTS assignment (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       courseId BIGINT NOT NULL,
       title VARCHAR(255) NOT NULL,
@@ -159,10 +159,10 @@ const schema = [
       requiresApproval TINYINT(1) DEFAULT 1,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'assignment_submission',
-        sql: `CREATE TABLE IF NOT EXISTS assignment_submission (
+  },
+  {
+    table: 'assignmentsubmission',
+    sql: `CREATE TABLE IF NOT EXISTS assignmentsubmission (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       assignmentId BIGINT NOT NULL,
       studentId BIGINT NOT NULL,
@@ -175,20 +175,20 @@ const schema = [
       FOREIGN KEY (assignmentId) REFERENCES assignment(id) ON DELETE CASCADE,
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'lesson_ai_summary',
-        sql: `CREATE TABLE IF NOT EXISTS lesson_ai_summary (
+  },
+  {
+    table: 'lessonaisummary',
+    sql: `CREATE TABLE IF NOT EXISTS lessonaisummary (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       lessonId BIGINT UNIQUE NOT NULL,
       aiSummary TEXT NOT NULL,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'ai_chat_log',
-        sql: `CREATE TABLE IF NOT EXISTS ai_chat_log (
+  },
+  {
+    table: 'aichatlog',
+    sql: `CREATE TABLE IF NOT EXISTS aichatlog (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       userId BIGINT NOT NULL,
       lessonId BIGINT,
@@ -198,10 +198,10 @@ const schema = [
       FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
       FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'notification',
-        sql: `CREATE TABLE IF NOT EXISTS notification (
+  },
+  {
+    table: 'notification',
+    sql: `CREATE TABLE IF NOT EXISTS notification (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       userId BIGINT NOT NULL,
       title VARCHAR(255) NOT NULL,
@@ -211,10 +211,10 @@ const schema = [
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
     )`
-    },
-    {
-        table: 'blog',
-        sql: `CREATE TABLE IF NOT EXISTS blog (
+  },
+  {
+    table: 'blog',
+    sql: `CREATE TABLE IF NOT EXISTS blog (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       content TEXT NOT NULL,
@@ -224,7 +224,7 @@ const schema = [
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (createdBy) REFERENCES user(id) ON DELETE CASCADE
     )`
-    }
+  }
 ];
 
 module.exports = schema;
