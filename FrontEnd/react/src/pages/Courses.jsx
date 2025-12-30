@@ -68,7 +68,7 @@ const categories = [
     { name: "Programming", icon: Globe },
     { name: "3D Design", icon: Boxes }
 ];
-const levels = ["All", "Beginner", "Intermediate", "Advanced", "All Levels"];
+const levels = ["All", "Beginner", "Intermediate", "Advanced"];
 
 export default function Courses() {
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -232,9 +232,9 @@ export default function Courses() {
                             ))}
                         </div>
 
-                        <button className="bg-[#00B4D8] text-white px-10 py-4 rounded-xl font-bold hover:bg-[#0096B4] transition-all shadow-lg hover:shadow-[#00B4D8]/20 hover:-translate-y-1">
+                        <Link to='/contact' className="bg-[#00B4D8] text-white px-10 py-4 rounded-xl font-bold hover:bg-[#0096B4] transition-all shadow-lg hover:shadow-[#00B4D8]/20 hover:-translate-y-1">
                             Contact for Partnerships
-                        </button>
+                        </Link>
                     </div>
                     <div className="flex-1 w-full relative order-1 md:order-2">
                         <div className="absolute inset-0 bg-[#FDB813] rounded-3xl transform rotate-3 translate-x-2 translate-y-2 -z-10 opacity-20"></div>

@@ -101,7 +101,7 @@ export default function About() {
   <h2 className="text-2xl font-bold mb-8">Our Partnerships</h2>
 
   <p className="max-w-2xl mx-auto mb-12 text-gray-400">
-    We are proud to work with organizations like Lela Learning Center, Innobiz-K, and MinT
+    We are proud to work with organizations like Lela Learning Center, Innobiz-K, MinT, Addis Bike
     to enhance our credibility and reach.
   </p>
 
