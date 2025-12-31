@@ -1,8 +1,9 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { generateReferralCode } = require('../utils/codeGenerator');
+const { generateReferralCode, generateUsername, generateSecurePassword } = require('../utils/codeGenerator');
 const { sendEmail } = require('../utils/emailUtils');
+const { teacherWelcomeEmail, credentialsUpdatedEmail } = require('../utils/emailTemplates');
 require('dotenv').config();
 
 const SALT_ROUNDS = 10;
@@ -265,14 +266,14 @@ const registerParent = async (req, res) => {
   }
 };
 
-const registerTeacher = async (req, res) => {
+const registerAdmin = async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    const {
-      fullName, username, email, gender = null, phoneNumber = null, address = null
-    } = req.body;
+    const { fullName, username, email, password, phoneNumber = null } = req.body;
+
+    console.log('--- Admin Registration Start ---');
 
     // 1. Check existing
     const [existing] = await conn.execute(
@@ -284,34 +285,214 @@ const registerTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Username or Email already exists' });
     }
 
-    // 2. Generate random password
-    const rawPassword = generateReferralCode(10); // Using the generator for a random string
-    const passwordHash = await bcrypt.hash(rawPassword, SALT_ROUNDS);
+    // 2. Hash Password
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     // 3. Get Role ID
-    const roleId = await getRoleId(conn, 'teacher');
+    const roleId = await getRoleId(conn, 'admin');
 
     // 4. Insert User
     const [userResult] = await conn.execute(
-      `INSERT INTO user (fullName, gender, username, email, passwordHash, phoneNumber, roleId, address) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fullName, gender, username, email, passwordHash, phoneNumber, roleId, address]
-    );
-
-    // 5. Mock Email
-    await sendEmail(
-      email,
-      'Your AbriTech Teacher Account',
-      `Welcome ${fullName}!\nAn admin has created your account.\nUsername: ${username}\nPassword: ${rawPassword}\nPlease login and change your password.`
+      `INSERT INTO user (fullName, username, email, passwordHash, phoneNumber, roleId) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [fullName, username, email, passwordHash, phoneNumber, roleId]
     );
 
     await conn.commit();
-    res.status(201).json({ message: 'Teacher registered successfully. Credentials sent to email.', rawPassword });
+    console.log('--- Admin Registration Successful ---');
+    res.status(201).json({ message: 'Admin registered successfully', userId: userResult.insertId });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error('Register Admin Error:', error);
+    res.status(500).json({ message: 'Admin registration failed', error: error.message });
+  } finally {
+    conn.release();
+  }
+};
+
+const registerTeacher = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const {
+      fullName, email, gender = null, phoneNumber = null, address = null, courseIds = [], specialization = null
+    } = req.body;
+
+    console.log('--- Teacher Registration Start ---');
+    console.log('Full Name:', fullName, 'Courses:', courseIds);
+
+    // 1. Generate username from full name and password
+    let username = generateUsername(fullName);
+    const rawPassword = generateSecurePassword(12);
+
+    // 2. Check if generated username exists, append number if needed
+    let usernameExists = true;
+    let counter = 1;
+    let finalUsername = username;
+
+    while (usernameExists) {
+      const [existing] = await conn.execute(
+        'SELECT id FROM user WHERE username = ?',
+        [finalUsername]
+      );
+      if (existing.length === 0) {
+        usernameExists = false;
+      } else {
+        finalUsername = `${username}${counter}`;
+        counter++;
+      }
+    }
+
+    // 3. Check if email exists
+    const [emailCheck] = await conn.execute(
+      'SELECT id FROM user WHERE email = ?',
+      [email]
+    );
+    if (emailCheck.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // 4. Hash Password
+    const passwordHash = await bcrypt.hash(rawPassword, SALT_ROUNDS);
+
+    // 5. Get Role ID
+    const roleId = await getRoleId(conn, 'teacher');
+
+    // 6. Insert User
+    console.log('Inserting user with username:', finalUsername);
+    const [userResult] = await conn.execute(
+      `INSERT INTO user (fullName, gender, username, email, passwordHash, phoneNumber, roleId, address) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fullName, gender, finalUsername, email, passwordHash, phoneNumber, roleId, address]
+    );
+    const userId = userResult.insertId;
+
+    // 7. Insert into teacher table
+    console.log('Inserting into teacher table...');
+    await conn.execute(
+      'INSERT INTO teacher (userId, specialization) VALUES (?, ?)',
+      [userId, specialization]
+    );
+
+    // 8. Assign courses if provided
+    if (courseIds && courseIds.length > 0) {
+      console.log('Assigning courses:', courseIds);
+      for (const courseId of courseIds) {
+        await conn.execute(
+          'INSERT INTO teachercourse (teacherId, courseId) VALUES (?, ?)',
+          [userId, courseId]
+        );
+      }
+    }
+
+    // 9. Send email with credentials
+    const emailContent = teacherWelcomeEmail(fullName, finalUsername, rawPassword);
+    try {
+      await sendEmail(email, emailContent.subject, emailContent.text, emailContent.html);
+      console.log('Welcome email sent to:', email);
+    } catch (mailErr) {
+      console.error('Email sending failed (non-blocking):', mailErr.message);
+    }
+
+    await conn.commit();
+    console.log('--- Teacher Registration Successful ---');
+    res.status(201).json({
+      message: 'Teacher registered successfully. Credentials sent to email.',
+      userId,
+      username: finalUsername
+    });
 
   } catch (error) {
     await conn.rollback();
     console.error('Register Teacher Error:', error);
     res.status(500).json({ message: 'Teacher registration failed', error: error.message });
+  } finally {
+    conn.release();
+  }
+};
+
+const updateCredentials = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const { userId } = req.user; // From auth middleware
+    const { newUsername, newPassword } = req.body;
+
+    console.log('--- Update Credentials Start ---');
+    console.log('User ID:', userId);
+
+    if (!newUsername && !newPassword) {
+      await conn.rollback();
+      return res.status(400).json({ message: 'Please provide new username or password' });
+    }
+
+    // Get current user info
+    const [users] = await conn.execute(
+      'SELECT username, email, fullName FROM user WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentUser = users[0];
+    let updateFields = [];
+    let updateValues = [];
+
+    // Check if new username is different and available
+    if (newUsername && newUsername !== currentUser.username) {
+      const [existing] = await conn.execute(
+        'SELECT id FROM user WHERE username = ? AND id != ?',
+        [newUsername, userId]
+      );
+      if (existing.length > 0) {
+        await conn.rollback();
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+      updateFields.push('username = ?');
+      updateValues.push(newUsername);
+    }
+
+    // Hash new password if provided
+    if (newPassword) {
+      const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      updateFields.push('passwordHash = ?');
+      updateValues.push(passwordHash);
+    }
+
+    // Add userId for WHERE clause
+    updateValues.push(userId);
+
+    // Update user
+    const updateQuery = `UPDATE user SET ${updateFields.join(', ')} WHERE id = ?`;
+    await conn.execute(updateQuery, updateValues);
+
+    // Send confirmation email
+    const finalUsername = newUsername || currentUser.username;
+    const emailContent = credentialsUpdatedEmail(currentUser.fullName, finalUsername);
+    try {
+      await sendEmail(currentUser.email, emailContent.subject, emailContent.text, emailContent.html);
+    } catch (mailErr) {
+      console.error('Email sending failed (non-blocking):', mailErr.message);
+    }
+
+    await conn.commit();
+    console.log('--- Credentials Updated Successfully ---');
+    res.json({
+      message: 'Credentials updated successfully',
+      username: finalUsername
+    });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error('Update Credentials Error:', error);
+    res.status(500).json({ message: 'Failed to update credentials', error: error.message });
   } finally {
     conn.release();
   }
@@ -325,6 +506,8 @@ module.exports = {
   login,
   registerStudent,
   registerParent,
+  registerAdmin,
   registerTeacher,
+  updateCredentials,
   logout
 };

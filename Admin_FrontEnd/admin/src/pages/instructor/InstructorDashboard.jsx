@@ -1,7 +1,11 @@
-import React from 'react';
-import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight, Info, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const InstructorDashboard = () => {
+    const navigate = useNavigate();
+    const [showBanner, setShowBanner] = useState(true);
+
     const stats = [
         { label: 'My Courses', value: '2', icon: BookOpen, bg: 'bg-blue-50', color: 'text-blue-500' },
         { label: 'Total Students', value: '2', icon: Users, bg: 'bg-green-50', color: 'text-green-500' },
@@ -21,6 +25,34 @@ const InstructorDashboard = () => {
                 <h1 className="text-2xl font-bold text-slate-800">Welcome, Dr. Tadesse Bekele</h1>
                 <p className="text-slate-500 text-sm mt-1">Here's an overview of your courses and students</p>
             </div>
+
+            {/* Credential Update Recommendation Banner */}
+            {showBanner && (
+                <div className="bg-gradient-to-r from-blue-50 to-primary/5 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Info className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-slate-800 mb-1">Secure Your Account</h3>
+                        <p className="text-sm text-slate-600 mb-3">
+                            We recommend updating your auto-generated credentials to something more memorable and secure.
+                        </p>
+                        <button
+                            onClick={() => navigate('/change-credentials')}
+                            className="px-4 py-2 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all flex items-center gap-2"
+                        >
+                            Update Credentials
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setShowBanner(false)}
+                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -1,31 +1,55 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
         setError('');
+        setIsLoading(true);
 
-        // Simulate API call and role-based redirect
-        setTimeout(() => {
-            if (email === 'admin@abritech.com') {
-                navigate('/admin/dashboard');
-            } else if (email === 'teacher@abritech.com') {
-                navigate('/instructor/dashboard');
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    usernameOrEmail: email,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store token and user data
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Role-based redirect
+                if (data.user.role === 'admin') {
+                    navigate('/admin/dashboard');
+                } else if (data.user.role === 'teacher') {
+                    navigate('/instructor/dashboard');
+                } else {
+                    navigate('/');
+                }
             } else {
-                setError('Invalid credentials. Use admin@abritech.com or teacher@abritech.com');
+                setError(data.message || 'Invalid credentials');
             }
+        } catch (err) {
+            setError('Network error. Please check if the server is running.');
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -56,11 +80,11 @@ const LoginPage = () => {
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
+                            <label className="text-sm font-semibold text-slate-700 ml-1">Email or Username</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="name@company.com"
@@ -111,11 +135,6 @@ const LoginPage = () => {
                         </button>
                     </form>
                 </div>
-
-                {/* Footer info */}
-                <p className="text-center text-slate-400 text-sm mt-8">
-                    Need access? Contact the platform administrator.
-                </p>
             </div>
         </div>
     );

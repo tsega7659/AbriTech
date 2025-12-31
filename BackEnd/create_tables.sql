@@ -19,6 +19,7 @@ CREATE TABLE user (
   parentPhone VARCHAR(255),
   address TEXT,
   roleId INT NOT NULL,
+  firstLogin TINYINT(1) DEFAULT 1,
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (roleId) REFERENCES role(id) ON DELETE CASCADE
 );
@@ -48,6 +49,13 @@ CREATE TABLE parent_student (
   studentId BIGINT NOT NULL,
   FOREIGN KEY (parentId) REFERENCES parent(id) ON DELETE CASCADE,
   FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE
+);
+
+CREATE TABLE teacher (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  userId BIGINT UNIQUE NOT NULL,
+  specialization VARCHAR(255),
+  FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
 );
 
 CREATE TABLE course (

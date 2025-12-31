@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginPage from './pages/auth/LoginPage';
+import ChangeCredentials from './pages/auth/ChangeCredentials';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentManagement from './pages/admin/StudentManagement';
 import CourseManagement from './pages/admin/CourseManagement';
@@ -18,8 +19,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Auth Route */}
+        {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/change-credentials" element={<ChangeCredentials />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<DashboardLayout role="admin" />}>

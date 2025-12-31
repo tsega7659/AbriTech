@@ -59,6 +59,15 @@ const schema = [
     )`
   },
   {
+    table: 'teacher',
+    sql: `CREATE TABLE IF NOT EXISTS teacher (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      userId BIGINT UNIQUE NOT NULL,
+      specialization VARCHAR(255),
+      FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+    )`
+  },
+  {
     table: 'course',
     sql: `CREATE TABLE IF NOT EXISTS course (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
