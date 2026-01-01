@@ -11,7 +11,7 @@ export const useAdmin = () => {
     return context;
 };
 
-import { API_BASE_URL } from '../config/apiConfig';
+
 
 export const AdminProvider = ({ children }) => {
     const [teachers, setTeachers] = useState([]);
