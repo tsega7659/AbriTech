@@ -402,7 +402,8 @@ const registerTeacher = async (req, res) => {
     res.status(201).json({
       message: 'Teacher registered successfully. Credentials sent to email.',
       userId,
-      username: finalUsername
+      username: finalUsername,
+      password: rawPassword
     });
 
   } catch (error) {

@@ -1,12 +1,15 @@
-const getCourses = async (req, res) => {
-  // Implementation
-};
+const pool = require('../config/db');
 
-const getCourseById = async (req, res) => {
-  // Implementation
+const getAllCourses = async (req, res) => {
+  try {
+    const [courses] = await pool.execute('SELECT * FROM course');
+    res.json(courses);
+  } catch (error) {
+    console.error('Get All Courses Error:', error);
+    res.status(500).json({ message: 'Failed to fetch courses', error: error.message });
+  }
 };
 
 module.exports = {
-  getCourses,
-  getCourseById
+  getAllCourses
 };

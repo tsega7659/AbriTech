@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const isDev = import.meta.env.DEV;
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://abritech.onrender.com/api',
+    baseURL: isDev
+        ? 'http://localhost:5000/api'
+        : 'https://abritech.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },

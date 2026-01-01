@@ -9,6 +9,7 @@ import CourseManagement from './pages/admin/CourseManagement';
 import InstructorManagement from './pages/admin/InstructorManagement';
 import UserRegistration from './pages/admin/UserRegistration';
 import ProjectReview from './pages/admin/ProjectReview';
+import Settings from './pages/common/Settings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
 import InstructorProjects from './pages/instructor/InstructorProjects';
@@ -34,7 +35,7 @@ function App() {
           <Route path="projects" element={<ProjectReview />} />
           <Route path="analytics" element={<div>Analytics (Refinement Pending)</div>} />
           <Route path="ai-insights" element={<div>AI Insights (Refinement Pending)</div>} />
-          <Route path="settings" element={<div>Settings (Refinement Pending)</div>} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Instructor Routes */}
@@ -45,6 +46,7 @@ function App() {
           <Route path="projects" element={<InstructorProjects />} />
           <Route path="students" element={<InstructorStudents />} />
           <Route path="analytics" element={<div>Performance (Pending)</div>} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Default Redirect */}

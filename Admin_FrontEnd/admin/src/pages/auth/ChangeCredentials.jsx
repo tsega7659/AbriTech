@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const ChangeCredentials = () => {
     const navigate = useNavigate();
@@ -34,7 +35,7 @@ const ChangeCredentials = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/auth/update-credentials', {
+            const response = await fetch(`${API_BASE_URL}/auth/update-credentials`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

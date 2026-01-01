@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
@@ -40,7 +40,27 @@ const SidebarLink = ({ to, icon: Icon, label, active }) => (
 
 const DashboardLayout = ({ role }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [user, setUser] = useState(null);
     const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
+
+    // Auto-close sidebar on mobile when route changes
+    useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [location.pathname]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
 
     const adminLinks = [
         { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -60,6 +80,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/instructor/projects', icon: CheckSquare, label: 'Project Reviews' },
         { to: '/instructor/students', icon: Users, label: 'Students' },
         { to: '/instructor/analytics', icon: TrendingUp, label: 'Performance' },
+        { to: '/instructor/settings', icon: Settings, label: 'Settings' },
     ];
 
     const links = role === 'admin' ? adminLinks : instructorLinks;
@@ -108,14 +129,20 @@ const DashboardLayout = ({ role }) => {
                     <div className="p-4 mt-auto border-t border-border bg-slate-50/50 sticky bottom-0 z-10 bg-white">
                         <div className="flex items-center gap-3 px-2 py-3 mb-2">
                             <div className="w-10 h-10 bg-slate-200 rounded-full overflow-hidden">
-                                <img src="https://ui-avatars.com/api/?name=Admin+User&background=4dbfec&color=fff" alt="User" />
+                                <img
+                                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=4dbfec&color=fff`}
+                                    alt="User"
+                                />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-800 truncate">Admin User</p>
+                                <p className="text-sm font-bold text-slate-800 truncate">{user?.fullName || 'Loading...'}</p>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">{role}</p>
                             </div>
                         </div>
-                        <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-slate-600 font-bold text-sm hover:bg-slate-100 transition-all">
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-slate-600 font-bold text-sm hover:bg-slate-100 transition-all active:scale-[0.98]"
+                        >
                             <LogOut className="w-4 h-4 text-slate-400" />
                             Logout
                         </button>
@@ -140,8 +167,6 @@ const DashboardLayout = ({ role }) => {
                         <Bell className="w-5 h-5" />
                     </button>
                 </header>
-
-                {/* Desktop Search/Navbar (Optional, as search is often in page content in the images) */}
 
                 {/* Page Content */}
                 <div className="flex-1 overflow-y-auto bg-slate-50/30">
