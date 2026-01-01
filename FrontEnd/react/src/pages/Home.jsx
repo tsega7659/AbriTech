@@ -255,7 +255,7 @@ export default function Home() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {popularCourses.map((course, index) => (
-                        <div key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
+                        <Link to="/courses" key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
                             <div className="relative h-48 overflow-hidden">
                                 <img
                                     src={course.image}
@@ -275,14 +275,14 @@ export default function Home() {
                                     View Details <ArrowRight className="ml-1 h-4 w-4" />
                                 </Link>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 
                 <div className="mt-12 text-center md:hidden">
-                    <Link to="/courses" className="btn-primary w-full">
+                    <span className="btn-primary w-full">
                         View All Courses
-                    </Link>
+                    </span>
                 </div>
             </section>
         </div>

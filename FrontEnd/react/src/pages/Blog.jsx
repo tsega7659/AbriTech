@@ -69,7 +69,7 @@ export default function Blog() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                     {posts.map((post) => (
-                        <div key={post.id} className="group bg-linear-to-br from-white to-gray-50 rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-2">
+                        <Link to={`/blog/${post.id}`} key={post.id} className="group bg-linear-to-br from-white to-gray-50 rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-2">
                             <div className="h-64 overflow-hidden relative">
                                 <img
                                     src={post.image}
@@ -96,7 +96,7 @@ export default function Blog() {
                                     Read Article <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform " />
                                 </Link>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>

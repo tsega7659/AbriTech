@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '../../config/apiConfig';
+import logo from '../../assets/logo.png';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -64,8 +65,8 @@ const LoginPage = () => {
             <div className="w-full max-w-[440px] relative">
                 {/* Logo */}
                 <div className="flex flex-col items-center mb-10">
-                    <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-xl shadow-primary/20 mb-4">
-                        A
+                    <div className="w-16 h-16  rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-xl shadow-primary/20 mb-4">
+                        <img src={logo} alt="Logo" className="w-10 h-10" />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">AbriTech Portal</h1>
                     <p className="text-slate-500 mt-2">Sign in to manage your learning platform</p>
