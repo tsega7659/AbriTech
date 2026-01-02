@@ -3,6 +3,8 @@ import lela from "../assets/lela.jpg";
 import addis from "../assets/Addisbike.png";
 import mint from "../assets/mint.jpg";
 import innobiz from "../assets/Innobiz.jpg";
+import about from "../assets/about.jpg"
+
 
 const values = [
     { title: "Innovation", desc: "Always seeking better ways to educate and inspire our students through cutting-edge technology.", icon: Lightbulb },
@@ -50,7 +52,7 @@ export default function About() {
                         </div>
                         <div className="flex-1">
                             <img
-                                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800"
+                                src={about}
                                 alt="Team collaboration"
                                 className="rounded-2xl shadow-xl"
                             />

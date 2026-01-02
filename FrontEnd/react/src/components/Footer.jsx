@@ -15,6 +15,9 @@ export default function Footer() {
                             </div>
                             <span className="font-bold text-2xl tracking-tight text-white">AbriTech</span>
                         </Link>
+                        <p className="text-white mb-8 leading-relaxed">
+                            "Connecting Education to Innovation"
+                        </p>
                         <p className="text-gray-400 mb-8 leading-relaxed">
                             Making high-quality STEM education accessible, affordable and relevant for Ethiopian youth.
                         </p>

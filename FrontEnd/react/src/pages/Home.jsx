@@ -1,6 +1,16 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Clock, Users, Shield, Lightbulb, Target, Cpu } from "lucide-react";
+import { ArrowRight, BookOpen, Clock, Users, Shield, Cpu, } from "lucide-react";
 import { motion } from "framer-motion";
+import { FaPeopleGroup } from "react-icons/fa6";
+import hero from "../assets/hero.jpg"
+import whyabri from "../assets/whyabri.jpg"
+
+// ... imports
+import { useState, useEffect } from "react";
+
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : 'https://abritech.onrender.com/api';
 
 const features = [
     {
@@ -25,41 +35,35 @@ const features = [
     },
 ];
 
-const popularCourses = [
-    {
-        title: "Arduino Programming",
-        level: "Beginner",
-        description: "Learn to program microcontrollers and bring innovative ideas to life with hands-on projects.",
-        image: "https://images.unsplash.com/photo-1555676105-06d51bb7e053?auto=format&fit=crop&q=80&w=800",
-    },
-    {
-        title: "Robotics",
-        level: "All Levels",
-        description: "Comprehensive robotics course from basic to advanced levels, classified by age and skill level.",
-        image: "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?auto=format&fit=crop&q=80&w=800",
-    },
-    {
-        title: "3D Modeling & CAD",
-        level: "Intermediate",
-        description: "Master 3D design software for visualization and 3D printing applications.",
-        image: "https://images.unsplash.com/photo-1615840287214-7ff58ee048e9?auto=format&fit=crop&q=80&w=800",
-    },
-];
+// Removed static popularCourses
 
 export default function Home() {
+    const [courses, setCourses] = useState([]);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/courses`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setCourses(data.slice(0, 3)); // Display top 3 as popular
+                }
+            } catch (error) {
+                console.error("Failed to fetch courses:", error);
+            }
+        };
+
+        fetchCourses();
+    }, []);
+
     return (
         <div className="flex flex-col gap-20 pb-20">
-            {/* Hero Section */}
             {/* Hero Section */}
             <section className="relative bg-white pt-20 pb-24 overflow-hidden">
                 {/* Background Blobs */}
                 <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/4">
                     <div className="w-[800px] h-[800px] bg-[#00B4D8] rounded-full opacity-5 blur-3xl"></div>
                 </div>
-                <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/4">
-                    <div className="w-[600px] h-[600px] bg-[#FDB813] rounded-full opacity-5 blur-3xl"></div>
-                </div>
-
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <motion.div
@@ -104,11 +108,11 @@ export default function Home() {
                             className="relative"
                         >
                             <div className="absolute inset-0 bg-[#FDB813] rounded-[2.5rem] transform rotate-3 translate-x-2 translate-y-2 -z-10 opacity-40"></div>
-                           
+
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-gradient-to-tr from-[#00B4D8] via-[#FDB813] to-[#00B4D8] blur-[100px] opacity-80 -z-20"></div>
 
                             <img
-                                src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=1000"
+                                src={hero}
                                 alt="Students learning STEM"
                                 className="rounded-[2.5rem] shadow-2xl object-cover h-[600px] w-full border-4 border-white relative z-10 filter drop-shadow-[0_0_50px_rgba(0,180,216,0.5)]"
                             />
@@ -178,7 +182,7 @@ export default function Home() {
                         <div className="relative">
                             <div className="absolute inset-0 bg-primary/10 rounded-3xl transform rotate-3"></div>
                             <img
-                                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800"
+                                src={whyabri}
                                 alt="Innovation Class"
                                 className="relative rounded-3xl shadow-xl hover:shadow-2xl transition-all"
                             />
@@ -254,12 +258,12 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {popularCourses.map((course, index) => (
+                    {courses.map((course, index) => (
                         <Link to="/courses" key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
                             <div className="relative h-48 overflow-hidden">
                                 <img
-                                    src={course.image}
-                                    alt={course.title}
+                                    src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
+                                    alt={course.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-gray-900 shadow-sm">
@@ -267,13 +271,23 @@ export default function Home() {
                                 </div>
                             </div>
                             <div className="p-6">
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">{course.title}</h3>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">{course.name}</h3>
                                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                                     {course.description}
                                 </p>
-                                <Link to="/courses" className="text-primary font-medium text-sm hover:text-primary/80 inline-flex items-center">
+                                <div className="flex justify-between">
+                                    <div>
+                                        <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                        <span className="text-gray-500 text-sm">Flexible</span>
+                                    </div>
+                                    <div>
+                                        <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                        <span className="text-gray-500 text-sm">Open</span>
+                                    </div>
+                                </div>
+                                <span className="text-primary font-medium text-sm hover:text-primary/80 inline-flex items-center">
                                     View Details <ArrowRight className="ml-1 h-4 w-4" />
-                                </Link>
+                                </span>
                             </div>
                         </Link>
                     ))}

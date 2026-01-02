@@ -1,65 +1,14 @@
-import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 import { Link } from "react-router-dom";
+import schoolpartership from "../assets/schoolpartner.jpg";
+import { FaPeopleGroup, FaPeopleLine } from "react-icons/fa6";
 
-const allCourses = [
-    {
-        title: "Arduino Programming",
-        category: "STEM",
-        level: "Beginner",
-        description: "Age-based curriculum helping students bring innovative ideas to life through microcontroller programming and electronics.",
-        image: "https://images.unsplash.com/photo-1555676105-06d51bb7e053?auto=format&fit=crop&q=80&w=800",
-        rating: 4.8,
-        students: 120,
-    },
-    {
-        title: "Robotics",
-        category: "Robotics",
-        level: "All Levels",
-        description: "Comprehensive robotics course classified into different stages and ages, from basic to advanced robotics systems.",
-        image: "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?auto=format&fit=crop&q=80&w=800",
-        rating: 4.9,
-        students: 250,
-    },
-    {
-        title: "3D Modeling & CAD",
-        category: "3D Design",
-        level: "Intermediate",
-        description: "Computer software training to create 3D designs for product visualization and 3D printing applications.",
-        image: "https://images.unsplash.com/photo-1615840287214-7ff58ee048e9?auto=format&fit=crop&q=80&w=800",
-        rating: 4.7,
-        students: 85,
-    },
-    {
-        title: "IoT Development",
-        category: "STEM",
-        level: "Advanced",
-        description: "Create connected devices and smart systems using Arduino and modern IoT technologies for real-world applications.",
-        image: "https://plus.unsplash.com/premium_photo-1663089688180-444ff0066e5d?auto=format&fit=crop&q=80&w=800",
-        rating: 4.6,
-        students: 45,
-    },
-    {
-        title: "Python Programming",
-        category: "Programming",
-        level: "Beginner",
-        description: "Learn the fundamentals of programming with Python, focusing on problem-solving and computational thinking.",
-        image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&q=80&w=800",
-        rating: 4.8,
-        students: 300,
-    },
-    {
-        title: "Web Development",
-        category: "Programming",
-        level: "Intermediate",
-        description: "Build modern websites and web applications using HTML, CSS, JavaScript, and popular frameworks.",
-        image: "https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&q=80&w=800",
-        rating: 4.7,
-        students: 180,
-    }
-];
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : 'https://abritech.onrender.com/api';
 
 const categories = [
     { name: "All", icon: Filter },
@@ -68,28 +17,59 @@ const categories = [
     { name: "Programming", icon: Globe },
     { name: "3D Design", icon: Boxes }
 ];
-const levels = ["All", "Beginner", "Intermediate", "Advanced"];
+const levels = ["All", "Beginner", "Intermediate", "All Levels"];
 
 export default function Courses() {
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedLevel, setSelectedLevel] = useState("All");
+    const [allCourses, setAllCourses] = useState([]);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/courses`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setAllCourses(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch courses:", error);
+            }
+        };
+        fetchCourses();
+    }, []);
 
     const filteredCourses = allCourses.filter(course => {
         const categoryMatch = selectedCategory === "All" || course.category === selectedCategory;
-        const levelMatch = selectedLevel === "All" || course.level === selectedLevel;
+        // Map 'all levels' filter to 'advanced' database value or 'all_levels' if we had it.
+        // Also if we display "All Levels", we should match it.
+        // User logic: Advanced -> All Levels.
+        // So if filter is "All Levels", we accept course.level === 'advanced'.
+        // If filter is "Advanced", we remove it from options.
+
+        let normalizedCourseLevel = course.level;
+        if (normalizedCourseLevel === 'advanced') normalizedCourseLevel = 'All Levels';
+        // Capitalize others
+        normalizedCourseLevel = normalizedCourseLevel.charAt(0).toUpperCase() + normalizedCourseLevel.slice(1);
+
+        const levelMatch = selectedLevel === "All" || normalizedCourseLevel === selectedLevel;
         return categoryMatch && levelMatch;
     });
 
     return (
         <div className="bg-white pb-20 relative overflow-hidden">
-            {/* Background Decorations */}
+            {/* ... Background and Header ... */}
+            {/* Keep existing Header section code but I'll skip re-writing it in replacement if not needed, however
+                I need to replace the whole initial block to remove allCourses static data. 
+                I will include the header in the StartLine/EndLine range or just the top part.
+            */}
             <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/4">
                 <div className="w-[800px] h-[800px] bg-[#00B4D8] rounded-full opacity-5 blur-3xl"></div>
             </div>
+            {/* ... skipped lines 92-110 ... */}
             <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/4">
                 <div className="w-[600px] h-[600px] bg-[#FDB813] rounded-full opacity-5 blur-3xl"></div>
             </div>
-            {/* Header */}
             <section className="bg-gray-50 py-20 mb-12 relative overflow-hidden">
                 <div className="absolute top-0 right-0 -z-10 opacity-5">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="h-[600px] w-[600px] fill-[#00B4D8]">
@@ -116,7 +96,7 @@ export default function Courses() {
 
                         {/* Fancy Filters */}
                         <div className="flex flex-col gap-6 w-full xl:w-auto">
-                            {/* Category Filter - Glassmorphic Pill Container */}
+                            {/* Category Filter */}
                             <div className="bg-gray-100/50 backdrop-blur-sm p-1.5 rounded-2xl flex flex-wrap gap-1 border border-gray-200 w-fit">
                                 {categories.map((cat) => (
                                     <button
@@ -141,7 +121,7 @@ export default function Courses() {
                                 ))}
                             </div>
 
-                            {/* Level Filter - Simple modern pills */}
+                            {/* Level Filter */}
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2">Filter by Level:</span>
                                 {levels.map(level => (
@@ -171,34 +151,42 @@ export default function Courses() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ duration: 0.3 }}
-                                    key={course.title} // Use title as key for animation continuity
+                                    key={course.id || index}
                                     className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group"
                                 >
                                     <div className="relative h-64 overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-60"></div>
                                         <img
-                                            src={course.image}
-                                            alt={course.title}
+                                            src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
+                                            alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
                                         <div className="absolute bottom-4 left-4 z-20">
-                                            <span className="bg-[#FDB813]/70 border-[#FDB813]  text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
+                                            <span className="bg-[#FDB813]/70 border-[#FDB813] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
                                                 {course.category}
                                             </span>
                                         </div>
-                                        <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-gray-900 flex items-center gap-1 shadow-sm">
-                                            <Star className="h-3 w-3 fill-[#FDB813] text-[#FDB813]" /> {course.rating}
-                                        </div>
                                     </div>
+
                                     <div className="p-8 flex flex-col flex-1">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#00B4D8] transition-colors">{course.title}</h3>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#00B4D8] transition-colors">{course.name}</h3>
                                         <p className="text-gray-600 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">
                                             {course.description}
                                         </p>
+                                        <div className="flex justify-between">
+                                            <div>
+                                                <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                <span className="text-gray-500 text-sm">Flexible</span>
+                                            </div>
+                                            <div>
+                                                <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                <span className="text-gray-500 text-sm">Open</span>
+                                            </div>
+                                        </div>
 
                                         <div className="pt-6 border-t border-gray-50 w-full mt-auto flex items-center justify-between gap-4">
                                             <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
-                                                {course.level}
+                                                {course.level === 'advanced' ? 'All Levels' : course.level}
                                             </div>
                                             <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
                                                 Enroll Now
@@ -239,7 +227,7 @@ export default function Courses() {
                     <div className="flex-1 w-full relative order-1 md:order-2">
                         <div className="absolute inset-0 bg-[#FDB813] rounded-3xl transform rotate-3 translate-x-2 translate-y-2 -z-10 opacity-20"></div>
                         <img
-                            src="https://images.unsplash.com/photo-1544531586-fde5298cdd40?auto=format&fit=crop&q=80&w=800"
+                            src={schoolpartership}
                             alt="Students collaborating"
                             className="rounded-3xl shadow-2xl w-full h-[400px] object-cover"
                         />

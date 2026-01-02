@@ -13,7 +13,8 @@ import {
     Settings,
     Sparkles,
     UserCheck,
-    UserPlus
+    UserPlus,
+    FileText
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -66,6 +67,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
         { to: '/admin/courses', icon: BookOpen, label: 'Courses' },
+        { to: '/admin/blogs', icon: FileText, label: 'Blogs' },
         { to: '/admin/students', icon: Users, label: 'Students' },
         { to: '/admin/instructors', icon: UserCheck, label: 'Instructors' },
         { to: '/admin/users/register', icon: UserPlus, label: 'Register User' },

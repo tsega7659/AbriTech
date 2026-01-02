@@ -11,20 +11,18 @@ export const useAdmin = () => {
     return context;
 };
 
-
-
 export const AdminProvider = ({ children }) => {
     const [teachers, setTeachers] = useState([]);
     const [students, setStudents] = useState([]);
     const [courses, setCourses] = useState([]);
+    const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState({
         teachers: false,
         students: false,
-        courses: false
+        courses: false,
+        blogs: false
     });
     const [error, setError] = useState(null);
-
-    // Initial load removed API_BASE_URL definition here as it's imported
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
@@ -88,6 +86,25 @@ export const AdminProvider = ({ children }) => {
             setError('Network error while fetching courses');
         } finally {
             setLoading(prev => ({ ...prev, courses: false }));
+        }
+    };
+
+    const fetchBlogs = async () => {
+        setLoading(prev => ({ ...prev, blogs: true }));
+        try {
+            const response = await fetch(`${API_BASE_URL}/blogs`, {
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setBlogs(data);
+            } else {
+                setError(data.message || 'Failed to fetch blogs');
+            }
+        } catch (err) {
+            setError('Network error while fetching blogs');
+        } finally {
+            setLoading(prev => ({ ...prev, blogs: false }));
         }
     };
 
@@ -163,10 +180,17 @@ export const AdminProvider = ({ children }) => {
 
     const registerCourse = async (courseData) => {
         try {
+            const isFormData = courseData instanceof FormData;
+            const headers = getAuthHeaders();
+
+            if (isFormData) {
+                delete headers['Content-Type'];
+            }
+
             const response = await fetch(`${API_BASE_URL}/courses`, {
                 method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify(courseData)
+                headers: headers,
+                body: isFormData ? courseData : JSON.stringify(courseData)
             });
             const data = await response.json();
             if (response.ok) {
@@ -179,6 +203,31 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const createBlog = async (blogData) => {
+        try {
+            const isFormData = blogData instanceof FormData;
+            const headers = getAuthHeaders();
+
+            if (isFormData) {
+                delete headers['Content-Type'];
+            }
+
+            const response = await fetch(`${API_BASE_URL}/blogs`, {
+                method: 'POST',
+                headers: headers,
+                body: isFormData ? blogData : JSON.stringify(blogData)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchBlogs();
+                return { success: true, data };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during blog creation' };
+        }
+    };
+
     // Initial load
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -186,6 +235,7 @@ export const AdminProvider = ({ children }) => {
             fetchTeachers();
             fetchStudents();
             fetchCourses();
+            fetchBlogs();
         }
     }, []);
 
@@ -193,16 +243,19 @@ export const AdminProvider = ({ children }) => {
         teachers,
         students,
         courses,
+        blogs,
         loading,
         error,
         fetchTeachers,
         fetchStudents,
         fetchCourses,
+        fetchBlogs,
         registerTeacher,
         registerStudent,
         registerAdmin,
         registerParent,
-        registerCourse
+        registerCourse,
+        createBlog
     };
 
     return (

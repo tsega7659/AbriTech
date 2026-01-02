@@ -1,17 +1,53 @@
 import { useParams, Link } from "react-router-dom";
 import { Calendar, User, ArrowLeft, Tag } from "lucide-react";
-import { posts } from "./Blog";
+import { useState, useEffect } from "react";
+
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : 'https://abritech.onrender.com/api';
 
 export default function BlogDetail() {
     const { id } = useParams();
-    const post = posts.find((p) => p.id === parseInt(id));
+    const [post, setPost] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    if (!post) {
+    useEffect(() => {
+        const fetchBlog = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/blogs/${id}`);
+                if (!response.ok) {
+                    throw new Error('Blog not found');
+                }
+                const data = await response.json();
+                setPost(data);
+            } catch (err) {
+                console.error("Failed to fetch blog:", err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchBlog();
+        }
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-gray-500">Loading article...</div>
+            </div>
+        );
+    }
+
+    if (error || !post) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Post not found</h2>
-                    <Link to="/blog" className="text-[#00B4D8] hover:underline flex items-center gap-2">
+                    <Link to="/blog" className="text-[#00B4D8] hover:underline flex items-center gap-2 justify-center">
                         <ArrowLeft className="h-4 w-4" /> Back to Blog
                     </Link>
                 </div>
@@ -38,11 +74,11 @@ export default function BlogDetail() {
                     <div className="max-w-3xl">
                         <div className="flex items-center gap-3 mb-6">
                             <span className="bg-[#00B4D8]/10 text-[#00B4D8] px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                                <Tag className="h-3 w-3" /> {post.category}
+                                <Tag className="h-3 w-3" /> News
                             </span>
                             <span className="text-gray-400">|</span>
                             <span className="text-gray-500 flex items-center gap-1 text-sm">
-                                <Calendar className="h-4 w-4" /> {post.date}
+                                <Calendar className="h-4 w-4" /> {new Date(post.createdAt).toLocaleDateString()}
                             </span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
@@ -50,10 +86,10 @@ export default function BlogDetail() {
                         </h1>
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-[#00B4D8]/20 flex items-center justify-center text-[#00B4D8] font-bold">
-                                {post.author[0]}
+                                {(post.authorName || 'AbriTech')[0]}
                             </div>
                             <div>
-                                <p className="text-gray-900 font-semibold">{post.author}</p>
+                                <p className="text-gray-900 font-semibold">{post.authorName || 'AbriTech'}</p>
                                 <p className="text-gray-500 text-sm">Author</p>
                             </div>
                         </div>
@@ -62,18 +98,19 @@ export default function BlogDetail() {
             </section>
 
             <div className="max-w-4xl mx-auto px-4">
-                <div className="rounded-3xl overflow-hidden shadow-2xl mb-12">
-                    <img
-                        src={post.image}
-                        alt={post.title}
-                        className="w-full h-auto object-cover max-h-[500px]"
-                    />
+                <div className="rounded-3xl overflow-hidden shadow-2xl mb-12 bg-gray-100">
+                    {post.coverImage ? (
+                        <img
+                            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL.replace('/api', '')}${post.coverImage}`}
+                            alt={post.title}
+                            className="w-full h-auto object-cover max-h-[500px]"
+                        />
+                    ) : (
+                        <div className="h-64 flex items-center justify-center text-gray-400">No Cover Image</div>
+                    )}
                 </div>
 
                 <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                    <p className="text-xl text-gray-600 mb-8 italic font-medium border-l-4 border-[#00B4D8] pl-6">
-                        {post.excerpt}
-                    </p>
                     <div className="whitespace-pre-line">
                         {post.content}
                     </div>

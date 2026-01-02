@@ -226,7 +226,7 @@ const schema = [
     sql: `CREATE TABLE IF NOT EXISTS blog (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
-      content TEXT NOT NULL,
+      content LONGTEXT NOT NULL,
       coverImage VARCHAR(255),
       isPublished TINYINT(1) DEFAULT 1,
       createdBy BIGINT NOT NULL,

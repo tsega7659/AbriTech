@@ -19,6 +19,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const CourseManagement = () => {
     const { courses, registerCourse, loading } = useAdmin();
@@ -27,12 +28,11 @@ const CourseManagement = () => {
     const [newCourse, setNewCourse] = useState({
         name: '',
         description: '',
-        level: 'Beginner',
+        level: 'beginner',
         category: 'Web Development',
-        price: '',
         duration: '',
-        image_url: '',
-        video_url: ''
+        image: '',
+        youtubeLink: ''
     });
 
     const categories = [
@@ -42,26 +42,45 @@ const CourseManagement = () => {
         'AI & Machine Learning',
         'Data Science',
         'UI/UX Design',
-        'Digital Marketing',
+        'STEM',
         'Other'
     ];
 
-    const levels = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
+    const levels = ['beginner', 'intermediate', 'all levels'];
 
     const handleAddCourse = async (e) => {
         e.preventDefault();
-        const result = await registerCourse(newCourse);
+
+        const levelToSend = newCourse.level === 'all levels' ? 'advanced' : newCourse.level;
+
+        // Prepare FormData
+        const formData = new FormData();
+        formData.append('name', newCourse.name);
+        formData.append('category', newCourse.category);
+        formData.append('level', levelToSend);
+
+        // Merge duration into description
+        const descriptionWithDuration = newCourse.duration
+            ? `${newCourse.description} | Duration: ${newCourse.duration}`
+            : newCourse.description;
+        formData.append('description', descriptionWithDuration);
+
+        if (newCourse.image) {
+            formData.append('image', newCourse.image);
+        }
+
+        const result = await registerCourse(formData);
+
         if (result.success) {
             setIsAdding(false);
             setNewCourse({
                 name: '',
                 description: '',
-                level: 'Beginner',
+                level: 'beginner',
                 category: 'Web Development',
-                price: '',
                 duration: '',
-                image_url: '',
-                video_url: ''
+                image: '',
+                youtubeLink: ''
             });
         } else {
             alert(result.message || 'Course creation failed');
@@ -160,19 +179,7 @@ const CourseManagement = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Price (USD)</label>
-                            <div className="relative group">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="number"
-                                    placeholder="49.99"
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-black text-slate-700"
-                                    value={newCourse.price}
-                                    onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
-                                />
-                            </div>
-                        </div>
+
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Duration (e.g. 12 Weeks)</label>
@@ -188,33 +195,20 @@ const CourseManagement = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cover Image URL</label>
+                        <div className="space-y-2 lg:col-span-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cover Image[max size: 2mb]</label>
                             <div className="relative group">
                                 <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
-                                    type="url"
-                                    placeholder="https://example.com/image.jpg"
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newCourse.image_url}
-                                    onChange={(e) => setNewCourse({ ...newCourse, image_url: e.target.value })}
+                                    type="file"
+                                    accept="image/*"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
+                                    onChange={(e) => setNewCourse({ ...newCourse, image: e.target.files[0] })}
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2 lg:col-span-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Intro Video URL (Optional)</label>
-                            <div className="relative group">
-                                <Video className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="url"
-                                    placeholder="https://youtube.com/..."
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newCourse.video_url}
-                                    onChange={(e) => setNewCourse({ ...newCourse, video_url: e.target.value })}
-                                />
-                            </div>
-                        </div>
+
 
                         <div className="lg:col-span-3 flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-50">
                             <button
@@ -278,12 +272,20 @@ const CourseManagement = () => {
                                 </tr>
                             ) : filteredCourses.length > 0 ? (
                                 filteredCourses.map((course) => (
-                                    <tr key={course.id} className="hover:bg-slate-50 transition-colors group">
+                                    <tr
+                                        key={course.id}
+                                        className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                                        onClick={() => window.location.href = `/admin/courses/${course.id}/lessons`}
+                                    >
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-20 h-14 bg-slate-100 rounded-xl overflow-hidden shrink-0 shadow-sm ring-1 ring-slate-200/50">
-                                                    {course.image_url ? (
-                                                        <img src={course.image_url} alt="" className="w-full h-full object-cover" />
+                                                    {course.image ? (
+                                                        <img
+                                                            src={course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-slate-300">
                                                             <BookOpen className="w-6 h-6" />
@@ -298,7 +300,7 @@ const CourseManagement = () => {
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">•</span>
                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                            {course.level}
+                                                            {course.level === 'advanced' ? 'all levels' : course.level}
                                                         </span>
                                                     </div>
                                                 </div>
