@@ -159,11 +159,21 @@ const registerStudent = async (req, res) => {
       if (parentEmail) {
         console.log('Sending referral email to:', parentEmail);
         try {
-          await sendEmail(
-            parentEmail,
-            'Your Child has registered - Link your account',
-            `Hello! Your child ${fullName} has registered at AbriTech.\nUse this referral code to link your parent account: ${referralCode}`
-          );
+          const subject = 'Your Child has registered - Link your account';
+          const text = `Hello! Your child ${fullName} has registered at AbriTech.\nUse this referral code to link your parent account: ${referralCode}`;
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #4dbfec;">Your Child has registered at AbriTech</h2>
+              <p>Hello!</p>
+              <p>Your child <strong>${fullName}</strong> has registered at AbriTech Learning Management System.</p>
+              <p>Use this referral code to link your parent account:</p>
+              <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 24px; font-weight: bold; color: #1e293b; font-family: 'Courier New', monospace;">${referralCode}</span>
+              </div>
+              <p style="color: #64748b; font-size: 14px;">If you did not expect this email, please contact our support team.</p>
+            </div>
+          `;
+          await sendEmail(parentEmail, subject, text, html);
         } catch (mailErr) {
           console.error('Email sending failed (non-blocking):', mailErr.message);
         }
