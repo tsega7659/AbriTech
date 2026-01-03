@@ -23,6 +23,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import Loading from '../../components/Loading';
 
 const StudentManagement = () => {
     const { students, registerStudent, loading } = useAdmin();
@@ -321,11 +322,8 @@ const StudentManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {loading.students ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-10 h-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
-                                            <p className="text-slate-500 font-bold">Loading students...</p>
-                                        </div>
+                                    <td colSpan="5">
+                                        <Loading fullScreen={false} message="Loading students..." />
                                     </td>
                                 </tr>
                             ) : filteredStudents.length > 0 ? (

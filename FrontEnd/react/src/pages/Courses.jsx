@@ -5,6 +5,7 @@ import { cn } from "../lib/utils";
 import { Link } from "react-router-dom";
 import schoolpartership from "../assets/schoolpartner.jpg";
 import { FaPeopleGroup, FaPeopleLine } from "react-icons/fa6";
+import Loading from "../components/Loading";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -23,6 +24,7 @@ export default function Courses() {
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedLevel, setSelectedLevel] = useState("All");
     const [allCourses, setAllCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -34,6 +36,8 @@ export default function Courses() {
                 }
             } catch (error) {
                 console.error("Failed to fetch courses:", error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchCourses();
@@ -143,59 +147,65 @@ export default function Courses() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <AnimatePresence mode="popLayout">
-                            {filteredCourses.map((course, index) => (
-                                <motion.div
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.3 }}
-                                    key={course.id || index}
-                                    className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group"
-                                >
-                                    <div className="relative h-64 overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-60"></div>
-                                        <img
-                                            src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
-                                            alt={course.name}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        />
-                                        <div className="absolute bottom-4 left-4 z-20">
-                                            <span className="bg-[#FDB813]/70 border-[#FDB813] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
-                                                {course.category}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-8 flex flex-col flex-1">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#00B4D8] transition-colors">{course.name}</h3>
-                                        <p className="text-gray-600 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">
-                                            {course.description}
-                                        </p>
-                                        <div className="flex justify-between">
-                                            <div>
-                                                <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                                <span className="text-gray-500 text-sm">Flexible</span>
-                                            </div>
-                                            <div>
-                                                <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                                <span className="text-gray-500 text-sm">Open</span>
+                        {loading ? (
+                            <div className="col-span-full py-12">
+                                <Loading fullScreen={false} message="Loading courses..." />
+                            </div>
+                        ) : (
+                            <AnimatePresence mode="popLayout">
+                                {filteredCourses.map((course, index) => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ duration: 0.3 }}
+                                        key={course.id || index}
+                                        className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group"
+                                    >
+                                        <div className="relative h-64 overflow-hidden">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-60"></div>
+                                            <img
+                                                src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
+                                                alt={course.name}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
+                                            <div className="absolute bottom-4 left-4 z-20">
+                                                <span className="bg-[#FDB813]/70 border-[#FDB813] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
+                                                    {course.category}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <div className="pt-6 border-t border-gray-50 w-full mt-auto flex items-center justify-between gap-4">
-                                            <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
-                                                {course.level === 'advanced' ? 'All Levels' : course.level}
+                                        <div className="p-8 flex flex-col flex-1">
+                                            <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#00B4D8] transition-colors">{course.name}</h3>
+                                            <p className="text-gray-600 text-sm mb-6 line-clamp-3 flex-grow leading-relaxed">
+                                                {course.description}
+                                            </p>
+                                            <div className="flex justify-between">
+                                                <div>
+                                                    <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                    <span className="text-gray-500 text-sm">Flexible</span>
+                                                </div>
+                                                <div>
+                                                    <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                    <span className="text-gray-500 text-sm">Open</span>
+                                                </div>
                                             </div>
-                                            <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
-                                                Enroll Now
-                                            </Link>
+
+                                            <div className="pt-6 border-t border-gray-50 w-full mt-auto flex items-center justify-between gap-4">
+                                                <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
+                                                    {course.level === 'advanced' ? 'All Levels' : course.level}
+                                                </div>
+                                                <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
+                                                    Enroll Now
+                                                </Link>
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        )}
                     </div>
                 </div>
 

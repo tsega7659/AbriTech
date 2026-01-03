@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { API_BASE_URL } from '../../config/apiConfig';
+import Loading from '../../components/Loading';
 
 const CourseManagement = () => {
     const { courses, registerCourse, loading } = useAdmin();
@@ -263,11 +264,8 @@ const CourseManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {loading.courses ? (
                                 <tr>
-                                    <td colSpan="4" className="px-8 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-12 h-12 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
-                                            <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Fetching Courses...</p>
-                                        </div>
+                                    <td colSpan="4">
+                                        <Loading fullScreen={false} message="Fetching Courses..." />
                                     </td>
                                 </tr>
                             ) : filteredCourses.length > 0 ? (

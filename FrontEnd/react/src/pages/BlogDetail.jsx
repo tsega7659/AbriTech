@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { Calendar, User, ArrowLeft, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
+import Loading from "../components/Loading";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -36,9 +37,7 @@ export default function BlogDetail() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-gray-500">Loading article...</div>
-            </div>
+            <Loading fullScreen={false} message="Loading article..." />
         );
     }
 

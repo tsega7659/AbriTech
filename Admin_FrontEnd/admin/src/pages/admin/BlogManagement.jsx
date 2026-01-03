@@ -5,6 +5,7 @@ import {
     XCircle, Image as ImageIcon, Loader2, Calendar, User
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config/apiConfig';
+import Loading from '../../components/Loading';
 
 const BlogManagement = () => {
     const { blogs, createBlog, loading } = useAdmin();
@@ -149,48 +150,53 @@ const BlogManagement = () => {
                 </div>
             )}
 
-            {/* Blog List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBlogs.map(blog => (
-                    <div key={blog.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
-                        <div className="relative h-48 overflow-hidden bg-slate-100">
-                            {blog.coverImage ? (
-                                <img
-                                    src={blog.coverImage.startsWith('http') ? blog.coverImage : `${API_BASE_URL.replace('/api', '')}${blog.coverImage}`}
-                                    alt={blog.title}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                    <FileText className="w-12 h-12" />
+            {/* Blog List or Loading */}
+            {loading.blogs ? (
+                <Loading fullScreen={false} message="Loading articles..." />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredBlogs.map(blog => (
+                        <div key={blog.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
+                            <div className="relative h-48 overflow-hidden bg-slate-100">
+                                {blog.coverImage ? (
+                                    <img
+                                        src={blog.coverImage.startsWith('http') ? blog.coverImage : `${API_BASE_URL.replace('/api', '')}${blog.coverImage}`}
+                                        alt={blog.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <FileText className="w-12 h-12" />
+                                    </div>
+                                )}
+                                <div className="absolute top-4 left-4">
+                                    <span className="px-3 py-1 bg-white/90 backdrop-blur text-xs font-bold rounded-lg shadow-sm text-slate-700">
+                                        {new Date(blog.createdAt).toLocaleDateString()}
+                                    </span>
                                 </div>
-                            )}
-                            <div className="absolute top-4 left-4">
-                                <span className="px-3 py-1 bg-white/90 backdrop-blur text-xs font-bold rounded-lg shadow-sm text-slate-700">
-                                    {new Date(blog.createdAt).toLocaleDateString()}
-                                </span>
+                            </div>
+
+                            <div className="p-6 flex flex-col flex-1">
+                                <h3 className="text-xl font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                                    {blog.title}
+                                </h3>
+                                <p className="text-slate-500 text-sm mb-6 line-clamp-3 leading-relaxed flex-grow">
+                                    {blog.content}
+                                </p>
+
+                                <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                        <User className="w-4 h-4" />
+                                        <span>{blog.authorName || 'Admin'}</span>
+                                    </div>
+                                    <button className="text-primary font-bold text-sm hover:underline">Read More</button>
+                                </div>
                             </div>
                         </div>
+                    ))}
+                </div>
+            )}
 
-                        <div className="p-6 flex flex-col flex-1">
-                            <h3 className="text-xl font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-                                {blog.title}
-                            </h3>
-                            <p className="text-slate-500 text-sm mb-6 line-clamp-3 leading-relaxed flex-grow">
-                                {blog.content}
-                            </p>
-
-                            <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                                    <User className="w-4 h-4" />
-                                    <span>{blog.authorName || 'Admin'}</span>
-                                </div>
-                                <button className="text-primary font-bold text-sm hover:underline">Read More</button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
             {!loading.blogs && filteredBlogs.length === 0 && (
                 <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
                     <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm text-slate-300">

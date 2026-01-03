@@ -7,6 +7,7 @@ import whyabri from "../assets/whyabri.jpg"
 
 // ... imports
 import { useState, useEffect } from "react";
+import Loading from "../components/Loading";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -39,6 +40,7 @@ const features = [
 
 export default function Home() {
     const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -50,6 +52,8 @@ export default function Home() {
                 }
             } catch (error) {
                 console.error("Failed to fetch courses:", error);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -257,48 +261,55 @@ export default function Home() {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {courses.map((course, index) => (
-                        <Link to="/courses" key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
-                            <div className="relative h-48 overflow-hidden">
-                                <img
-                                    src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
-                                    alt={course.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
-                                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-gray-900 shadow-sm">
-                                    {course.level}
-                                </div>
-                            </div>
-                            <div className="p-6">
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">{course.name}</h3>
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                                    {course.description}
-                                </p>
-                                <div className="flex justify-between">
-                                    <div>
-                                        <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                        <span className="text-gray-500 text-sm">Flexible</span>
+                <div className="min-h-[300px]">
+                    {loading ? (
+                        <Loading fullScreen={false} message="Loading popular courses..." />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {courses.map((course, index) => (
+                                <Link to="/courses" key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
+                                    <div className="relative h-48 overflow-hidden">
+                                        <img
+                                            src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
+                                            alt={course.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-gray-900 shadow-sm">
+                                            {course.level}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                        <span className="text-gray-500 text-sm">Open</span>
+                                    <div className="p-6">
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{course.name}</h3>
+                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                                            {course.description}
+                                        </p>
+                                        <div className="flex justify-between">
+                                            <div>
+                                                <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                <span className="text-gray-500 text-sm">Flexible</span>
+                                            </div>
+                                            <div>
+                                                <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
+                                                <span className="text-gray-500 text-sm">Open</span>
+                                            </div>
+                                        </div>
+                                        <span className="text-primary font-medium text-sm hover:text-primary/80 inline-flex items-center mt-4">
+                                            View Details <ArrowRight className="ml-1 h-4 w-4" />
+                                        </span>
                                     </div>
-                                </div>
-                                <span className="text-primary font-medium text-sm hover:text-primary/80 inline-flex items-center">
-                                    View Details <ArrowRight className="ml-1 h-4 w-4" />
-                                </span>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
 
-                <div className="mt-12 text-center md:hidden">
-                    <span className="btn-primary w-full">
-                        View All Courses
-                    </span>
-                </div>
+                    <div className="mt-12 text-center md:hidden">
+                        <span className="btn-primary w-full">
+                            View All Courses
+                        </span>
+                    </div>
+                    </div>
             </section>
         </div>
+        
     );
 }

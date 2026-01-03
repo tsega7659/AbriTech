@@ -1,6 +1,7 @@
 import { Calendar, User, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import Loading from "../components/Loading";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -28,6 +29,7 @@ export default function Blog() {
         fetchBlogs();
     }, []);
 
+
     return (
         <div className="bg-white min-h-screen pb-20 relative overflow-hidden">
             {/* Background Decorations */}
@@ -51,9 +53,7 @@ export default function Blog() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="text-gray-500">Loading articles...</div>
-                    </div>
+                    <Loading fullScreen={false} message="Loading articles..." />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                         {blogs.map((post) => (
