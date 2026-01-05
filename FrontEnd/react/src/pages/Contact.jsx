@@ -73,25 +73,25 @@ export default function Contact() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-700">First Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-text-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter first name" />
+                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter first name" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-700">Last Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-text-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter last name" />
+                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter last name" />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Email Address</label>
-                                <input type="email" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-text-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter your email" />
+                                <input type="email" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter your email" />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Message</label>
-                                <textarea rows={4} className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-text-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Type your message..."></textarea>
+                                <textarea rows={4} className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Type your message..."></textarea>
                             </div>
 
-                            <button type="button" className="w-full bg-text-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-text-[#00B4D8]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+                            <button type="button" className="w-full bg-text-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-text-[#00B4D8]/90 transition-all  hover:-translate-y-1">
                                 Send Message
                             </button>
                         </form>

@@ -76,13 +76,13 @@ export default function Home() {
                             transition={{ duration: 0.5 }}
                             className="space-y-8"
                         >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00B4D8]/10 text-sm font-bold text-[#00B4D8] border border-[#00B4D8]/20">
+                            {/* <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00B4D8]/10 text-sm font-bold text-[#00B4D8] border border-[#00B4D8]/20">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00B4D8] opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00B4D8]"></span>
                                 </span>
                                 Connecting Education to Innovation
-                            </div>
+                            </div> */}
 
                             <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1]">
                                 Transforming <br />
