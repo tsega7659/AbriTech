@@ -51,6 +51,24 @@ export const AuthProvider = ({ children }) => {
         try {
             const endpoint = type === 'student' ? '/auth/register/student' : '/auth/register/parent';
             const response = await api.post(endpoint, data);
+
+            // If registration is successful, automatically log in the user
+            if (response.data.userId) {
+                // After registration, log the user in
+                const loginResponse = await api.post('/auth/login', {
+                    usernameOrEmail: data.username || data.email,
+                    password: data.password
+                });
+
+                const { token: newToken, user: userData } = loginResponse.data;
+                setToken(newToken);
+                setUser(userData);
+                localStorage.setItem('token', newToken);
+                localStorage.setItem('user', JSON.stringify(userData));
+
+                return { success: true, data: response.data, user: userData, autoLogin: true };
+            }
+
             return { success: true, data: response.data };
         } catch (error) {
             const message = error.response?.data?.message || 'Registration failed. Please try again.';

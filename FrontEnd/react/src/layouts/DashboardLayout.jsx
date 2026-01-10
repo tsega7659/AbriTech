@@ -43,7 +43,13 @@ export default function DashboardLayout({ role = "student" }) {
     ];
 
     const { user, logout } = useAuth();
-    const links = role === "parent" ? parentLinks : studentLinks;
+
+    const getLinks = () => {
+        if (role === "parent") return parentLinks;
+        return studentLinks;
+    };
+
+    const links = getLinks();
 
     const handleLogout = () => {
         logout();
@@ -123,12 +129,6 @@ export default function DashboardLayout({ role = "student" }) {
                                 <p className="text-[10px] font-bold text-[#00B4D8] uppercase tracking-wider">{user?.role || role}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                        >
-                            <LogOut className="h-5 w-5" /> Logout
-                        </button>
                     </div>
                 </div>
             </aside>
@@ -155,6 +155,13 @@ export default function DashboardLayout({ role = "student" }) {
                         <button className="p-2.5 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-xl transition-colors relative">
                             <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
                             <Bell className="h-5 w-5" />
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all group"
+                        >
+                            <LogOut className="h-4 w-4 text-gray-400 group-hover:text-red-500 transition-colors" />
+                            <span className="hidden xs:inline">Logout</span>
                         </button>
                         <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 font-bold lg:hidden">
                             {user?.fullName?.charAt(0) || 'U'}

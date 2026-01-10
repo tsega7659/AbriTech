@@ -3,15 +3,45 @@ import { useAuth } from "../../context/AuthContext";
 import LinkStudentForm from "../../components/LinkStudentForm";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
+import { useState, useEffect } from "react";
+import api from "../../lib/api";
+import Loading from "../../components/Loading";
 
 export default function ParentDashboard() {
     const { user } = useAuth();
+    const [dashboardData, setDashboardData] = useState(null);
+    const [linkedStudents, setLinkedStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const [statsResponse, studentsResponse] = await Promise.all([
+                    api.get('/parents/dashboard'),
+                    api.get('/parents/linked-students')
+                ]);
+
+                setDashboardData(statsResponse.data);
+                setLinkedStudents(studentsResponse.data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    if (loading) {
+        return <Loading fullScreen={false} message="Loading your dashboard..." />;
+    }
 
     const stats = [
-        { label: "Children", value: "2", icon: Users, color: "text-[#00B4D8]", bg: "bg-blue-50" },
-        { label: "Course Enrollments", value: "4", icon: BookOpen, color: "text-green-500", bg: "bg-green-50" },
-        { label: "Lessons Completed", value: "5", icon: Trophy, color: "text-[#FDB813]", bg: "bg-yellow-50" },
-        { label: "Avg Quiz Score", value: "92%", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-50" },
+        { label: "Children", value: dashboardData?.linkedStudents || "0", icon: Users, color: "text-[#00B4D8]", bg: "bg-blue-50" },
+        { label: "Course Enrollments", value: dashboardData?.totalCourseEnrollments || "0", icon: BookOpen, color: "text-green-500", bg: "bg-green-50" },
+        { label: "Lessons Completed", value: dashboardData?.totalLessonsCompleted || "0", icon: Trophy, color: "text-[#FDB813]", bg: "bg-yellow-50" },
+        { label: "Avg Quiz Score", value: dashboardData?.averageQuizScore ? `${dashboardData.averageQuizScore}%` : "N/A", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-50" },
     ];
 
     return (
@@ -72,6 +102,47 @@ export default function ParentDashboard() {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Linked Students Section */}
+            {linkedStudents.length > 0 && (
+                <section>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Linked Students</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {linkedStudents.map((student, i) => (
+                            <motion.div
+                                key={student.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">{student.fullName}</h3>
+                                        <p className="text-sm text-gray-500">{student.schoolName || 'Not specified'}</p>
+                                        <p className="text-xs text-gray-400">{student.classLevel || 'N/A'}</p>
+                                    </div>
+                                    <div className="bg-blue-50 px-3 py-1 rounded-full">
+                                        <p className="text-xs font-bold text-[#00B4D8]">{student.enrolledCourses} Courses</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Average Progress</span>
+                                        <span className="font-bold text-[#00B4D8]">{Math.round(student.averageProgress || 0)}%</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-[#00B4D8] rounded-full transition-all"
+                                            style={{ width: `${student.averageProgress || 0}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Tip Card */}
             <div className="bg-[#00B4D8] rounded-[2.5rem] p-8 md:p-10 text-white flex flex-col md:flex-row gap-8 items-center shadow-2xl shadow-blue-200">

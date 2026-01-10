@@ -6,6 +6,8 @@ import { Link } from "react-router-dom";
 import schoolpartership from "../assets/schoolpartner.jpg";
 import { FaPeopleGroup, FaPeopleLine } from "react-icons/fa6";
 import Loading from "../components/Loading";
+import { useAuth } from "../context/AuthContext";
+import api from "../lib/api";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -21,10 +23,12 @@ const categories = [
 const levels = ["All", "Beginner", "Intermediate", "All Levels"];
 
 export default function Courses() {
+    const { user } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedLevel, setSelectedLevel] = useState("All");
     const [allCourses, setAllCourses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [enrolling, setEnrolling] = useState(null);
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -42,6 +46,26 @@ export default function Courses() {
         };
         fetchCourses();
     }, []);
+
+    const handleEnroll = async (courseId) => {
+        if (!user) {
+            // Not logged in, redirect to get started
+            return;
+        }
+
+        setEnrolling(courseId);
+        try {
+            // Enroll the student in the course
+            await api.post('/courses/enroll', { courseId });
+            alert('Successfully enrolled in the course!');
+            // You might want to redirect to the course or dashboard
+        } catch (error) {
+            console.error("Failed to enroll:", error);
+            alert(error.response?.data?.message || 'Failed to enroll in course');
+        } finally {
+            setEnrolling(null);
+        }
+    };
 
     const filteredCourses = allCourses.filter(course => {
         const categoryMatch = selectedCategory === "All" || course.category === selectedCategory;
@@ -197,9 +221,19 @@ export default function Courses() {
                                                 <div className="text-sm font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
                                                     {course.level === 'advanced' ? 'All Levels' : course.level}
                                                 </div>
-                                                <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
-                                                    Enroll Now
-                                                </Link>
+                                                {user && user.role === 'student' ? (
+                                                    <button
+                                                        onClick={() => handleEnroll(course.id)}
+                                                        disabled={enrolling === course.id}
+                                                        className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
+                                                    </button>
+                                                ) : (
+                                                    <Link to="/auth/get-started" className="flex-1 bg-[#00B4D8] text-white py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all flex items-center justify-center shadow-lg shadow-[#00B4D8]/20 hover:-translate-y-0.5">
+                                                        Enroll Now
+                                                    </Link>
+                                                )}
                                             </div>
                                         </div>
                                     </motion.div>

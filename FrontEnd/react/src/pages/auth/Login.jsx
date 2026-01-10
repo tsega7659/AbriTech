@@ -122,7 +122,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 ${role === 'student' ? 'bg-[#00B4D8] hover:bg-[#0096B4] shadow-blue-200' : 'bg-[#FDB813] hover:bg-yellow-500 shadow-yellow-200'}`}
+                        className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 ${role === 'student' ? 'bg-[#00B4D8] hover:bg-[#0096B4] shadow-blue-200' : 'bg-[#FDB813] hover:bg-[#e7be5f] shadow-indigo-200'}`}
                     >
                         {isLoading ? (
                             <>

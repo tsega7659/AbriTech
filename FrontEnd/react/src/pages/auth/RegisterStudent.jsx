@@ -54,6 +54,12 @@ export default function RegisterStudent() {
 
         setIsLoading(false);
         if (result.success) {
+            if (result.autoLogin) {
+                // Auto-login successful, redirect to dashboard after brief delay
+                setTimeout(() => {
+                    navigate('/dashboard/student');
+                }, 1500);
+            }
             setSuccessData(result.data);
             console.log(result.data);
         } else {
@@ -80,12 +86,9 @@ export default function RegisterStudent() {
                         </div>
                     )}
                 </div>
-                <button
-                    onClick={() => navigate('/auth/login')}
-                    className="w-full bg-[#00B4D8] text-white font-bold py-3 rounded-xl hover:bg-[#0096B4] transition-all"
-                >
-                    Proceed to Login
-                </button>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <p className="text-blue-700 font-medium">Redirecting to your dashboard...</p>
+                </div>
             </div>
         );
     }

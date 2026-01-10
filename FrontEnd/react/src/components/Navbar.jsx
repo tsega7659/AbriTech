@@ -1,8 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../lib/utils";
 import logo from "../assets/logo.png";
+import { useAuth } from "../context/AuthContext";
 
 
 const navigation = [
@@ -16,10 +17,24 @@ const navigation = [
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
     const isActive = (path) => {
         if (path === "/" && location.pathname !== "/") return false;
         return location.pathname.startsWith(path);
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+        setIsOpen(false);
+    };
+
+    const getDashboardPath = () => {
+        if (user?.role === 'student') return '/dashboard/student';
+        if (user?.role === 'parent') return '/dashboard/parent';
+        return '/';
     };
 
     return (
@@ -52,18 +67,39 @@ export default function Navbar() {
                             </Link>
                         ))}
                         <div className="flex items-center gap-4 pl-4 border-l border-gray-100">
-                            <Link
-                                to="/auth/login"
-                                className="text-sm font-bold text-gray-500 hover:text-[#00B4D8] transition-colors"
-                            >
-                                Sign In
-                            </Link>
-                            <Link
-                                to="/auth/get-started"
-                                className="bg-[#00B4D8] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[#0096B4] transition-all shadow-lg hover:shadow-[#00B4D8]/30 hover:-translate-y-0.5"
-                            >
-                                Get Started
-                            </Link>
+                            {user ? (
+                                <>
+                                    <Link
+                                        to={getDashboardPath()}
+                                        className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-[#00B4D8] transition-colors"
+                                    >
+                                        <User className="h-4 w-4" />
+                                        Dashboard
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-red-600 transition-colors"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/auth/login"
+                                        className="text-sm font-bold text-gray-500 hover:text-[#00B4D8] transition-colors"
+                                    >
+                                        Sign In
+                                    </Link>
+                                    <Link
+                                        to="/auth/get-started"
+                                        className="bg-[#00B4D8] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[#0096B4] transition-all shadow-lg hover:shadow-[#00B4D8]/30 hover:-translate-y-0.5"
+                                    >
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -97,20 +133,42 @@ export default function Navbar() {
                         </Link>
                     ))}
                     <div className="pt-4 flex flex-col gap-3">
-                        <Link
-                            to="/auth/login"
-                            className="block w-full text-center text-gray-600 font-bold py-2 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Sign In
-                        </Link>
-                        <Link
-                            to="/auth/get-started"
-                            className="block w-full text-center bg-[#00B4D8] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all shadow-lg"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Get Started
-                        </Link>
+                        {user ? (
+                            <>
+                                <Link
+                                    to={getDashboardPath()}
+                                    className="flex items-center justify-center gap-2 w-full text-center text-gray-700 font-bold py-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    <User className="h-5 w-5" />
+                                    Dashboard
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-base font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors border border-gray-100"
+                                >
+                                    <LogOut className="h-5 w-5" />
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/auth/login"
+                                    className="block w-full text-center text-gray-600 font-bold py-2 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    to="/auth/get-started"
+                                    className="block w-full text-center bg-[#00B4D8] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all shadow-lg"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

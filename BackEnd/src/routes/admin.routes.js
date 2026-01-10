@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const adminController = require('../controllers/admin.controller');
+const { authenticateToken, authorizeRole } = require('../middleware/auth.middleware');
 
-// Admin routes will be defined here
+// All routes here are protected and require admin role
+router.use(authenticateToken);
+router.use(authorizeRole('admin'));
+
+router.get('/users', adminController.getAllUsers);
+router.delete('/users/:id', adminController.deleteUser);
 
 module.exports = router;

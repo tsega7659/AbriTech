@@ -35,7 +35,12 @@ export default function RegisterParent() {
         setIsLoading(false);
         if (result.success) {
             setIsSuccess(true);
-            setTimeout(() => navigate('/auth/login'), 2000);
+            if (result.autoLogin) {
+                // Auto-login successful, redirect to parent dashboard
+                setTimeout(() => navigate('/dashboard/parent'), 1500);
+            } else {
+                setTimeout(() => navigate('/auth/login'), 2000);
+            }
         } else {
             setError(result.message);
         }
@@ -48,7 +53,10 @@ export default function RegisterParent() {
                     <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Registration Successful!</h2>
-                <p className="text-gray-600">Redirecting you to login...</p>
+                <p className="text-gray-600">Welcome to AbriTech!</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+                    <p className="text-blue-700 font-medium">Redirecting to your dashboard...</p>
+                </div>
             </div>
         );
     }

@@ -57,7 +57,8 @@ const ChangeCredentials = () => {
                 }));
                 setSuccess(true);
                 setTimeout(() => {
-                    navigate('/instructor/dashboard');
+                    const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/instructor/dashboard';
+                    navigate(dashboardPath);
                 }, 2000);
             } else {
                 setError(data.message || 'Failed to update credentials');
@@ -179,7 +180,11 @@ const ChangeCredentials = () => {
                             <div className="flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/instructor/dashboard')}
+                                    onClick={() => {
+                                        const user = JSON.parse(localStorage.getItem('user'));
+                                        const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/instructor/dashboard';
+                                        navigate(dashboardPath);
+                                    }}
                                     className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
                                 >
                                     Skip for Now

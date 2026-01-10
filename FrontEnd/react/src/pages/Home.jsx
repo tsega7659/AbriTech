@@ -157,27 +157,27 @@ export default function Home() {
             <section className="bg-gray-50 py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6">Why Choose AbriTech?</h2>
-                            <p className="text-gray-600 mb-8 leading-relaxed">
+                        <div className="flex flex-col justify-center">
+                            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">Why Choose AbriTech?</h2>
+                            <p className="text-lg lg:text-xl text-gray-600 mb-10 leading-relaxed">
                                 We're committed to transforming STEM education in Ethiopia through innovative teaching methods and hands-on learning experiences that prepare students for the future.
                             </p>
 
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 {[
                                     { title: "Innovation-Focused", desc: "Cutting-edge curriculum that encourages creative problem-solving and technological innovation." },
                                     { title: "Expert Instructors", desc: "Learn from experienced professionals who are passionate about STEM education and student success." },
                                     { title: "Proven Results", desc: "Track record of helping students excel in STEM fields and pursue successful careers in technology." }
                                 ].map((item, i) => (
-                                    <div key={i} className="flex gap-4 group">
+                                    <div key={i} className="flex gap-5 group">
                                         <div className="flex-shrink-0 mt-1">
-                                            <div className="w-8 h-8 rounded-full bg-[#00B4D8]/10 flex items-center justify-center text-[#00B4D8] font-bold text-sm group-hover:bg-[#00B4D8] group-hover:text-white transition-all">
+                                            <div className="w-10 h-10 rounded-full bg-[#00B4D8]/10 flex items-center justify-center text-[#00B4D8] font-bold text-base group-hover:bg-[#00B4D8] group-hover:text-white transition-all">
                                                 {i + 1}
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-gray-900 mb-1 group-hover:text-[#00B4D8] transition-colors">{item.title}</h3>
-                                            <p className="text-gray-600 text-sm">{item.desc}</p>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-[#00B4D8] transition-colors">{item.title}</h3>
+                                            <p className="text-gray-600 text-base leading-relaxed">{item.desc}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -307,9 +307,9 @@ export default function Home() {
                             View All Courses
                         </span>
                     </div>
-                    </div>
+                </div>
             </section>
         </div>
-        
+
     );
 }

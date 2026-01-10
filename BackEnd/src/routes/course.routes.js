@@ -7,5 +7,6 @@ const { authenticateToken, authorizeRole } = require('../middleware/auth.middlew
 const upload = require('../middleware/upload.middleware');
 router.get('/', courseController.getAllCourses);
 router.post('/', authenticateToken, authorizeRole('admin'), upload.single('image'), courseController.createCourse);
+router.post('/enroll', authenticateToken, authorizeRole('student'), courseController.enrollCourse);
 
 module.exports = router;

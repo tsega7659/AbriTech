@@ -14,7 +14,17 @@ import RegisterParent from "./pages/auth/RegisterParent";
 import Login from "./pages/auth/Login";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
+import StudentCourses from "./pages/dashboard/StudentCourses";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
+import {
+  StudentProgress,
+  StudentPortfolio,
+  StudentProjects,
+  StudentAITutor,
+  ParentChildren,
+  ParentReports,
+  ParentEvents
+} from "./pages/dashboard/PlaceholderPages";
 import { AuthProvider } from "./context/AuthContext";
 import './index.css'
 
@@ -55,11 +65,20 @@ function App() {
           {/* Dashboard Routes */}
           <Route path="/dashboard/student" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentDashboard />} />
+            <Route path="courses" element={<StudentCourses />} />
+            <Route path="progress" element={<StudentProgress />} />
+            <Route path="portfolio" element={<StudentPortfolio />} />
+            <Route path="projects" element={<StudentProjects />} />
+            <Route path="ai-tutor" element={<StudentAITutor />} />
           </Route>
 
           <Route path="/dashboard/parent" element={<DashboardLayout role="parent" />}>
             <Route index element={<ParentDashboard />} />
+            <Route path="children" element={<ParentChildren />} />
+            <Route path="reports" element={<ParentReports />} />
+            <Route path="events" element={<ParentEvents />} />
           </Route>
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

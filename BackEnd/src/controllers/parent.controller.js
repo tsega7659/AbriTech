@@ -62,6 +62,81 @@ const linkStudent = async (req, res) => {
   }
 };
 
+const getDashboard = async (req, res) => {
+  try {
+    const { userId } = req.user; // From auth middleware
+
+    // Get parent ID
+    const [parents] = await pool.execute('SELECT id FROM parent WHERE userId = ?', [userId]);
+    if (parents.length === 0) {
+      return res.status(403).json({ message: "Access denied. Not a parent account." });
+    }
+    const parentId = parents[0].id;
+
+    // Get linked students count
+    const [linkedStudents] = await pool.execute(
+      'SELECT COUNT(*) as count FROM parentstudent WHERE parentId = ?',
+      [parentId]
+    );
+
+    // Get total course enrollments for all linked students
+    const [courseEnrollments] = await pool.execute(`
+      SELECT COUNT(*) as count 
+      FROM enrollment e
+      JOIN parentstudent ps ON e.studentId = ps.studentId
+      WHERE ps.parentId = ?
+    `, [parentId]);
+
+    // Placeholders for now
+    const totalLessonsCompleted = 0;
+    const averageQuizScore = 0;
+
+    res.json({
+      linkedStudents: linkedStudents[0].count,
+      totalCourseEnrollments: courseEnrollments[0].count,
+      totalLessonsCompleted,
+      averageQuizScore
+    });
+  } catch (error) {
+    console.error('Get Parent Dashboard Error:', error);
+    res.status(500).json({ message: 'Failed to fetch dashboard data', error: error.message });
+  }
+};
+
+const getLinkedStudents = async (req, res) => {
+  try {
+    const { userId } = req.user; // From auth middleware
+
+    // Get parent ID
+    const [parents] = await pool.execute('SELECT id FROM parent WHERE userId = ?', [userId]);
+    if (parents.length === 0) {
+      return res.status(403).json({ message: "Access denied. Not a parent account." });
+    }
+    const parentId = parents[0].id;
+
+    // Get linked students with their data
+    const [students] = await pool.execute(`
+      SELECT 
+        u.id,
+        u.fullName,
+        u.email,
+        s.classLevel,
+        s.schoolName,
+        (SELECT COUNT(*) FROM enrollment WHERE studentId = s.id) as enrolledCourses,
+        (SELECT AVG(progressPercentage) FROM enrollment WHERE studentId = s.id) as averageProgress
+      FROM user u
+      JOIN student s ON u.id = s.userId
+      JOIN parentstudent ps ON s.id = ps.studentId
+      WHERE ps.parentId = ?
+    `, [parentId]);
+
+    res.json(students);
+  } catch (error) {
+    console.error('Get Linked Students Error:', error);
+    res.status(500).json({ message: 'Failed to fetch linked students', error: error.message });
+  }
+};
+
 const getParents = async (req, res) => {
   // Placeholder/Future implementation
   res.status(501).json({ message: "Not Implemented" });
@@ -75,5 +150,7 @@ const getParentById = async (req, res) => {
 module.exports = {
   getParents,
   getParentById,
-  linkStudent
+  linkStudent,
+  getDashboard,
+  getLinkedStudents
 };
