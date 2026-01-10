@@ -13,6 +13,7 @@ export default function GetStarted() {
             </div>
 
             <div className="space-y-4">
+                
                 <Link to="/auth/register/student" className="block group">
                     <motion.div
                         whileHover={{ scale: 1.02 }}

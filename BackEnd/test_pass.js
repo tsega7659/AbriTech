@@ -13,8 +13,7 @@ async function testPassword() {
         queueLimit: 0
     });
 
-    const passwordToTest = 'Admin@123';
-    const usernames = ['admin', 'Admin1'];
+   
 
     try {
         for (const username of usernames) {
