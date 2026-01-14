@@ -1,39 +1,41 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-// Ensure uploads directory exists
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
+/**
+ * Dynamic Cloudinary upload middleware
+ * @param {string} folderName - The folder in Cloudinary to store the image
+ * @returns {multer.Instance} - Multer middleware instance
+ */
+const upload = (folderName) => {
+    const storage = new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+            folder: folderName,
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+            // transformation is optional, can be added if needed
+            public_id: (req, file) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                return `${uniqueSuffix}-${file.originalname.split('.')[0]}`;
+            }
+        },
+    });
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+    return multer({
+        storage: storage,
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        fileFilter: (req, file, cb) => {
+            const allowedTypes = /jpeg|jpg|png|webp/;
+            const isSupported = allowedTypes.test(file.mimetype) ||
+                allowedTypes.test(file.originalname.toLowerCase());
 
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (extname && mimetype) {
-        return cb(null, true);
-    } else {
-        cb(new Error('Only images are allowed (jpeg, jpg, png, gif, webp)!'));
-    }
+            if (isSupported) {
+                return cb(null, true);
+            } else {
+                cb(new Error('Only images are allowed (jpeg, jpg, png, webp)!'));
+            }
+        }
+    });
 };
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: fileFilter
-});
 
 module.exports = upload;

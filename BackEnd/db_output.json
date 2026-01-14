@@ -21,14 +21,6 @@
 --- Users with Roles ---
 [
   {
-    "id": 1,
-    "fullName": "Abebe Kebede",
-    "username": "abe123",
-    "email": "abe@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
     "id": 2,
     "fullName": "kebede kebe",
     "username": "kebe123",
@@ -45,62 +37,6 @@
     "roleName": "student"
   },
   {
-    "id": 4,
-    "fullName": "yeabsira",
-    "username": "yeab123",
-    "email": "yeabsirazelalem791@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 5,
-    "fullName": "yeabsira",
-    "username": "yeab12",
-    "email": "yeabsirazelalem79@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 6,
-    "fullName": "test student",
-    "username": "tets123",
-    "email": "stutest@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 7,
-    "fullName": "testuser",
-    "username": "test1",
-    "email": "test1@gmial.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 8,
-    "fullName": "finish school",
-    "username": "finishschool",
-    "email": "yeabzelalemtilahun@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 9,
-    "fullName": "test parent",
-    "username": "testparent",
-    "email": "t@example.com",
-    "roleId": 3,
-    "roleName": "parent"
-  },
-  {
-    "id": 10,
-    "fullName": "Admin User",
-    "username": "admin",
-    "email": "admin@abritech.com",
-    "roleId": 5,
-    "roleName": "admin"
-  },
-  {
     "id": 14,
     "fullName": "Dr. Tadesse Bekele",
     "username": "dr..tadesse.bekele",
@@ -111,71 +47,16 @@
   {
     "id": 15,
     "fullName": "Admin User",
-    "username": "Admin1",
+    "username": "adminn",
     "email": "adminn@abritech.com",
     "roleId": 5,
     "roleName": "admin"
-  },
-  {
-    "id": 16,
-    "fullName": "Bekele",
-    "username": "bekele",
-    "email": "yiiii@gmail.com",
-    "roleId": 9,
-    "roleName": "teacher"
-  },
-  {
-    "id": 17,
-    "fullName": "Bekele",
-    "username": "Bekelee",
-    "email": "yiiiita@gmail.com",
-    "roleId": 9,
-    "roleName": "teacher"
-  },
-  {
-    "id": 18,
-    "fullName": "belete",
-    "username": "belete",
-    "email": "bebb@gmail.com",
-    "roleId": 9,
-    "roleName": "teacher"
-  },
-  {
-    "id": 19,
-    "fullName": "Yeabb",
-    "username": "Yeabbb",
-    "email": "yeabbb@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 20,
-    "fullName": "Betel",
-    "username": "betel",
-    "email": "betel@gmail.com",
-    "roleId": 2,
-    "roleName": "student"
-  },
-  {
-    "id": 21,
-    "fullName": "yeaab",
-    "username": "yeabsira",
-    "email": "gebremichaelyeabsira5@gmail.com",
-    "roleId": 3,
-    "roleName": "parent"
   }
 ]
 
 --- All Users (Raw) ---
 [
   {
-    "id": 1,
-    "fullName": "Abebe Kebede",
-    "username": "abe123",
-    "email": "abe@gmail.com",
-    "roleId": 2
-  },
-  {
     "id": 2,
     "fullName": "kebede kebe",
     "username": "kebe123",
@@ -190,55 +71,6 @@
     "roleId": 2
   },
   {
-    "id": 4,
-    "fullName": "yeabsira",
-    "username": "yeab123",
-    "email": "yeabsirazelalem791@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 5,
-    "fullName": "yeabsira",
-    "username": "yeab12",
-    "email": "yeabsirazelalem79@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 6,
-    "fullName": "test student",
-    "username": "tets123",
-    "email": "stutest@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 7,
-    "fullName": "testuser",
-    "username": "test1",
-    "email": "test1@gmial.com",
-    "roleId": 2
-  },
-  {
-    "id": 8,
-    "fullName": "finish school",
-    "username": "finishschool",
-    "email": "yeabzelalemtilahun@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 9,
-    "fullName": "test parent",
-    "username": "testparent",
-    "email": "t@example.com",
-    "roleId": 3
-  },
-  {
-    "id": 10,
-    "fullName": "Admin User",
-    "username": "admin",
-    "email": "admin@abritech.com",
-    "roleId": 5
-  },
-  {
     "id": 14,
     "fullName": "Dr. Tadesse Bekele",
     "username": "dr..tadesse.bekele",
@@ -248,51 +80,9 @@
   {
     "id": 15,
     "fullName": "Admin User",
-    "username": "Admin1",
+    "username": "adminn",
     "email": "adminn@abritech.com",
     "roleId": 5
-  },
-  {
-    "id": 16,
-    "fullName": "Bekele",
-    "username": "bekele",
-    "email": "yiiii@gmail.com",
-    "roleId": 9
-  },
-  {
-    "id": 17,
-    "fullName": "Bekele",
-    "username": "Bekelee",
-    "email": "yiiiita@gmail.com",
-    "roleId": 9
-  },
-  {
-    "id": 18,
-    "fullName": "belete",
-    "username": "belete",
-    "email": "bebb@gmail.com",
-    "roleId": 9
-  },
-  {
-    "id": 19,
-    "fullName": "Yeabb",
-    "username": "Yeabbb",
-    "email": "yeabbb@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 20,
-    "fullName": "Betel",
-    "username": "betel",
-    "email": "betel@gmail.com",
-    "roleId": 2
-  },
-  {
-    "id": 21,
-    "fullName": "yeaab",
-    "username": "yeabsira",
-    "email": "gebremichaelyeabsira5@gmail.com",
-    "roleId": 3
   }
 ]
 

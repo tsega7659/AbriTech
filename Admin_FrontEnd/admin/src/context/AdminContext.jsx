@@ -228,6 +228,56 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const updateBlog = async (id, blogData) => {
+        try {
+            const isFormData = blogData instanceof FormData;
+            const headers = getAuthHeaders();
+
+            if (isFormData) {
+                delete headers['Content-Type'];
+            }
+
+            const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+                method: 'PUT',
+                headers: headers,
+                body: isFormData ? blogData : JSON.stringify(blogData)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchBlogs();
+                return { success: true, data };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during blog update' };
+        }
+    };
+
+    const updateCourse = async (id, courseData) => {
+        try {
+            const isFormData = courseData instanceof FormData;
+            const headers = getAuthHeaders();
+
+            if (isFormData) {
+                delete headers['Content-Type'];
+            }
+
+            const response = await fetch(`${API_BASE_URL}/courses/${id}`, {
+                method: 'PUT',
+                headers: headers,
+                body: isFormData ? courseData : JSON.stringify(courseData)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchCourses();
+                return { success: true, data };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during course update' };
+        }
+    };
+
     // Initial load
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -255,7 +305,9 @@ export const AdminProvider = ({ children }) => {
         registerAdmin,
         registerParent,
         registerCourse,
-        createBlog
+        createBlog,
+        updateBlog,
+        updateCourse
     };
 
     return (

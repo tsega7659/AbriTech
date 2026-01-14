@@ -8,8 +8,9 @@ import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
 
 const BlogManagement = () => {
-    const { blogs, createBlog, loading } = useAdmin();
+    const { blogs, createBlog, updateBlog, loading } = useAdmin();
     const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState(null); // Stores the blog ID being edited
     const [searchTerm, setSearchTerm] = useState('');
     const [newBlog, setNewBlog] = useState({
         title: '',
@@ -22,12 +23,17 @@ const BlogManagement = () => {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit');
+                e.target.value = null;
+                return;
+            }
             setNewBlog({ ...newBlog, coverImage: file });
             setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
-    const handleCreateBlog = async (e) => {
+    const handleCreateOrUpdateBlog = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
@@ -35,19 +41,43 @@ const BlogManagement = () => {
         formData.append('title', newBlog.title);
         formData.append('content', newBlog.content);
         if (newBlog.coverImage) {
-            formData.append('coverImage', newBlog.coverImage);
+            formData.append('image', newBlog.coverImage);
         }
 
-        const result = await createBlog(formData);
+        let result;
+        if (isEditing) {
+            result = await updateBlog(isEditing, formData);
+        } else {
+            result = await createBlog(formData);
+        }
 
         setSubmitting(false);
         if (result.success) {
             setIsAdding(false);
+            setIsEditing(null);
             setNewBlog({ title: '', content: '', coverImage: null });
             setPreviewUrl(null);
         } else {
             alert(result.message);
         }
+    };
+
+    const handleEditClick = (blog) => {
+        setIsEditing(blog.id);
+        setIsAdding(true);
+        setNewBlog({
+            title: blog.title,
+            content: blog.content,
+            coverImage: null // Don't pre-fill the file input
+        });
+        setPreviewUrl(blog.coverImage);
+    };
+
+    const handleCancel = () => {
+        setIsAdding(false);
+        setIsEditing(null);
+        setNewBlog({ title: '', content: '', coverImage: null });
+        setPreviewUrl(null);
     };
 
     const filteredBlogs = blogs.filter(blog =>
@@ -77,14 +107,14 @@ const BlogManagement = () => {
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-                            <FileText className="w-7 h-7 text-primary" /> New Article
+                            <FileText className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Article' : 'New Article'}
                         </h3>
-                        <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
+                        <button onClick={handleCancel} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
                             <XCircle className="w-6 h-6" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleCreateBlog} className="space-y-6">
+                    <form onSubmit={handleCreateOrUpdateBlog} className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Article Title</label>
                             <input
@@ -137,11 +167,11 @@ const BlogManagement = () => {
                             >
                                 {submitting ? (
                                     <>
-                                        <Loader2 className="w-5 h-5 animate-spin" /> Publishing...
+                                        <Loader2 className="w-5 h-5 animate-spin" /> {isEditing ? 'Updating...' : 'Publishing...'}
                                     </>
                                 ) : (
                                     <>
-                                        Publish Article <FileText className="w-5 h-5" />
+                                        {isEditing ? 'Update Article' : 'Publish Article'} <FileText className="w-5 h-5" />
                                     </>
                                 )}
                             </button>
@@ -189,7 +219,15 @@ const BlogManagement = () => {
                                         <User className="w-4 h-4" />
                                         <span>{blog.authorName || 'Admin'}</span>
                                     </div>
-                                    <button className="text-primary font-bold text-sm hover:underline">Read More</button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleEditClick(blog)}
+                                            className="text-primary font-bold text-sm hover:underline"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button className="text-slate-400 font-bold text-sm hover:text-slate-600">Read More</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -31,6 +31,16 @@ async function check() {
         fs.writeFileSync('db_output.json', output);
         console.log('Results written to db_output.json');
 
+        // Check Blog columns
+        const [blogColumns] = await pool.execute('SHOW COLUMNS FROM blog');
+        console.log('\n--- Blog Table Columns ---');
+        console.log(JSON.stringify(blogColumns, null, 2));
+
+        // Check Course columns
+        const [courseColumns] = await pool.execute('SHOW COLUMNS FROM course');
+        console.log('\n--- Course Table Columns ---');
+        console.log(JSON.stringify(courseColumns, null, 2));
+
     } catch (err) {
         console.error('Error during check:', err);
     } finally {

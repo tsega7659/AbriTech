@@ -17,8 +17,7 @@ const createCourse = async (req, res) => {
     // Handle Image Upload
     let imageUrl = '';
     if (req.file) {
-      // Store relative path like '/uploads/filename.ext'
-      imageUrl = `/uploads/${req.file.filename}`;
+      imageUrl = req.file.path;
     }
 
     // Basic Validation
@@ -86,8 +85,66 @@ const enrollCourse = async (req, res) => {
   }
 };
 
+const updateCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, category, level, description } = req.body;
+    let imageUrl = req.file ? req.file.path : undefined;
+
+    // Check if course exists
+    const [existing] = await pool.execute('SELECT * FROM course WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Prepare update query
+    let query = 'UPDATE course SET ';
+    const params = [];
+
+    if (name) {
+      query += 'name = ?, ';
+      params.push(name);
+    }
+    if (category) {
+      query += 'category = ?, ';
+      params.push(category);
+    }
+    if (level) {
+      query += 'level = ?, ';
+      params.push(level);
+    }
+    if (description) {
+      query += 'description = ?, ';
+      params.push(description);
+    }
+    if (imageUrl) {
+      query += 'image = ?, ';
+      params.push(imageUrl);
+    }
+
+    // If no fields to update
+    if (params.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    // Remove trailing comma and space
+    query = query.slice(0, -2);
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    await pool.execute(query, params);
+    const [updatedCourse] = await pool.execute('SELECT * FROM course WHERE id = ?', [id]);
+
+    res.json({ message: 'Course updated successfully', course: updatedCourse[0] });
+  } catch (error) {
+    console.error('Update Course Error:', error);
+    res.status(500).json({ message: 'Failed to update course', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCourses,
   createCourse,
-  enrollCourse
+  enrollCourse,
+  updateCourse
 };

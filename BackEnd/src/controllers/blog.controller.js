@@ -15,7 +15,7 @@ const getAllBlogs = async (req, res) => {
 const createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const coverImage = req.file ? `/uploads/${req.file.filename}` : null;
+    const coverImage = req.file ? req.file.path : null;
     const createdBy = req.user.userId; // Assumes authenticateToken middleware adds user to req
 
     if (!title || !content) {
@@ -56,8 +56,62 @@ const getBlogById = async (req, res) => {
   }
 };
 
+const updateBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content } = req.body;
+    let coverImage = req.file ? req.file.path : undefined;
+
+    console.log('Update Blog Hit:', { id, title, content, coverImage });
+
+    // Check if blog exists
+    const [existing] = await pool.execute('SELECT * FROM blog WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    // Prepare update query
+    let query = 'UPDATE blog SET ';
+    const params = [];
+
+    if (title) {
+      query += 'title = ?, ';
+      params.push(title);
+    }
+    if (content) {
+      query += 'content = ?, ';
+      params.push(content);
+    }
+    if (coverImage) {
+      query += 'coverImage = ?, ';
+      params.push(coverImage);
+    }
+
+    // If no fields to update
+    if (params.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    // Remove trailing comma and space
+    query = query.slice(0, -2);
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    console.log('Update Blog Query:', query, params);
+
+    await pool.execute(query, params);
+    const [updatedBlog] = await pool.execute('SELECT * FROM blog WHERE id = ?', [id]);
+
+    res.json(updatedBlog[0]);
+  } catch (error) {
+    console.error('Update Blog Error:', error);
+    res.status(500).json({ message: 'Failed to update blog', error: error.message });
+  }
+};
+
 module.exports = {
   getAllBlogs,
   createBlog,
-  getBlogById
+  getBlogById,
+  updateBlog
 };

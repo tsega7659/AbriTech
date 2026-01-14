@@ -16,16 +16,18 @@ import {
     Image as ImageIcon,
     Video,
     ArrowRight,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
 
 const CourseManagement = () => {
-    const { courses, registerCourse, loading } = useAdmin();
+    const { courses, registerCourse, updateCourse, loading } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState(null); // Stores the course ID being edited
     const [newCourse, setNewCourse] = useState({
         name: '',
         description: '',
@@ -35,6 +37,7 @@ const CourseManagement = () => {
         image: '',
         youtubeLink: ''
     });
+    const [submitting, setSubmitting] = useState(false);
 
     const categories = [
         'Web Development',
@@ -49,8 +52,9 @@ const CourseManagement = () => {
 
     const levels = ['beginner', 'intermediate', 'all levels'];
 
-    const handleAddCourse = async (e) => {
+    const handleAddOrUpdateCourse = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
 
         const levelToSend = newCourse.level === 'all levels' ? 'advanced' : newCourse.level;
 
@@ -60,20 +64,24 @@ const CourseManagement = () => {
         formData.append('category', newCourse.category);
         formData.append('level', levelToSend);
 
-        // Merge duration into description
-        const descriptionWithDuration = newCourse.duration
-            ? `${newCourse.description} | Duration: ${newCourse.duration}`
-            : newCourse.description;
-        formData.append('description', descriptionWithDuration);
+        // Merge duration into description if it's a new course or being updated
+        // For simplicity, we just send description as is if it already contains duration
+        formData.append('description', newCourse.description);
 
         if (newCourse.image) {
             formData.append('image', newCourse.image);
         }
 
-        const result = await registerCourse(formData);
+        let result;
+        if (isEditing) {
+            result = await updateCourse(isEditing, formData);
+        } else {
+            result = await registerCourse(formData);
+        }
 
         if (result.success) {
             setIsAdding(false);
+            setIsEditing(null);
             setNewCourse({
                 name: '',
                 description: '',
@@ -84,9 +92,38 @@ const CourseManagement = () => {
                 youtubeLink: ''
             });
         } else {
-            alert(result.message || 'Course creation failed');
+            alert(result.message || (isEditing ? 'Course update failed' : 'Course creation failed'));
         }
+        setSubmitting(false);
     };
+
+    const handleEditClick = (course) => {
+        setIsEditing(course.id);
+        setIsAdding(true);
+        setNewCourse({
+            name: course.name,
+            description: course.description,
+            level: course.level === 'advanced' ? 'all levels' : course.level,
+            category: course.category || 'Web Development',
+            duration: '', // Duration is merged in description in the database currently
+            image: '', // Don't pre-fill the file input
+            youtubeLink: course.youtubeLink || ''
+        });
+    };
+
+    const handleCancel = () => {
+        setIsAdding(false);
+        setIsEditing(null);
+        setNewCourse({
+            name: '',
+            description: '',
+            level: 'beginner',
+            category: 'Web Development',
+            duration: '',
+            image: '',
+            youtubeLink: ''
+        });
+    }
 
     const filteredCourses = courses.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,14 +152,14 @@ const CourseManagement = () => {
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-                            <BookOpen className="w-7 h-7 text-primary" /> Create New Course
+                            <BookOpen className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Course' : 'Create New Course'}
                         </h3>
-                        <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
+                        <button onClick={() => { setIsAdding(false); setIsEditing(null); }} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
                             <XCircle className="w-6 h-6" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <form onSubmit={handleAddOrUpdateCourse} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="space-y-2 lg:col-span-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Course Name / Title</label>
                             <div className="relative group">
@@ -197,14 +234,22 @@ const CourseManagement = () => {
                         </div>
 
                         <div className="space-y-2 lg:col-span-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cover Image[max size: 2mb]</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cover Image [max size: 5MB]</label>
                             <div className="relative group">
                                 <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
                                     type="file"
                                     accept="image/*"
                                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
-                                    onChange={(e) => setNewCourse({ ...newCourse, image: e.target.files[0] })}
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file && file.size > 5 * 1024 * 1024) {
+                                            alert('File size exceeds 5MB limit');
+                                            e.target.value = null;
+                                            return;
+                                        }
+                                        setNewCourse({ ...newCourse, image: file });
+                                    }}
                                 />
                             </div>
                         </div>
@@ -221,10 +266,19 @@ const CourseManagement = () => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-12 py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all flex items-center justify-center gap-3 w-full sm:w-auto uppercase tracking-widest text-xs"
+                                disabled={submitting}
+                                className="px-12 py-4 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all flex items-center justify-center gap-3 w-full sm:w-auto uppercase tracking-widest text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Publish Course
-                                <ArrowRight className="w-5 h-5" />
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" /> {isEditing ? 'Updating...' : 'Publishing...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {isEditing ? 'Update Course' : 'Publish Course'}
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -327,8 +381,14 @@ const CourseManagement = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <button className="p-3 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-2xl transition-all active:scale-90">
-                                                <MoreHorizontal className="w-6 h-6" />
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditClick(course);
+                                                }}
+                                                className="p-3 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-2xl transition-all active:scale-90"
+                                            >
+                                                Edit
                                             </button>
                                         </td>
                                     </tr>
