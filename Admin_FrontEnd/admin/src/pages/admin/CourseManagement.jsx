@@ -22,9 +22,10 @@ import {
 import { useAdmin } from '../../context/AdminContext';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 
 const CourseManagement = () => {
-    const { courses, registerCourse, updateCourse, loading } = useAdmin();
+    const { courses, registerCourse, updateCourse, deleteCourse, loading } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [isEditing, setIsEditing] = useState(null); // Stores the course ID being edited
@@ -38,6 +39,30 @@ const CourseManagement = () => {
         youtubeLink: ''
     });
     const [submitting, setSubmitting] = useState(false);
+
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [courseToDelete, setCourseToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (course) => {
+        setCourseToDelete(course);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!courseToDelete) return;
+
+        setIsDeleting(true);
+        const result = await deleteCourse(courseToDelete.id);
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+        setCourseToDelete(null);
+
+        if (!result.success) {
+            alert(result.message);
+        }
+    };
 
     const categories = [
         'Web Development',
@@ -381,15 +406,26 @@ const CourseManagement = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEditClick(course);
-                                                }}
-                                                className="p-3 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-2xl transition-all active:scale-90"
-                                            >
-                                                Edit
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditClick(course);
+                                                    }}
+                                                    className="px-4 py-2 text-primary hover:bg-primary/10 rounded-xl transition-all font-bold text-sm"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteClick(course);
+                                                    }}
+                                                    className="px-4 py-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-bold text-sm"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -413,6 +449,16 @@ const CourseManagement = () => {
                     </p>
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Course"
+                message="Are you sure you want to delete this course? This action cannot be undone and will remove all student enrollments for this course."
+                itemName={courseToDelete?.name}
+                loading={isDeleting}
+            />
         </div>
     );
 };

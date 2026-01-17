@@ -70,6 +70,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/blogs', icon: FileText, label: 'Blogs' },
         { to: '/admin/students', icon: Users, label: 'Students' },
         { to: '/admin/instructors', icon: UserCheck, label: 'Instructors' },
+        { to: '/admin/parents', icon: Users, label: 'Parents' },
         { to: '/admin/users/register', icon: UserPlus, label: 'Register User' },
         { to: '/admin/projects', icon: CheckSquare, label: 'Projects' },
         { to: '/admin/ai-insights', icon: Sparkles, label: 'AI Insights' },

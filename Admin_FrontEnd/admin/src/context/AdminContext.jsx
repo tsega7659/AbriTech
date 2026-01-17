@@ -16,11 +16,13 @@ export const AdminProvider = ({ children }) => {
     const [students, setStudents] = useState([]);
     const [courses, setCourses] = useState([]);
     const [blogs, setBlogs] = useState([]);
+    const [parents, setParents] = useState([]);
     const [loading, setLoading] = useState({
         teachers: false,
         students: false,
         courses: false,
-        blogs: false
+        blogs: false,
+        parents: false
     });
     const [error, setError] = useState(null);
 
@@ -108,6 +110,25 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const fetchParents = async () => {
+        setLoading(prev => ({ ...prev, parents: true }));
+        try {
+            const response = await fetch(`${API_BASE_URL}/parents`, {
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setParents(data);
+            } else {
+                setError(data.message || 'Failed to fetch parents');
+            }
+        } catch (err) {
+            setError('Network error while fetching parents');
+        } finally {
+            setLoading(prev => ({ ...prev, parents: false }));
+        }
+    };
+
     const registerTeacher = async (teacherData) => {
         try {
             const response = await fetch(`${API_BASE_URL}/auth/register/teacher`, {
@@ -170,6 +191,7 @@ export const AdminProvider = ({ children }) => {
             });
             const data = await response.json();
             if (response.ok) {
+                await fetchParents();
                 return { success: true, data };
             }
             return { success: false, message: data.message };
@@ -278,6 +300,91 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const deleteBlog = async (id) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchBlogs();
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during blog deletion' };
+        }
+    };
+
+    const deleteCourse = async (id) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/courses/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchCourses();
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during course deletion' };
+        }
+    };
+
+    const deleteTeacher = async (id) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchTeachers();
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during teacher deletion' };
+        }
+    };
+
+    const deleteStudent = async (id) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/students/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchStudents();
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during student deletion' };
+        }
+    };
+
+    const deleteParent = async (id) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/parents/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await fetchParents();
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (err) {
+            return { success: false, message: 'Network error during parent deletion' };
+        }
+    };
+
     // Initial load
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -286,6 +393,7 @@ export const AdminProvider = ({ children }) => {
             fetchStudents();
             fetchCourses();
             fetchBlogs();
+            fetchParents();
         }
     }, []);
 
@@ -294,12 +402,14 @@ export const AdminProvider = ({ children }) => {
         students,
         courses,
         blogs,
+        parents,
         loading,
         error,
         fetchTeachers,
         fetchStudents,
         fetchCourses,
         fetchBlogs,
+        fetchParents,
         registerTeacher,
         registerStudent,
         registerAdmin,
@@ -307,7 +417,12 @@ export const AdminProvider = ({ children }) => {
         registerCourse,
         createBlog,
         updateBlog,
-        updateCourse
+        updateCourse,
+        deleteBlog,
+        deleteCourse,
+        deleteTeacher,
+        deleteStudent,
+        deleteParent
     };
 
     return (

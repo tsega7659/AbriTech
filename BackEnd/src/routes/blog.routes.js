@@ -12,6 +12,7 @@ router.get('/', blogController.getAllBlogs);
 // Note: Frontend should send 'image' field for the file
 router.post('/', authenticateToken, authorizeRole('admin'), upload('blog_covers').single('image'), blogController.createBlog);
 router.put('/:id', authenticateToken, authorizeRole('admin'), upload('blog_covers').single('image'), blogController.updateBlog);
+router.delete('/:id', authenticateToken, authorizeRole('admin'), blogController.deleteBlog);
 
 router.get('/:id', blogController.getBlogById);
 

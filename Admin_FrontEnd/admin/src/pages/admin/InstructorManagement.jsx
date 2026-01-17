@@ -18,9 +18,11 @@ import {
     Check
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+
 
 const InstructorManagement = () => {
-    const { teachers, courses, registerTeacher, loading } = useAdmin();
+    const { teachers, courses, registerTeacher, deleteTeacher, loading } = useAdmin();
     const [isRegistering, setIsRegistering] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [registrationResult, setRegistrationResult] = useState(null);
@@ -33,6 +35,30 @@ const InstructorManagement = () => {
         specialization: '',
         courseIds: []
     });
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [teacherToDelete, setTeacherToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (teacher) => {
+        setTeacherToDelete(teacher);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!teacherToDelete) return;
+
+        setIsDeleting(true);
+        const result = await deleteTeacher(teacherToDelete.userId || teacherToDelete.id);
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+        setTeacherToDelete(null);
+
+        if (!result.success) {
+            alert(result.message);
+        }
+    };
+
     const [copied, setCopied] = useState({ user: false, pass: false });
 
     const handleRegister = async (e) => {
@@ -332,9 +358,18 @@ const InstructorManagement = () => {
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
                                         <CheckCircle2 className="w-3 h-3" /> Active
                                     </span>
-                                    <button className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline">
-                                        Manage Profile
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => handleDeleteClick(inst)}
+                                            className="text-[11px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                        >
+                                            Delete
+                                        </button>
+
+                                        <button className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline">
+                                            Manage Profile
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -349,7 +384,21 @@ const InstructorManagement = () => {
                     <p className="text-slate-500 text-sm max-w-xs mx-auto">Try adjusting your search term or register a new instructor to get started.</p>
                 </div>
             )}
+
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setTeacherToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Instructor"
+                message="Are you sure you want to delete this instructor? This will also remove their user account and all course assignments. This action cannot be undone."
+                itemName={teacherToDelete?.fullName}
+                loading={isDeleting}
+            />
         </div>
+
     );
 };
 

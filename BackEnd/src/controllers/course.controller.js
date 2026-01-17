@@ -142,9 +142,31 @@ const updateCourse = async (req, res) => {
   }
 };
 
+const deleteCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if course exists
+    const [existing] = await pool.execute('SELECT * FROM course WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Note: In a real app, you might want to check for dependencies (enrollments, lessons, etc.)
+    // For now, we'll do a simple delete. If there are FK constraints, it will error out or cascade if configured.
+    await pool.execute('DELETE FROM course WHERE id = ?', [id]);
+
+    res.json({ message: 'Course deleted successfully' });
+  } catch (error) {
+    console.error('Delete Course Error:', error);
+    res.status(500).json({ message: 'Failed to delete course', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCourses,
   createCourse,
   enrollCourse,
-  updateCourse
+  updateCourse,
+  deleteCourse
 };

@@ -10,4 +10,8 @@ router.post('/link-student', authenticateToken, authorizeRole('parent'), parentC
 router.get('/dashboard', authenticateToken, authorizeRole('parent'), parentController.getDashboard);
 router.get('/linked-students', authenticateToken, authorizeRole('parent'), parentController.getLinkedStudents);
 
+// Admin Routes
+router.get('/', authenticateToken, authorizeRole('admin'), parentController.getAllParents);
+router.delete('/:id', authenticateToken, authorizeRole('admin'), parentController.deleteParent);
+
 module.exports = router;

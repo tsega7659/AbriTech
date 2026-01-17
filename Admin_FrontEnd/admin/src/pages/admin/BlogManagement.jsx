@@ -6,9 +6,10 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 
 const BlogManagement = () => {
-    const { blogs, createBlog, updateBlog, loading } = useAdmin();
+    const { blogs, createBlog, updateBlog, deleteBlog, loading } = useAdmin();
     const [isAdding, setIsAdding] = useState(false);
     const [isEditing, setIsEditing] = useState(null); // Stores the blog ID being edited
     const [searchTerm, setSearchTerm] = useState('');
@@ -19,6 +20,30 @@ const BlogManagement = () => {
     });
     const [previewUrl, setPreviewUrl] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [blogToDelete, setBlogToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (blog) => {
+        setBlogToDelete(blog);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!blogToDelete) return;
+
+        setIsDeleting(true);
+        const result = await deleteBlog(blogToDelete.id);
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+        setBlogToDelete(null);
+
+        if (!result.success) {
+            alert(result.message);
+        }
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -219,12 +244,18 @@ const BlogManagement = () => {
                                         <User className="w-4 h-4" />
                                         <span>{blog.authorName || 'Admin'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-4">
                                         <button
                                             onClick={() => handleEditClick(blog)}
                                             className="text-primary font-bold text-sm hover:underline"
                                         >
                                             Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(blog)}
+                                            className="text-rose-500 font-bold text-sm hover:underline"
+                                        >
+                                            Delete
                                         </button>
                                         <button className="text-slate-400 font-bold text-sm hover:text-slate-600">Read More</button>
                                     </div>
@@ -244,6 +275,16 @@ const BlogManagement = () => {
                     <p className="text-slate-500">Start writing to share news and updates.</p>
                 </div>
             )}
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Blog Post"
+                message="Are you sure you want to delete this article? This action will permanently remove the post and its cover image."
+                itemName={blogToDelete?.title}
+                loading={isDeleting}
+            />
         </div>
     );
 };

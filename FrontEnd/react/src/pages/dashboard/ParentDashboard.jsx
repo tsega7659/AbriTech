@@ -122,11 +122,25 @@ export default function ParentDashboard() {
                                         <p className="text-sm text-gray-500">{student.schoolName || 'Not specified'}</p>
                                         <p className="text-xs text-gray-400">{student.classLevel || 'N/A'}</p>
                                     </div>
-                                    <div className="bg-blue-50 px-3 py-1 rounded-full">
-                                        <p className="text-xs font-bold text-[#00B4D8]">{student.enrolledCourses} Courses</p>
+                                    <div className="bg-blue-50 px-3 py-1 rounded-full flex-shrink-0">
+                                        <p className="text-xs font-bold text-[#00B4D8]">{student.enrolledCount || 0} Courses</p>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
+
+                                {student.enrolledCourses && student.enrolledCourses.length > 0 && (
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Enrolled Courses</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {student.enrolledCourses.map((course, idx) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-md text-[10px] font-bold text-gray-600">
+                                                    {course}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2 mt-auto">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">Average Progress</span>
                                         <span className="font-bold text-[#00B4D8]">{Math.round(student.averageProgress || 0)}%</span>
@@ -138,6 +152,7 @@ export default function ParentDashboard() {
                                         ></div>
                                     </div>
                                 </div>
+
                             </motion.div>
                         ))}
                     </div>

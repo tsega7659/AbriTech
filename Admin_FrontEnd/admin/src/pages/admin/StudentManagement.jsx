@@ -24,9 +24,10 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import Loading from '../../components/Loading';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 
 const StudentManagement = () => {
-    const { students, registerStudent, loading } = useAdmin();
+    const { students, registerStudent, deleteStudent, loading } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
     const [newStudent, setNewStudent] = useState({
@@ -45,6 +46,30 @@ const StudentManagement = () => {
         parentPhone: '',
         courseLevel: 'beginner'
     });
+
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (student) => {
+        setStudentToDelete(student);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!studentToDelete) return;
+
+        setIsDeleting(true);
+        const result = await deleteStudent(studentToDelete.id);
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+        setStudentToDelete(null);
+
+        if (!result.success) {
+            alert(result.message);
+        }
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -360,11 +385,15 @@ const StudentManagement = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right whitespace-nowrap">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-2 transition-opacity">
                                                 <button className="p-2.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" title="Edit Student">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Remove">
+                                                <button
+                                                    onClick={() => handleDeleteClick(student)}
+                                                    className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    title="Remove"
+                                                >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                                 <button className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl transition-all">
@@ -398,6 +427,16 @@ const StudentManagement = () => {
                     </div>
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Student account"
+                message="Are you sure you want to delete this student? This will permanently remove their account, enrollment history, and all associated data."
+                itemName={studentToDelete?.fullName}
+                loading={isDeleting}
+            />
         </div>
     );
 };

@@ -8,6 +8,7 @@ import StudentManagement from './pages/admin/StudentManagement';
 import CourseManagement from './pages/admin/CourseManagement';
 import CourseLessons from './pages/admin/CourseLessons';
 import InstructorManagement from './pages/admin/InstructorManagement';
+import ParentManagement from './pages/admin/ParentManagement';
 import UserRegistration from './pages/admin/UserRegistration';
 import ProjectReview from './pages/admin/ProjectReview';
 import BlogManagement from './pages/admin/BlogManagement';
@@ -34,6 +35,7 @@ function App() {
           <Route path="courses" element={<CourseManagement />} />
           <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
           <Route path="instructors" element={<InstructorManagement />} />
+          <Route path="parents" element={<ParentManagement />} />
           <Route path="users/register" element={<UserRegistration />} />
           <Route path="projects" element={<ProjectReview />} />
           <Route path="blogs" element={<BlogManagement />} />

@@ -2,7 +2,8 @@ import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+
 import schoolpartership from "../assets/schoolpartner.jpg";
 import { FaPeopleGroup, FaPeopleLine } from "react-icons/fa6";
 import Loading from "../components/Loading";
@@ -23,12 +24,14 @@ const categories = [
 const levels = ["All", "Beginner", "Intermediate", "All Levels"];
 
 export default function Courses() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedLevel, setSelectedLevel] = useState("All");
     const [allCourses, setAllCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(null);
+    const [enrollSuccess, setEnrollSuccess] = useState(false);
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -49,23 +52,26 @@ export default function Courses() {
 
     const handleEnroll = async (courseId) => {
         if (!user) {
-            // Not logged in, redirect to get started
+            navigate('/auth/get-started');
             return;
         }
 
         setEnrolling(courseId);
         try {
-            // Enroll the student in the course
             await api.post('/courses/enroll', { courseId });
-            alert('Successfully enrolled in the course!');
-            // You might want to redirect to the course or dashboard
+            setEnrollSuccess(true);
+
+            // Wait a moment for visual confirmation before redirecting
+            setTimeout(() => {
+                navigate('/dashboard/student');
+            }, 2000);
         } catch (error) {
             console.error("Failed to enroll:", error);
             alert(error.response?.data?.message || 'Failed to enroll in course');
-        } finally {
             setEnrolling(null);
         }
     };
+
 
     const filteredCourses = allCourses.filter(course => {
         const categoryMatch = selectedCategory === "All" || course.category === selectedCategory;
@@ -292,6 +298,74 @@ export default function Courses() {
                     </div>
                 </div>
             </div>
+            {/* Enrollment Overlays */}
+            <AnimatePresence>
+                {enrolling && !enrollSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-white rounded-[2.5rem] p-12 max-w-sm w-full text-center space-y-6 shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gray-100">
+                                <motion.div
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 2, ease: "linear" }}
+                                    className="h-full bg-[#00B4D8]"
+                                />
+                            </div>
+                            <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-[#00B4D8] mx-auto animate-bounce">
+                                <Cpu className="h-10 w-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Processing</h3>
+                                <p className="text-gray-500 font-medium">Setting up your learning path...</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {enrollSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[110] bg-[#00B4D8] flex items-center justify-center p-4"
+                    >
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="text-center space-y-8"
+                        >
+                            <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white mx-auto shadow-2xl relative">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring", delay: 0.2 }}
+                                >
+                                    <CheckCircle2 className="h-12 w-12" />
+                                </motion.div>
+                                <motion.div
+                                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="absolute inset-0 border-4 border-white rounded-full"
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                <h2 className="text-5xl font-black text-white uppercase tracking-tighter">Welcome Aboard!</h2>
+                                <p className="text-blue-50 font-bold text-xl opacity-80">You've successfully enrolled in the course.</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
+

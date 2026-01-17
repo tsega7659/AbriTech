@@ -1,4 +1,4 @@
-import { BookOpen, Trophy, TrendingUp, Clock, ArrowRight } from "lucide-react";
+import { BookOpen, Trophy, TrendingUp, Clock, ArrowRight, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
@@ -87,10 +87,19 @@ export default function StudentDashboard() {
             <section>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900 tracking-tight">Active Courses</h2>
-                    <Link to="/dashboard/student/courses" className="text-sm font-bold text-[#00B4D8] hover:text-[#0096B4] transition-colors flex items-center gap-1.5 group">
-                        View All <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link
+                            to="/courses"
+                            className="hidden sm:flex items-center gap-2 bg-blue-50 text-[#00B4D8] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#00B4D8] hover:text-white transition-all border border-blue-100"
+                        >
+                            <Plus className="h-4 w-4" /> Enroll in More
+                        </Link>
+                        <Link to="/dashboard/student/courses" className="text-sm font-bold text-gray-400 hover:text-[#00B4D8] transition-colors flex items-center gap-1.5 group">
+                            View All <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                    </div>
                 </div>
+
 
                 {courses.length === 0 ? (
                     <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center">
@@ -137,11 +146,12 @@ export default function StudentDashboard() {
                                         </div>
                                         <div className="flex justify-between items-center pt-2">
                                             <Link
-                                                to="#"
+                                                to={`/dashboard/student/courses/${course.id}/learn/1`}
                                                 className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
                                             >
                                                 Resume Lesson
                                             </Link>
+
                                             <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
                                                 <ArrowRight className="h-4 w-4" />
                                             </div>

@@ -88,8 +88,72 @@ const getAssignedCourses = async (req, res) => {
     }
 };
 
+const deleteTeacher = async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const { id } = req.params; // This is the user ID
+
+        await conn.beginTransaction();
+
+        // Check if teacher exists
+        const [teacher] = await conn.execute('SELECT id FROM teacher WHERE userId = ?', [id]);
+        if (teacher.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ message: 'Teacher not found' });
+        }
+
+        // 1. Delete teacher courses
+        await conn.execute('DELETE FROM teachercourse WHERE teacherId = ?', [id]);
+
+        // 2. Delete teacher record
+        await conn.execute('DELETE FROM teacher WHERE userId = ?', [id]);
+
+        // 3. Delete user record
+        await conn.execute('DELETE FROM user WHERE id = ?', [id]);
+
+        await conn.commit();
+        res.json({ message: 'Teacher and associated records deleted successfully' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Delete Teacher Error:', error);
+        res.status(500).json({ message: 'Failed to delete teacher', error: error.message });
+    } finally {
+        conn.release();
+    }
+};
+
+const getEnrolledStudents = async (req, res) => {
+    try {
+        const { userId } = req.user; // Teacher's userId
+
+        const [students] = await pool.execute(`
+            SELECT 
+                u.id,
+                u.fullName,
+                u.email,
+                JSON_ARRAYAGG(c.name) as enrolledCourses,
+                AVG(e.progressPercentage) as avgProgress
+            FROM user u
+            JOIN student s ON u.id = s.userId
+            JOIN enrollment e ON s.id = e.studentId
+            JOIN course c ON e.courseId = c.id
+            JOIN teachercourse tc ON c.id = tc.courseId
+            WHERE tc.teacherId = ?
+            GROUP BY u.id
+        `, [userId]);
+
+        res.json(students);
+    } catch (error) {
+        console.error('Get Enrolled Students Error:', error);
+        res.status(500).json({ message: 'Failed to fetch students', error: error.message });
+    }
+};
+
 module.exports = {
     getAllTeachers,
     getDashboard,
-    getAssignedCourses
+    getAssignedCourses,
+    getEnrolledStudents,
+    deleteTeacher
 };
+

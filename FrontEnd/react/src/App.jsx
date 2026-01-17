@@ -25,7 +25,10 @@ import {
   ParentReports,
   ParentEvents
 } from "./pages/dashboard/PlaceholderPages";
+import CourseDetail from "./pages/dashboard/CourseDetail";
+import LessonPlayer from "./pages/dashboard/LessonPlayer";
 import { AuthProvider } from "./context/AuthContext";
+
 import './index.css'
 
 
@@ -66,7 +69,10 @@ function App() {
           <Route path="/dashboard/student" element={<DashboardLayout role="student" />}>
             <Route index element={<StudentDashboard />} />
             <Route path="courses" element={<StudentCourses />} />
+            <Route path="courses/:courseId" element={<CourseDetail />} />
+            <Route path="courses/:courseId/learn/:lessonId" element={<LessonPlayer />} />
             <Route path="progress" element={<StudentProgress />} />
+
             <Route path="portfolio" element={<StudentPortfolio />} />
             <Route path="projects" element={<StudentProjects />} />
             <Route path="ai-tutor" element={<StudentAITutor />} />

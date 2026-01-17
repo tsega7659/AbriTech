@@ -7,5 +7,8 @@ const { authenticateToken, authorizeRole } = require('../middleware/auth.middlew
 router.get('/', authenticateToken, authorizeRole('admin'), teacherController.getAllTeachers);
 router.get('/dashboard', authenticateToken, authorizeRole('teacher'), teacherController.getDashboard);
 router.get('/courses', authenticateToken, authorizeRole('teacher'), teacherController.getAssignedCourses);
+router.get('/students', authenticateToken, authorizeRole('teacher'), teacherController.getEnrolledStudents);
+router.delete('/:id', authenticateToken, authorizeRole('admin'), teacherController.deleteTeacher);
+
 
 module.exports = router;

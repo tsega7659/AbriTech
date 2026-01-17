@@ -109,9 +109,29 @@ const updateBlog = async (req, res) => {
   }
 };
 
+const deleteBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if blog exists
+    const [existing] = await pool.execute('SELECT * FROM blog WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    await pool.execute('DELETE FROM blog WHERE id = ?', [id]);
+
+    res.json({ message: 'Blog deleted successfully' });
+  } catch (error) {
+    console.error('Delete Blog Error:', error);
+    res.status(500).json({ message: 'Failed to delete blog', error: error.message });
+  }
+};
+
 module.exports = {
   getAllBlogs,
   createBlog,
   getBlogById,
-  updateBlog
+  updateBlog,
+  deleteBlog
 };

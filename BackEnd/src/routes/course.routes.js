@@ -9,5 +9,6 @@ router.get('/', courseController.getAllCourses);
 router.post('/', authenticateToken, authorizeRole('admin'), upload('course_images').single('image'), courseController.createCourse);
 router.put('/:id', authenticateToken, authorizeRole('admin'), upload('course_images').single('image'), courseController.updateCourse);
 router.post('/enroll', authenticateToken, authorizeRole('student'), courseController.enrollCourse);
+router.delete('/:id', authenticateToken, authorizeRole('admin'), courseController.deleteCourse);
 
 module.exports = router;

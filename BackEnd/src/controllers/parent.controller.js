@@ -122,8 +122,14 @@ const getLinkedStudents = async (req, res) => {
         u.email,
         s.classLevel,
         s.schoolName,
-        (SELECT COUNT(*) FROM enrollment WHERE studentId = s.id) as enrolledCourses,
-        (SELECT AVG(progressPercentage) FROM enrollment WHERE studentId = s.id) as averageProgress
+        (SELECT COUNT(*) FROM enrollment WHERE studentId = s.id) as enrolledCount,
+        (SELECT AVG(progressPercentage) FROM enrollment WHERE studentId = s.id) as averageProgress,
+        (
+          SELECT JSON_ARRAYAGG(c.name)
+          FROM enrollment e
+          JOIN course c ON e.courseId = c.id
+          WHERE e.studentId = s.id
+        ) as enrolledCourses
       FROM user u
       JOIN student s ON u.id = s.userId
       JOIN parentstudent ps ON s.id = ps.studentId
@@ -134,6 +140,63 @@ const getLinkedStudents = async (req, res) => {
   } catch (error) {
     console.error('Get Linked Students Error:', error);
     res.status(500).json({ message: 'Failed to fetch linked students', error: error.message });
+  }
+};
+
+const getAllParents = async (req, res) => {
+  try {
+    const [parents] = await pool.execute(`
+      SELECT 
+        u.id, 
+        u.fullName, 
+        u.email, 
+        u.username, 
+        u.phoneNumber, 
+        u.gender, 
+        u.address
+      FROM user u
+      JOIN parent p ON u.id = p.userId
+    `);
+    res.json(parents);
+  } catch (error) {
+    console.error('Get All Parents Error:', error);
+    res.status(500).json({ message: 'Failed to fetch parents', error: error.message });
+  }
+};
+
+const deleteParent = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { id } = req.params; // User ID
+
+    await conn.beginTransaction();
+
+    // Check if parent exists
+    const [parent] = await conn.execute('SELECT id FROM parent WHERE userId = ?', [id]);
+    if (parent.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Parent not found' });
+    }
+
+    const parentId = parent[0].id;
+
+    // 1. Delete parent-student links
+    await conn.execute('DELETE FROM parentstudent WHERE parentId = ?', [parentId]);
+
+    // 2. Delete parent record
+    await conn.execute('DELETE FROM parent WHERE userId = ?', [id]);
+
+    // 3. Delete user record
+    await conn.execute('DELETE FROM user WHERE id = ?', [id]);
+
+    await conn.commit();
+    res.json({ message: 'Parent and associated records deleted successfully' });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Delete Parent Error:', error);
+    res.status(500).json({ message: 'Failed to delete parent', error: error.message });
+  } finally {
+    conn.release();
   }
 };
 
@@ -152,5 +215,7 @@ module.exports = {
   getParentById,
   linkStudent,
   getDashboard,
-  getLinkedStudents
+  getLinkedStudents,
+  getAllParents,
+  deleteParent
 };
