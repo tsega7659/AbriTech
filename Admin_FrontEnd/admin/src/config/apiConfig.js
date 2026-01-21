@@ -6,3 +6,11 @@ export const API_BASE_URL = isDev
 
 console.log(`[API Config] Mode: ${isDev ? 'Development' : 'Production'}`);
 console.log(`[API Config] Base URL: ${API_BASE_URL}`);
+
+export const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json'
+    };
+};

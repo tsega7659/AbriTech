@@ -26,5 +26,6 @@ app.use('/api/teachers', require('./routes/teacher.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/courses', require('./routes/course.routes'));
 app.use('/api/blogs', require('./routes/blog.routes'));
+app.use('/api/lessons', require('./routes/lesson.routes'));
 
 module.exports = app;
