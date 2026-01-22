@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+
+@custom-variant hover (&:hover);
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 :root {
     --primary: #4dbfec;
     --primary-hover: #3daedb;

@@ -133,7 +133,7 @@ export default function ParentDashboard() {
                                         <div className="flex flex-wrap gap-1.5">
                                             {student.enrolledCourses.map((course, idx) => (
                                                 <span key={idx} className="px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-md text-[10px] font-bold text-gray-600">
-                                                    {course}
+                                                    {course.name}
                                                 </span>
                                             ))}
                                         </div>
@@ -157,7 +157,8 @@ export default function ParentDashboard() {
                         ))}
                     </div>
                 </section>
-            )}
+            )
+            }
 
             {/* Tip Card */}
             <div className="bg-[#00B4D8] rounded-[2.5rem] p-8 md:p-10 text-white flex flex-col md:flex-row gap-8 items-center shadow-2xl shadow-blue-200">
@@ -171,6 +172,6 @@ export default function ParentDashboard() {
                     </p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

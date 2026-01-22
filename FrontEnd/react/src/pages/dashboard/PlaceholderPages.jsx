@@ -26,6 +26,5 @@ export const StudentProjects = () => <PlaceholderPage title="My Projects" descri
 export const StudentAITutor = () => <PlaceholderPage title="AI Tutor" description="Your personal AI learning assistant is being prepared. Coming soon!" />;
 
 // Parent Placeholder Pages
-export const ParentChildren = () => <PlaceholderPage title="My Children" description="Monitor your children's learning path and linked accounts. Coming soon!" />;
 export const ParentReports = () => <PlaceholderPage title="Learning Reports" description="Detailed insights into learning progress and assessments. Coming soon!" />;
 export const ParentEvents = () => <PlaceholderPage title="Upcoming Events" description="Stay updated with school events and deadlines. Coming soon!" />;

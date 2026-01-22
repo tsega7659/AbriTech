@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../../config/apiConfig';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
-    const [showBanner, setShowBanner] = useState(true);
+    const [showBanner, setShowBanner] = useState(false);
     const [statsData, setStatsData] = useState(null);
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +13,12 @@ const InstructorDashboard = () => {
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
-        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            // Show banner only if firstLogin is true (1)
+            setShowBanner(!!parsedUser.firstLogin);
+        }
 
         const fetchData = async () => {
             const token = localStorage.getItem('token');
@@ -92,7 +97,7 @@ const InstructorDashboard = () => {
                     >
                         <X className="w-5 h-5" />
                     </button>
-                    
+
                 </div>
             )}
 

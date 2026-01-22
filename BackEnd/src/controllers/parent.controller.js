@@ -125,7 +125,14 @@ const getLinkedStudents = async (req, res) => {
         (SELECT COUNT(*) FROM enrollment WHERE studentId = s.id) as enrolledCount,
         (SELECT AVG(progressPercentage) FROM enrollment WHERE studentId = s.id) as averageProgress,
         (
-          SELECT JSON_ARRAYAGG(c.name)
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'id', c.id,
+              'name', c.name,
+              'progress', e.progressPercentage,
+              'thumbnail', c.image
+            )
+          )
           FROM enrollment e
           JOIN course c ON e.courseId = c.id
           WHERE e.studentId = s.id

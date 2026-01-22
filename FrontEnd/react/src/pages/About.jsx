@@ -116,13 +116,13 @@ export default function About() {
     ].map((partner) => (
       <div
         key={partner.name}
-        className="flex flex-col items-center gap-3 opacity-80 hover:opacity-100 transition"
+        className="flex flex-col items-center gap-3 opacity-100 hover:opacity-80 transition"
       >
         <div className="w-20 h-20  flex items-center justify-center bg-white/5 rounded-xl">
           <img
             src={partner.logo}
             alt={partner.name}
-            className="max-h-12 object-contain rounded-xl"
+            className="max-h-26 object-contain rounded-xl"
           />
         </div>
 

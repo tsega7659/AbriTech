@@ -21,7 +21,7 @@ const categories = [
     { name: "Programming", icon: Globe },
     { name: "3D Design", icon: Boxes }
 ];
-const levels = ["All", "Beginner", "Intermediate", "All Levels"];
+const levels = ["All", "Beginner", "Intermediate", "Advanced", "All Levels"];
 
 export default function Courses() {
     const navigate = useNavigate();

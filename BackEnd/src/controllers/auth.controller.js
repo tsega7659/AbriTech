@@ -480,6 +480,9 @@ const updateCredentials = async (req, res) => {
     // Add userId for WHERE clause
     updateValues.push(userId);
 
+    // Set firstLogin to 0
+    updateFields.push('firstLogin = 0');
+
     // Update user
     const updateQuery = `UPDATE user SET ${updateFields.join(', ')} WHERE id = ?`;
     await conn.execute(updateQuery, updateValues);

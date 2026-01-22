@@ -75,7 +75,7 @@ const CourseManagement = () => {
         'Other'
     ];
 
-    const levels = ['beginner', 'intermediate', 'all levels'];
+    const levels = ['beginner', 'intermediate', 'advanced','all levels'];
 
     const handleAddOrUpdateCourse = async (e) => {
         e.preventDefault();

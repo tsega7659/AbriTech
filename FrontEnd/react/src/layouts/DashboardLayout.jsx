@@ -15,9 +15,11 @@ import {
 import { cn } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import LogoutModal from "../components/LogoutModal";
 
 export default function DashboardLayout({ role = "student" }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -51,13 +53,14 @@ export default function DashboardLayout({ role = "student" }) {
 
     const links = getLinks();
 
-    const handleLogout = () => {
+    const handleLogoutConfirm = () => {
         logout();
         navigate("/auth/login");
+        setIsLogoutModalOpen(false);
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="h-screen overflow-hidden bg-gray-50 flex">
             {/* Sidebar accessibility overlay */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -108,7 +111,7 @@ export default function DashboardLayout({ role = "student" }) {
                                         "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
                                         isActive
                                             ? "bg-[#00B4D8] text-white shadow-lg shadow-blue-100"
-                                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                                            : "text-gray-500 hover:bg-gray-50 hover:text-[#00B4D8]"
                                     )}
                                 >
                                     <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-gray-400")} />
@@ -134,7 +137,7 @@ export default function DashboardLayout({ role = "student" }) {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden text-gray-900">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden text-gray-900 h-full">
                 {/* Topbar */}
                 <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center justify-between px-6 sticky top-0 z-30 lg:px-10">
                     <div className="flex items-center gap-4">
@@ -157,11 +160,11 @@ export default function DashboardLayout({ role = "student" }) {
                             <Bell className="h-5 w-5" />
                         </button>
                         <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all group"
+                            onClick={() => setIsLogoutModalOpen(true)}
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 font-bold text-sm transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 hover:shadow-md active:scale-95 group"
                         >
                             <LogOut className="h-4 w-4 text-gray-400 group-hover:text-red-500 transition-colors" />
-                            <span className="hidden xs:inline">Logout</span>
+                            <span className="hidden sm:inline">Log Out</span>
                         </button>
                         <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 font-bold lg:hidden">
                             {user?.fullName?.charAt(0) || 'U'}
@@ -175,6 +178,12 @@ export default function DashboardLayout({ role = "student" }) {
                     </div>
                 </main>
             </div>
+
+            <LogoutModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogoutConfirm}
+            />
         </div>
     );
 }

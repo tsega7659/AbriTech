@@ -16,12 +16,12 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import StudentCourses from "./pages/dashboard/StudentCourses";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
+import ParentChildren from "./pages/dashboard/ParentChildren";
 import {
   StudentProgress,
   StudentPortfolio,
   StudentProjects,
   StudentAITutor,
-  ParentChildren,
   ParentReports,
   ParentEvents
 } from "./pages/dashboard/PlaceholderPages";

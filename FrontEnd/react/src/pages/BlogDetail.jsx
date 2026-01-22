@@ -88,7 +88,7 @@ export default function BlogDetail() {
                                 {(post.authorName || 'AbriTech')[0]}
                             </div>
                             <div>
-                                <p className="text-gray-900 font-semibold">{post.authorName || 'AbriTech'}</p>
+                                <p className="text-gray-900 font-semibold">{'AbriTech Team'}</p>
                                 <p className="text-gray-500 text-sm">Author</p>
                             </div>
                         </div>
@@ -110,8 +110,34 @@ export default function BlogDetail() {
                 </div>
 
                 <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                    <div className="whitespace-pre-line">
-                        {post.content}
+                    <div className="space-y-8">
+                        {(() => {
+                            try {
+                                const sections = JSON.parse(post.content);
+                                if (Array.isArray(sections)) {
+                                    return sections.map((section, index) => (
+                                        <div key={index}>
+                                            {section.subtitle && (
+                                                <h2 className="text-2xl font-bold text-[#00B4D8] hover:underline mb-3 mt-8">
+                                                    {section.subtitle}
+                                                </h2>
+                                            )}
+                                            <p className="whitespace-pre-line text-lg leading-relaxed text-gray-600 w-full">
+                                                {section.body}
+                                            </p>
+                                        </div>
+                                    ));
+                                }
+                                throw new Error('Not an array');
+                            } catch (e) {
+                                // Fallback for legacy plain text content
+                                return (
+                                    <div className="whitespace-pre-line text-lg leading-relaxed">
+                                        {post.content}
+                                    </div>
+                                );
+                            }
+                        })()}
                     </div>
 
                     <div className="mt-12 p-8 bg-gray-50 rounded-2xl border border-gray-100">

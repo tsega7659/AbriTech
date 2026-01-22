@@ -58,13 +58,31 @@ const BlogManagement = () => {
         }
     };
 
+    const [sections, setSections] = useState([{ subtitle: '', body: '' }]);
+
+    const handleAddSection = () => {
+        setSections([...sections, { subtitle: '', body: '' }]);
+    };
+
+    const handleRemoveSection = (index) => {
+        const newSections = sections.filter((_, i) => i !== index);
+        setSections(newSections);
+    };
+
+    const handleSectionChange = (index, field, value) => {
+        const newSections = [...sections];
+        newSections[index][field] = value;
+        setSections(newSections);
+    };
+
     const handleCreateOrUpdateBlog = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
         const formData = new FormData();
         formData.append('title', newBlog.title);
-        formData.append('content', newBlog.content);
+        // Serialize sections to JSON
+        formData.append('content', JSON.stringify(sections));
         if (newBlog.coverImage) {
             formData.append('image', newBlog.coverImage);
         }
@@ -81,6 +99,7 @@ const BlogManagement = () => {
             setIsAdding(false);
             setIsEditing(null);
             setNewBlog({ title: '', content: '', coverImage: null });
+            setSections([{ subtitle: '', body: '' }]); // Reset sections
             setPreviewUrl(null);
         } else {
             alert(result.message);
@@ -92,16 +111,28 @@ const BlogManagement = () => {
         setIsAdding(true);
         setNewBlog({
             title: blog.title,
-            content: blog.content,
-            coverImage: null // Don't pre-fill the file input
+            coverImage: null
         });
         setPreviewUrl(blog.coverImage);
+
+        // Try to parse content as JSON, fallback to single section if plain text
+        try {
+            const parsedContent = JSON.parse(blog.content);
+            if (Array.isArray(parsedContent)) {
+                setSections(parsedContent);
+            } else {
+                setSections([{ subtitle: '', body: blog.content }]);
+            }
+        } catch (e) {
+            setSections([{ subtitle: '', body: blog.content }]);
+        }
     };
 
     const handleCancel = () => {
         setIsAdding(false);
         setIsEditing(null);
         setNewBlog({ title: '', content: '', coverImage: null });
+        setSections([{ subtitle: '', body: '' }]);
         setPreviewUrl(null);
     };
 
@@ -172,16 +203,57 @@ const BlogManagement = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Content</label>
-                            <textarea
-                                required
-                                rows="10"
-                                placeholder="Write your article content here..."
-                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-medium text-slate-600 leading-relaxed resize-none"
-                                value={newBlog.content}
-                                onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
-                            ></textarea>
+                        {/* Dynamic Sections */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Article Sections</label>
+                            </div>
+
+                            {sections.map((section, index) => (
+                                <div key={index} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 relative group hover:border-primary/20 transition-all">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Subtitle (Optional)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Section subtitle..."
+                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
+                                                value={section.subtitle}
+                                                onChange={(e) => handleSectionChange(index, 'subtitle', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Content</label>
+                                            <textarea
+                                                required
+                                                rows="5"
+                                                placeholder="Section content..."
+                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-medium text-slate-600 resize-none leading-relaxed"
+                                                value={section.body}
+                                                onChange={(e) => handleSectionChange(index, 'body', e.target.value)}
+                                            ></textarea>
+                                        </div>
+                                    </div>
+
+                                    {sections.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveSection(index)}
+                                            className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <XCircle className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            <button
+                                type="button"
+                                onClick={handleAddSection}
+                                className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Plus className="w-5 h-5" /> Add Another Section
+                            </button>
                         </div>
 
                         <div className="flex justify-end pt-4">
@@ -235,8 +307,16 @@ const BlogManagement = () => {
                                 <h3 className="text-xl font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                                     {blog.title}
                                 </h3>
+                                {/* Parse and display partial content if it's JSON */}
                                 <p className="text-slate-500 text-sm mb-6 line-clamp-3 leading-relaxed flex-grow">
-                                    {blog.content}
+                                    {(() => {
+                                        try {
+                                            const sections = JSON.parse(blog.content);
+                                            return Array.isArray(sections) ? sections[0].body : blog.content;
+                                        } catch {
+                                            return blog.content;
+                                        }
+                                    })()}
                                 </p>
 
                                 <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">

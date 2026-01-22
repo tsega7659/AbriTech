@@ -19,6 +19,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import logo from '../../assets/logo.png';
+import LogoutModal from '../LogoutModal';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -41,6 +42,7 @@ const SidebarLink = ({ to, icon: Icon, label, active }) => (
 
 const DashboardLayout = ({ role }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [user, setUser] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
@@ -57,10 +59,11 @@ const DashboardLayout = ({ role }) => {
         setIsSidebarOpen(false);
     }, [location.pathname]);
 
-    const handleLogout = () => {
+    const handleLogoutConfirm = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/login');
+        setIsLogoutModalOpen(false);
     };
 
     const adminLinks = [
@@ -89,7 +92,7 @@ const DashboardLayout = ({ role }) => {
     const links = role === 'admin' ? adminLinks : instructorLinks;
 
     return (
-        <div className="flex min-h-screen bg-background text-text-main font-sans">
+        <div className="flex h-screen overflow-hidden bg-background text-text-main font-sans">
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
@@ -147,18 +150,18 @@ const DashboardLayout = ({ role }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden lg:ml-72">
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden lg:ml-72 h-full">
                 {/* Desktop Header */}
                 <header className="hidden lg:flex h-16 bg-white border-b border-border items-center justify-end px-6 sticky top-0 z-30 gap-3">
                     <button className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">
                         <Bell className="w-5 h-5" />
                     </button>
                     <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-white text-slate-600 font-bold text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all group"
+                        onClick={() => setIsLogoutModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-white text-slate-600 font-bold text-sm transition-all duration-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 hover:shadow-md active:scale-95 group"
                     >
                         <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-500 transition-colors" />
-                        Logout
+                        Log Out
                     </button>
                 </header>
 
@@ -178,7 +181,7 @@ const DashboardLayout = ({ role }) => {
                             <Bell className="w-5 h-5" />
                         </button>
                         <button
-                            onClick={handleLogout}
+                            onClick={() => setIsLogoutModalOpen(true)}
                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                             <LogOut className="w-5 h-5" />
@@ -191,6 +194,12 @@ const DashboardLayout = ({ role }) => {
                     <Outlet />
                 </div>
             </main>
+
+            <LogoutModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogoutConfirm}
+            />
         </div>
     );
 };
