@@ -12,8 +12,8 @@ const upload = (folderName) => {
         cloudinary: cloudinary,
         params: {
             folder: folderName,
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-            // transformation is optional, can be added if needed
+            resource_type: 'auto', // Support non-image files like PDF and Video
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'doc', 'docx', 'mp4', 'mkv'],
             public_id: (req, file) => {
                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                 return `${uniqueSuffix}-${file.originalname.split('.')[0]}`;
@@ -23,16 +23,16 @@ const upload = (folderName) => {
 
     return multer({
         storage: storage,
-        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        limits: { fileSize: 50 * 1024 * 1024 }, // Increased to 50MB for videos
         fileFilter: (req, file, cb) => {
-            const allowedTypes = /jpeg|jpg|png|webp/;
+            const allowedTypes = /jpeg|jpg|png|webp|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|video/;
             const isSupported = allowedTypes.test(file.mimetype) ||
                 allowedTypes.test(file.originalname.toLowerCase());
 
             if (isSupported) {
                 return cb(null, true);
             } else {
-                cb(new Error('Only images are allowed (jpeg, jpg, png, webp)!'));
+                cb(new Error('Format not supported! (Allowed: Images, PDF, Doc, Video)'));
             }
         }
     });
