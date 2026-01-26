@@ -84,7 +84,17 @@ export default function Blog() {
                                         {post.title}
                                     </h2>
                                     <p className="text-gray-600 mb-6 leading-relaxed flex-grow line-clamp-3">
-                                        {post.content}
+                                        {(() => {
+                                            try {
+                                                const sections = JSON.parse(post.content);
+                                                if (Array.isArray(sections) && sections.length > 0) {
+                                                    return sections[0].body;
+                                                }
+                                                return post.content;
+                                            } catch (e) {
+                                                return post.content;
+                                            }
+                                        })()}
                                     </p>
                                     <div className="text-[#00B4D8] font-semibold hover:font-bold self-start mt-auto flex items-center gap-2 group/btn">
                                         Read Article <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform " />

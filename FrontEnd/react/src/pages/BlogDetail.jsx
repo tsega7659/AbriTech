@@ -64,13 +64,13 @@ export default function BlogDetail() {
                 <div className="w-150 h-150 bg-[#FDB813] rounded-full opacity-5 blur-3xl"></div>
             </div>
 
-            <section className="bg-gray-50 py-16 mb-12 relative overflow-hidden">
+            <section className="bg-gray-50 py-10 mb-8 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] opacity-30"></div>
                 <div className="max-w-7xl mx-auto px-4 relative z-10">
-                    <Link to="/blog" className="inline-flex items-center gap-2 text-[#00B4D8] font-semibold mb-8 hover:translate-x-[-4px] transition-transform">
+                    <Link to="/blog" className="inline-flex items-center gap-2 text-[#00B4D8] font-semibold mb-6 hover:translate-x-[-4px] transition-transform">
                         <ArrowLeft className="h-4 w-4" /> Back to Blog
                     </Link>
-                    <div className="max-w-3xl">
+                    <div className="max-w-4xl mx-auto">
                         <div className="flex items-center gap-3 mb-6">
                             <span className="bg-[#00B4D8]/10 text-[#00B4D8] px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
                                 <Tag className="h-3 w-3" /> News
@@ -122,7 +122,7 @@ export default function BlogDetail() {
                                                     {section.subtitle}
                                                 </h2>
                                             )}
-                                            <p className="whitespace-pre-line text-lg leading-relaxed text-gray-600 w-full">
+                                            <p className="whitespace-pre-line text-lg leading-relaxed text-gray-600 w-full text-justify px-2 md:px-0">
                                                 {section.body}
                                             </p>
                                         </div>
@@ -132,7 +132,7 @@ export default function BlogDetail() {
                             } catch (e) {
                                 // Fallback for legacy plain text content
                                 return (
-                                    <div className="whitespace-pre-line text-lg leading-relaxed">
+                                    <div className="whitespace-pre-line text-lg leading-relaxed text-justify px-2 md:px-0">
                                         {post.content}
                                     </div>
                                 );
