@@ -24,21 +24,21 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
           const tableName = item.table;
 
           // Check if table exists
-          const [tables] = await conn.execute(`SHOW TABLES LIKE ?`, [tableName]);
+          const [tables] = await conn.query(`SHOW TABLES LIKE ?`, [tableName]);
 
           if (tables.length === 0) {
             console.log(`Table '${tableName}' does not exist. Creating...`);
-            await conn.execute(item.sql);
+            await conn.query(item.sql);
           } else if (item.columns) {
             // Table exists, check for missing columns
-            const [columns] = await conn.execute(`SHOW COLUMNS FROM ??`, [tableName]);
+            const [columns] = await conn.query(`SHOW COLUMNS FROM ??`, [tableName]);
             const existingColumnNames = columns.map(c => c.Field);
 
             for (const colDef of item.columns) {
               if (!existingColumnNames.includes(colDef.name)) {
                 console.log(`Table '${tableName}': Adding missing column '${colDef.name}'`);
                 try {
-                  await conn.execute(`ALTER TABLE ?? ADD COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
+                  await conn.query(`ALTER TABLE ?? ADD COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
                 } catch (alterError) {
                   console.error(`Error adding column '${colDef.name}' to '${tableName}':`, alterError.message);
                 }
@@ -47,7 +47,7 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
           } else {
             // Fallback for tables without structured column definitions in schema.js
             // Just run the CREATE TABLE IF NOT EXISTS as a safety measure
-            await conn.execute(item.sql);
+            await conn.query(item.sql);
           }
         }
 
