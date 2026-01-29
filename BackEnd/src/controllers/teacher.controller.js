@@ -19,7 +19,24 @@ const getAllTeachers = async (req, res) => {
       LEFT JOIN course c ON tc.courseId = c.id
       GROUP BY u.id
     `);
-        res.json(teachers);
+        // Robust JSON parsing for environments where JSON_ARRAYAGG returns strings
+        const formattedTeachers = teachers.map(t => {
+            let assigned = t.assignedCourses;
+            if (typeof assigned === 'string') {
+                try {
+                    assigned = JSON.parse(assigned);
+                } catch (e) {
+                    assigned = [];
+                }
+            }
+            return {
+                ...t,
+                // Filter out null values which can occur with LEFT JOINs
+                assignedCourses: Array.isArray(assigned) ? assigned.filter(c => c !== null) : []
+            };
+        });
+
+        res.json(formattedTeachers);
     } catch (error) {
         console.error('Get All Teachers Error:', error);
         res.status(500).json({ message: 'Failed to fetch teachers', error: error.message });
@@ -167,7 +184,24 @@ const getEnrolledStudents = async (req, res) => {
         query += " GROUP BY u.id";
 
         const [students] = await pool.execute(query, params);
-        res.json(students);
+
+        // Robust JSON parsing for environments where JSON_ARRAYAGG returns strings
+        const formattedStudents = students.map(s => {
+            let enrolled = s.enrolledCourses;
+            if (typeof enrolled === 'string') {
+                try {
+                    enrolled = JSON.parse(enrolled);
+                } catch (e) {
+                    enrolled = [];
+                }
+            }
+            return {
+                ...s,
+                enrolledCourses: Array.isArray(enrolled) ? enrolled.filter(c => c !== null) : []
+            };
+        });
+
+        res.json(formattedStudents);
     } catch (error) {
         console.error('Get Enrolled Students Error:', error);
         res.status(500).json({ message: 'Failed to fetch students', error: error.message });

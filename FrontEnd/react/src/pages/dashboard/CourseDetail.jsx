@@ -1,4 +1,18 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import {
+    BookOpen,
+    Clock,
+    Trophy,
+    ChevronRight,
+    Play,
+    Lock,
+    CheckCircle,
+    FileText,
+    Download
+} from 'lucide-react';
 import { useStudent } from "../../context/StudentContext";
+import Loading from "../../components/Loading";
 
 export default function CourseDetail() {
     const { courseId } = useParams();

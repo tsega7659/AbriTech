@@ -30,8 +30,8 @@ export const ParentProvider = ({ children }) => {
             setDashboardStats(statsResponse.data);
             setLinkedStudents(studentsResponse.data);
         } catch (err) {
-            console.error("Failed to fetch parent data:", err);
-            setError("Failed to load dashboard data. Please try again later.");
+            const message = err.response?.data?.message || "Failed to load dashboard data. Please try again later.";
+            setError(message);
         } finally {
             setLoading(false);
         }

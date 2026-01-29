@@ -332,7 +332,7 @@ const InstructorManagement = () => {
                                         <Link2 className="w-3 h-3" /> Assigned Courses
                                     </p>
                                     <div className="flex flex-wrap gap-2">
-                                        {inst.assignedCourses && inst.assignedCourses[0] !== null ? inst.assignedCourses.map((c, i) => (
+                                        {Array.isArray(inst.assignedCourses) && inst.assignedCourses.length > 0 ? inst.assignedCourses.map((c, i) => (
                                             <span key={i} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight ring-1 ring-blue-100">
                                                 {c}
                                             </span>

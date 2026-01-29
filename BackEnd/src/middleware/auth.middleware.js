@@ -14,7 +14,12 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
+      console.error('JWT Verify Error:', err.message);
+      return res.status(403).json({
+        message: 'Invalid or expired token',
+        error: err.message,
+        code: 'TOKEN_INVALID'
+      });
     }
     req.user = user;
     next();
@@ -27,10 +32,19 @@ const authorizeRole = (...allowedRoles) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    // req.user.role should be a string (e.g. 'parent'). 
-    // If allowedRoles contains that string, proceed.
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied: Insufficient permissions' });
+    // req.user.role should be a string (e.g. 'student'). 
+    // Case-insensitive check
+    const userRole = req.user.role ? req.user.role.toLowerCase() : '';
+    const roles = allowedRoles.map(r => r.toLowerCase());
+
+    if (!roles.includes(userRole)) {
+      console.warn(`Access denied for user ${req.user.userId}. Role: ${req.user.role}, Required: ${allowedRoles}`);
+      return res.status(403).json({
+        message: 'Access denied: Insufficient permissions',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        code: 'INSUFFICIENT_PERMISSIONS'
+      });
     }
     next();
   };

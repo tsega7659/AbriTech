@@ -157,7 +157,23 @@ const getLinkedStudents = async (req, res) => {
       WHERE ps.parentId = ?
     `, [parentId]);
 
-    res.json(students);
+    // Robust JSON parsing for aggregated student data
+    const formattedStudents = students.map(s => {
+      let enrolled = s.enrolledCourses;
+      if (typeof enrolled === 'string') {
+        try {
+          enrolled = JSON.parse(enrolled);
+        } catch (e) {
+          enrolled = [];
+        }
+      }
+      return {
+        ...s,
+        enrolledCourses: Array.isArray(enrolled) ? enrolled.filter(c => c !== null) : []
+      };
+    });
+
+    res.json(formattedStudents);
   } catch (error) {
     console.error('Get Linked Students Error:', error);
     res.status(500).json({ message: 'Failed to fetch linked students', error: error.message });

@@ -31,8 +31,8 @@ export const StudentProvider = ({ children }) => {
             setDashboardStats(statsResponse.data);
             setEnrolledCourses(coursesResponse.data);
         } catch (err) {
-            console.error("Failed to fetch student data:", err);
-            setError("Failed to load dashboard data. Please try again later.");
+            const message = err.response?.data?.message || "Failed to load dashboard data. Please try again later.";
+            setError(message);
         } finally {
             setLoading(false);
         }
