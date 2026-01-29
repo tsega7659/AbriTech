@@ -85,6 +85,56 @@ const registerStudent = async (req, res) => {
     console.log('Username:', username, 'Email:', email);
     console.log('Parent Email provided:', parentEmail);
 
+    // --- Validation Rules ---
+    const errors = [];
+
+    // 1. All fields required
+    const requiredFields = [
+      'fullName', 'username', 'email', 'password', 'gender', 'classLevel',
+      'schoolName', 'educationLevel', 'courseLevel'
+    ];
+    if (isCurrentStudent) requiredFields.push('parentEmail', 'parentPhone');
+
+    for (const field of requiredFields) {
+      if (!req.body[field] || req.body[field].toString().trim() === '') {
+        errors.push(`${field} is required`);
+      }
+    }
+
+    // 2. Name validation (no numbers or special characters except /)
+    if (fullName && !/^[a-zA-Z\s\/]+$/.test(fullName)) {
+      errors.push('Name can only contain letters, spaces, and "/"');
+    }
+
+    // 3. Phone number validation (starts with 09, exactly 10 digits)
+    const phoneRegex = /^09\d{8}$/;
+    if (phoneNumber && !phoneRegex.test(phoneNumber)) {
+      errors.push('Phone number must start with 09 and be 10 digits');
+    }
+    if (parentPhone && !phoneRegex.test(parentPhone)) {
+      errors.push('Parent phone number must start with 09 and be 10 digits');
+    }
+
+    // 4. Grade level validation (Numeric only)
+    if (classLevel && !/^\d+$/.test(classLevel.toString())) {
+      errors.push('Grade level must be a number');
+    }
+
+    // 5. Password validation (>= 8 chars, letters and numbers)
+    if (password) {
+      if (password.length < 8) {
+        errors.push('Password must be at least 8 characters long');
+      }
+      if (!(/[a-zA-Z]/.test(password) && /\d/.test(password))) {
+        errors.push('Password must contain both letters and numbers');
+      }
+    }
+
+    if (errors.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ message: 'Validation failed', errors });
+    }
+
     // 1a. Validate Parent Email (Self-referral check)
     if (parentEmail && parentEmail.toLowerCase() === email.toLowerCase()) {
       console.log('Validation Error: Student tried to use their own email as parent email.');
@@ -212,6 +262,41 @@ const registerParent = async (req, res) => {
 
     console.log('--- Parent Registration Start ---');
     console.log('Username:', username, 'Email:', email);
+
+    // --- Validation Rules ---
+    const errors = [];
+    const requiredFields = ['fullName', 'username', 'email', 'password', 'phoneNumber'];
+
+    for (const field of requiredFields) {
+      if (!req.body[field] || req.body[field].toString().trim() === '') {
+        errors.push(`${field} is required`);
+      }
+    }
+
+    // 1. Name validation
+    if (fullName && !/^[a-zA-Z\s\/]+$/.test(fullName)) {
+      errors.push('Name can only contain letters, spaces, and "/"');
+    }
+
+    // 2. Phone number validation
+    if (phoneNumber && !/^09\d{8}$/.test(phoneNumber)) {
+      errors.push('Phone number must start with 09 and be 10 digits');
+    }
+
+    // 3. Password validation
+    if (password) {
+      if (password.length < 8) {
+        errors.push('Password must be at least 8 characters long');
+      }
+      if (!(/[a-zA-Z]/.test(password) && /\d/.test(password))) {
+        errors.push('Password must contain both letters and numbers');
+      }
+    }
+
+    if (errors.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ message: 'Validation failed', errors });
+    }
 
     // 1. Check existing
     const [existingUsers] = await conn.execute(

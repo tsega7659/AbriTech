@@ -1,36 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, Users } from 'lucide-react';
-import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
+import { useInstructor } from '../../context/InstructorContext';
 
 const InstructorStudents = () => {
-    const [students, setStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { students, loading } = useInstructor();
     const [searchTerm, setSearchTerm] = useState("");
-
-    useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE_URL}/teachers/students`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    setStudents(data);
-                } else {
-                    console.error("Failed to fetch students:", data.message);
-                }
-            } catch (error) {
-                console.error("Failed to fetch students:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStudents();
-    }, []);
 
     const filteredStudents = students.filter(student =>
         student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||

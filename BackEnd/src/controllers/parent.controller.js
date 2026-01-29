@@ -87,9 +87,23 @@ const getDashboard = async (req, res) => {
       WHERE ps.parentId = ?
     `, [parentId]);
 
-    // Placeholders for now
-    const totalLessonsCompleted = 0;
-    const averageQuizScore = 0;
+    // Get total lessons completed by all linked students
+    const [lessonsResult] = await pool.execute(`
+      SELECT COUNT(*) as count 
+      FROM lessonprogress lp
+      JOIN parentstudent ps ON lp.studentId = ps.studentId
+      WHERE ps.parentId = ? AND lp.completed = 1
+    `, [parentId]);
+    const totalLessonsCompleted = lessonsResult[0].count;
+
+    // Get average quiz score for all linked students
+    const [quizResult] = await pool.execute(`
+      SELECT AVG(qa.isCorrect * 100) as average
+      FROM quizattempt qa
+      JOIN parentstudent ps ON qa.studentId = ps.studentId
+      WHERE ps.parentId = ?
+    `, [parentId]);
+    const averageQuizScore = Math.round(quizResult[0].average || 0);
 
     res.json({
       linkedStudents: linkedStudents[0].count,

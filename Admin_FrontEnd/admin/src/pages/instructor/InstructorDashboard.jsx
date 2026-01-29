@@ -3,12 +3,12 @@ import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight, Info, X, 
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/apiConfig';
 
+import { useInstructor } from '../../context/InstructorContext';
+
 const InstructorDashboard = () => {
     const navigate = useNavigate();
+    const { assignedCourses: courses, dashboardStats: statsData, loading } = useInstructor();
     const [showBanner, setShowBanner] = useState(false);
-    const [statsData, setStatsData] = useState(null);
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -19,35 +19,7 @@ const InstructorDashboard = () => {
             // Show banner only if firstLogin is true (1)
             setShowBanner(!!parsedUser.firstLogin);
         }
-
-        const fetchData = async () => {
-            const token = localStorage.getItem('token');
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            };
-
-            try {
-                const [statsRes, coursesRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/teachers/dashboard`, { headers }),
-                    fetch(`${API_BASE_URL}/teachers/courses`, { headers })
-                ]);
-
-                if (statsRes.ok && coursesRes.ok) {
-                    const stats = await statsRes.json();
-                    const coursesData = await coursesRes.json();
-                    setStatsData(stats);
-                    setCourses(coursesData);
-                }
-            } catch (error) {
-                console.error("Failed to fetch instructor data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
+    }, [loading]);
 
     if (loading) {
         return (

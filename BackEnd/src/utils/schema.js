@@ -311,7 +311,9 @@ const schema = [
       { name: 'title', type: 'VARCHAR(255) NOT NULL' },
       { name: 'description', type: 'TEXT NOT NULL' },
       { name: 'dueDate', type: 'DATETIME' },
-      { name: 'requiresApproval', type: 'TINYINT(1) DEFAULT 1' }
+      { name: 'requiresApproval', type: 'TINYINT(1) DEFAULT 1' },
+      { name: 'createdAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'updatedAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP' }
     ],
     foreignKeys: [
       'FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE'
@@ -323,6 +325,8 @@ const schema = [
       description TEXT NOT NULL,
       dueDate DATETIME,
       requiresApproval TINYINT(1) DEFAULT 1,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
   },

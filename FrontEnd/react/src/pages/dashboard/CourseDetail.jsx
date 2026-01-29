@@ -1,22 +1,24 @@
-import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
-import { PlayCircle, Lock, CheckCircle, Clock, FileText, Download, ChevronDown, ChevronUp, Star, Share2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import api from "../../lib/api";
-import Loading from "../../components/Loading";
-
+import { useStudent } from "../../context/StudentContext";
 
 export default function CourseDetail() {
     const { courseId } = useParams();
+    const { enrolledCourses, loading: contextLoading } = useStudent();
     const [activeTab, setActiveTab] = useState("curriculum");
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchCourseDetails = async () => {
+            // Check if course is in enrolledCourses first
+            const enrolledCourse = enrolledCourses.find(c => c.id === parseInt(courseId));
+
+            if (enrolledCourse) {
+                setCourse(enrolledCourse);
+                setLoading(false);
+                return;
+            }
+
             try {
-                // We'll use the existing public courses endpoint or a specific student one if available
-                // For now, fetching all and filtering or assuming we have a detail endpoint
                 const response = await api.get(`/courses`);
                 const foundCourse = response.data.find(c => c.id === parseInt(courseId));
                 setCourse(foundCourse);
@@ -27,9 +29,9 @@ export default function CourseDetail() {
             }
         };
         fetchCourseDetails();
-    }, [courseId]);
+    }, [courseId, enrolledCourses]);
 
-    if (loading) return <Loading fullScreen={false} message="Loading course details..." />;
+    if (loading || contextLoading) return <Loading fullScreen={false} message="Loading course details..." />;
     if (!course) return (
         <div className="text-center py-20">
             <h2 className="text-2xl font-bold text-gray-900">Course not found</h2>

@@ -158,7 +158,7 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <div className="flex flex-col justify-center">
-                            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">Why Choose AbriTech?</h2>
+                            <h2 className="text-4xl lg:text-4xl font-bold text-gray-900 mb-8">Why Choose AbriTech?</h2>
                             <p className="text-lg lg:text-xl text-gray-600 mb-10 leading-relaxed">
                                 We're committed to transforming STEM education in Ethiopia through innovative teaching methods and hands-on learning experiences that prepare students for the future.
                             </p>

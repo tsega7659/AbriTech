@@ -1,36 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Users, Eye, TrendingUp, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '../../config/apiConfig';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Users, TrendingUp, Eye, Loader2 } from 'lucide-react';
+import { useInstructor } from '../../context/InstructorContext';
 
 const InstructorCourses = () => {
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { assignedCourses: courses, loading } = useInstructor();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchCourses = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE_URL}/teachers/courses`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    setCourses(data);
-                } else {
-                    console.error("Failed to fetch courses:", data.message);
-                }
-            } catch (error) {
-                console.error("Failed to fetch courses:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCourses();
-    }, []);
 
     if (loading) {
         return (
@@ -109,7 +85,10 @@ const InstructorCourses = () => {
                                 </div>
 
                                 {/* View Details Button */}
-                                <button className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl font-bold transition-all group">
+                                <button
+                                    onClick={() => navigate(`/instructor/courses/${course.id}/students`)}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl font-bold transition-all group"
+                                >
                                     <Eye className="w-4 h-4" />
                                     View Details
                                 </button>

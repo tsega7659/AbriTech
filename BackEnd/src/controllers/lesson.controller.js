@@ -236,8 +236,41 @@ const markLessonComplete = async (req, res) => {
       );
     }
 
-    // Update Course Progress (Optional but good for UX)
-    // logic to calc % can be added here or separate
+    // --- Update Course Progress ---
+    // 1. Get Course ID for this lesson
+    const [lessonData] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
+    if (lessonData.length > 0) {
+      const courseId = lessonData[0].courseId;
+
+      // 2. Count total lessons in this course
+      const [totalLessonsResult] = await pool.execute(
+        'SELECT COUNT(*) as total FROM lesson WHERE courseId = ?',
+        [courseId]
+      );
+      const totalLessons = totalLessonsResult[0].total;
+
+      // 3. Count completed lessons for this student in this course
+      const [completedLessonsResult] = await pool.execute(
+        `SELECT COUNT(*) as completed 
+         FROM lessonprogress lp
+         JOIN lesson l ON lp.lessonId = l.id
+         WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
+        [studentId, courseId]
+      );
+      const completedLessons = completedLessonsResult[0].completed;
+
+      // 4. Calculate percentage
+      const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+      const status = progressPercentage === 100 ? 'completed' : 'active';
+
+      // 5. Update Enrollment
+      await pool.execute(
+        'UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?',
+        [progressPercentage, status, studentId, courseId]
+      );
+
+      console.log(`[Progress Update] Student: ${studentId}, Course: ${courseId}, Progress: ${progressPercentage}%`);
+    }
 
     res.json({ message: 'Lesson marked as complete' });
 

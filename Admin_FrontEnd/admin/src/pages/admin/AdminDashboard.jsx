@@ -30,58 +30,69 @@ function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-const miniStats = [
-    { label: 'Total Students', value: '3', icon: GraduationCap, bg: 'bg-blue-50', color: 'text-blue-500' },
-    { label: 'Instructors', value: '2', icon: Users, bg: 'bg-green-50', color: 'text-green-500' },
-    { label: 'Courses', value: '7', icon: BookOpen, bg: 'bg-amber-50', color: 'text-amber-500' },
-    { label: 'Pending Reviews', value: '1', icon: Clock, bg: 'bg-purple-50', color: 'text-purple-500' },
-];
-
-const analyticalStats = [
-    {
-        label: 'Total Enrollments',
-        value: '6',
-        change: '+12% this month',
-        trend: 'up',
-        icon: TrendingUp,
-        iconColor: 'text-green-500'
-    },
-    {
-        label: 'Courses Completed',
-        value: '4',
-        change: '67% completion rate',
-        icon: CheckCircle2,
-        iconColor: 'text-blue-500',
-        badge: 'bg-blue-50 text-blue-600'
-    },
-    {
-        label: 'Active Parents',
-        value: '1',
-        change: 'Monitoring students',
-        icon: Users2,
-        iconColor: 'text-orange-500',
-        badge: 'bg-amber-50 text-amber-600'
-    },
-];
-
-const topCoursesData = [
-    { name: 'Introduction to Python...', value: 2 },
-    { name: 'Robotics Fundamental...', value: 1 },
-    { name: 'AI and Machine Learn...', value: 1 },
-    { name: 'Digital Creativity w...', value: 1 },
-    { name: 'Mobile App Developme...', value: 1 },
-];
-
-const categoryData = [
-    { name: 'Coding', value: 50, color: '#3b82f6' },
-    { name: 'STEM', value: 0, color: '#ef4444' },
-    { name: 'Digital Creativity', value: 17, color: '#a855f7' },
-    { name: 'University Prep', value: 0, color: '#f43f5e' },
-    { name: 'AI & ML', value: 17, color: '#f59e0b' },
-    { name: 'Robotics', value: 17, color: '#10b981' },
-];
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminDashboard = () => {
+    const {
+        students,
+        teachers,
+        courses,
+        parents,
+        adminDashboardStats,
+        loading
+    } = useAdmin();
+
+    const miniStats = [
+        { label: 'Total Students', value: students.length.toString(), icon: GraduationCap, bg: 'bg-blue-50', color: 'text-blue-500' },
+        { label: 'Instructors', value: teachers.length.toString(), icon: Users, bg: 'bg-green-50', color: 'text-green-500' },
+        { label: 'Courses', value: courses.length.toString(), icon: BookOpen, bg: 'bg-amber-50', color: 'text-amber-500' },
+        { label: 'Pending Reviews', value: adminDashboardStats?.pendingReviews || '1', icon: Clock, bg: 'bg-purple-50', color: 'text-purple-500' },
+    ];
+
+    const analyticalStats = [
+        {
+            label: 'Total Enrollments',
+            value: adminDashboardStats?.totalEnrollments || '6',
+            change: adminDashboardStats?.enrollmentChange || '+12% this month',
+            trend: 'up',
+            icon: TrendingUp,
+            iconColor: 'text-green-500'
+        },
+        {
+            label: 'Courses Completed',
+            value: adminDashboardStats?.coursesCompleted || '4',
+            change: adminDashboardStats?.completionRate || '67% completion rate',
+            icon: CheckCircle2,
+            iconColor: 'text-blue-500',
+            badge: 'bg-blue-50 text-blue-600'
+        },
+        {
+            label: 'Active Parents',
+            value: parents.length.toString(),
+            change: 'Monitoring students',
+            icon: Users2,
+            iconColor: 'text-orange-500',
+            badge: 'bg-amber-50 text-amber-600'
+        },
+    ];
+
+    const topCoursesData = adminDashboardStats?.topCourses || [
+        { name: 'Introduction to Python...', value: 2 },
+        { name: 'Robotics Fundamental...', value: 1 },
+        { name: 'AI and Machine Learn...', value: 1 },
+        { name: 'Digital Creativity w...', value: 1 },
+        { name: 'Mobile App Developme...', value: 1 },
+    ];
+
+    const categoryData = adminDashboardStats?.categoryStats || [
+        { name: 'Coding', value: 50, color: '#3b82f6' },
+        { name: 'STEM', value: 0, color: '#ef4444' },
+        { name: 'Digital Creativity', value: 17, color: '#a855f7' },
+        { name: 'University Prep', value: 0, color: '#f43f5e' },
+        { name: 'AI & ML', value: 17, color: '#f59e0b' },
+        { name: 'Robotics', value: 17, color: '#10b981' },
+    ];
+
     return (
         <div className="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto">
             {/* Page Header */}

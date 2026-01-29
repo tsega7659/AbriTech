@@ -1,27 +1,11 @@
 import { Search, Filter, BookOpen, Clock, MoreVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import api from "../../lib/api";
-import Loading from "../../components/Loading";
+import { useStudent } from "../../context/StudentContext";
 
 export default function StudentCourses() {
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { enrolledCourses: courses, loading } = useStudent();
     const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        const fetchCourses = async () => {
-            try {
-                const response = await api.get('/students/courses');
-                setCourses(response.data);
-            } catch (error) {
-                console.error("Failed to fetch enrolled courses:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCourses();
-    }, []);
 
     const filteredCourses = courses.filter(course =>
         course.name.toLowerCase().includes(searchTerm.toLowerCase())

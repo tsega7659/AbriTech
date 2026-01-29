@@ -12,23 +12,29 @@ const resend = new Resend(process.env.EMAIL_API_KEY);
  */
 const sendEmail = async (to, subject, text, html) => {
     try {
+        console.log(`[EmailUtils] Attempting to send email to: ${to}`);
+        console.log(`[EmailUtils] Using API Key: ${process.env.EMAIL_API_KEY ? 'Present' : 'MISSING'}`);
+
         const { data, error } = await resend.emails.send({
-            from: 'AbriTech LMS <onboarding@resend.dev>', // Change later when domain verified
+            from: 'AbriTech LMS <onboarding@resend.dev>',
             to,
             subject,
             text,
-            html: html || text, // Fallback to text if html is not provided
+            html: html || text,
         });
 
         if (error) {
-            console.error('Resend error:', error);
+            console.error('[EmailUtils] Resend API Error:', JSON.stringify(error, null, 2));
             return false;
         }
 
-        console.log('Email sent successfully:', data.id);
+        console.log('[EmailUtils] Email sent successfully. ID:', data.id);
         return true;
     } catch (err) {
-        console.error('Failed to send email:', err);
+        console.error('[EmailUtils] Unexpected error during email sending:', err);
+        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+            console.error('[EmailUtils] Hint: This could be a network issue or an incompatible Node.js version for the native fetch API.');
+        }
         return false;
     }
 };

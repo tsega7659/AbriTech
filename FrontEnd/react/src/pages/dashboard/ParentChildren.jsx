@@ -1,28 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, BookOpen, ChevronRight, ArrowLeft, Trophy, Calendar } from 'lucide-react';
-import api from '../../lib/api';
 import Loading from '../../components/Loading';
+import { useParent } from '../../context/ParentContext';
 
 export default function ParentChildren() {
-    const [students, setStudents] = useState([]);
+    const { linkedStudents: students, loading } = useParent();
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                const response = await api.get('/parents/linked-students');
-                setStudents(response.data);
-            } catch (error) {
-                console.error("Failed to fetch students:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStudents();
-    }, []);
 
     if (loading) return <Loading />;
 

@@ -17,12 +17,14 @@ export const AdminProvider = ({ children }) => {
     const [courses, setCourses] = useState([]);
     const [blogs, setBlogs] = useState([]);
     const [parents, setParents] = useState([]);
+    const [adminDashboardStats, setAdminDashboardStats] = useState(null);
     const [loading, setLoading] = useState({
         teachers: false,
         students: false,
         courses: false,
         blogs: false,
-        parents: false
+        parents: false,
+        dashboard: false
     });
     const [error, setError] = useState(null);
 
@@ -32,6 +34,29 @@ export const AdminProvider = ({ children }) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
+    };
+
+    const fetchAdminDashboardStats = async () => {
+        setLoading(prev => ({ ...prev, dashboard: true }));
+        try {
+            // Note: Assuming there's an /admin/dashboard endpoint
+            // If not, we might need to derive it from other fetches or wait for backend update
+            // For now, we'll try to fetch it if it exists.
+            const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setAdminDashboardStats(data);
+            } else {
+                // If endpoint doesn't exist, we might just use the lists to calculate counts
+                console.warn('Admin dashboard stats endpoint not found or failed');
+            }
+        } catch (err) {
+            console.error('Error fetching admin dashboard stats:', err);
+        } finally {
+            setLoading(prev => ({ ...prev, dashboard: false }));
+        }
     };
 
     const fetchTeachers = async () => {
@@ -394,6 +419,7 @@ export const AdminProvider = ({ children }) => {
             fetchCourses();
             fetchBlogs();
             fetchParents();
+            fetchAdminDashboardStats();
         }
     }, []);
 
@@ -403,6 +429,7 @@ export const AdminProvider = ({ children }) => {
         courses,
         blogs,
         parents,
+        adminDashboardStats,
         loading,
         error,
         fetchTeachers,
@@ -410,6 +437,7 @@ export const AdminProvider = ({ children }) => {
         fetchCourses,
         fetchBlogs,
         fetchParents,
+        fetchAdminDashboardStats,
         registerTeacher,
         registerStudent,
         registerAdmin,

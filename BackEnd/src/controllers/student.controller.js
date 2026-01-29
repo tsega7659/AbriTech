@@ -44,15 +44,22 @@ const getDashboard = async (req, res) => {
       [studentId]
     );
 
-    // Get completed lessons count (assuming you have a lesson completion tracking)
-    // For now, we'll use a placeholder
-    const lessonsCompleted = 0;
+    // Get completed lessons count
+    const [completedLessonsResult] = await pool.execute(
+      'SELECT COUNT(*) as count FROM lessonprogress WHERE studentId = ? AND completed = 1',
+      [studentId]
+    );
+    const lessonsCompleted = completedLessonsResult[0].count;
 
-    // Get average score (placeholder for now)
-    const averageScore = 0;
+    // Get average quiz score
+    const [quizResult] = await pool.execute(
+      'SELECT AVG(isCorrect * 100) as average FROM quizattempt WHERE studentId = ?',
+      [studentId]
+    );
+    const averageScore = quizResult[0].average !== null ? Math.round(quizResult[0].average) : null;
 
-    // Get learning time (placeholder for now)
-    const learningTime = '0h';
+    // Placeholder for learning time (can be estimated later)
+    const learningTime = 'Est. 2h';
 
     res.json({
       enrolledCourses: enrolledCourses[0].count,

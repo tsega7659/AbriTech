@@ -3,35 +3,13 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { useState, useEffect } from "react";
-import api from "../../lib/api";
+import { useStudent } from "../../context/StudentContext";
 import Loading from "../../components/Loading";
 
 export default function StudentDashboard() {
     const { user } = useAuth();
-    const [dashboardData, setDashboardData] = useState(null);
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { enrolledCourses: courses, dashboardStats: dashboardData, loading, error } = useStudent();
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [statsResponse, coursesResponse] = await Promise.all([
-                    api.get('/students/dashboard'),
-                    api.get('/students/courses')
-                ]);
-
-                setDashboardData(statsResponse.data);
-                setCourses(coursesResponse.data);
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
 
     if (loading) {
         return <Loading fullScreen={false} message="Loading your dashboard..." />;
@@ -40,7 +18,7 @@ export default function StudentDashboard() {
     const stats = [
         { label: "Enrolled Courses", value: dashboardData?.enrolledCourses || "0", icon: BookOpen, color: "text-[#00B4D8]", bg: "bg-blue-50" },
         { label: "Lessons Completed", value: dashboardData?.lessonsCompleted || "0", icon: Trophy, color: "text-green-500", bg: "bg-green-50" },
-        { label: "Average Score", value: dashboardData?.averageScore ? `${dashboardData.averageScore}%` : "N/A", icon: TrendingUp, color: "text-[#FDB813]", bg: "bg-yellow-50" },
+        { label: "Average Score", value: (dashboardData?.averageScore !== null && dashboardData?.averageScore !== undefined) ? `${dashboardData.averageScore}%` : "N/A", icon: TrendingUp, color: "text-[#FDB813]", bg: "bg-yellow-50" },
         { label: "Learning Time", value: dashboardData?.learningTime || "0h", icon: Clock, color: "text-purple-500", bg: "bg-purple-50" },
     ];
 
@@ -120,44 +98,45 @@ export default function StudentDashboard() {
                                 key={course.id}
                                 className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl transition-all group lg:hover:-translate-y-1"
                             >
-                                <div className="h-48 relative overflow-hidden">
-                                    <img
-                                        src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600'}
-                                        alt={course.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                    />
-                                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-xl text-xs font-black text-gray-900 shadow-sm uppercase tracking-wider">
-                                        {course.level}
+                                <Link to={`/dashboard/student/courses/${course.id}/learn/1`}>
+                                    <div className="h-48 relative overflow-hidden">
+                                        <img
+                                            src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600'}
+                                            alt={course.name}
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        />
+                                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-xl text-xs font-black text-gray-900 shadow-sm uppercase tracking-wider">
+                                            {course.level}
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                     </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                </div>
-                                <div className="p-6">
-                                    <h3 className="font-bold text-gray-900 text-lg mb-4 line-clamp-1">{course.name}</h3>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center text-xs font-bold">
-                                            <span className="text-gray-400 uppercase tracking-tighter">Progress</span>
-                                            <span className="text-[#00B4D8]">{course.progress || 0}%</span>
-                                        </div>
-                                        <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full transition-all duration-1000 bg-[#00B4D8]"
-                                                style={{ width: `${course.progress || 0}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="flex justify-between items-center pt-2">
-                                            <Link
-                                                to={`/dashboard/student/courses/${course.id}/learn/1`}
-                                                className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
-                                            >
-                                                Resume Lesson
-                                            </Link>
+                                    <div className="p-6">
+                                        <h3 className="font-bold text-gray-900 text-lg mb-4 line-clamp-1">{course.name}</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-xs font-bold">
+                                                <span className="text-gray-400 uppercase tracking-tighter">Progress</span>
+                                                <span className="text-[#00B4D8]">{course.progress || 0}%</span>
+                                            </div>
+                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-1000 bg-[#00B4D8]"
+                                                    style={{ width: `${course.progress || 0}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2">
+                                                <button
+                                                    className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
+                                                >
+                                                    Resume Lesson
+                                                </button>
 
-                                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
-                                                <ArrowRight className="h-4 w-4" />
+                                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             </motion.div>
                         ))}
                     </div>

@@ -44,9 +44,24 @@ const getDashboard = async (req, res) => {
             WHERE tc.teacherId = ?
         `, [userId]);
 
-        // Placeholders for now
-        const activeAssignments = 0;
-        const averageCompletion = 0;
+        // Get count of lessons/courses assigned to teacher that students have enrolled in
+        // and calculate average progress
+        const [progressResult] = await pool.execute(`
+            SELECT AVG(e.progressPercentage) as average
+            FROM teachercourse tc
+            JOIN enrollment e ON tc.courseId = e.courseId
+            WHERE tc.teacherId = ?
+        `, [userId]);
+        const averageCompletion = Math.round(progressResult[0].average || 0);
+
+        // Get active assignments count for their courses
+        const [assignmentsResult] = await pool.execute(`
+            SELECT COUNT(*) as count
+            FROM teachercourse tc
+            JOIN assignment a ON tc.courseId = a.courseId
+            WHERE tc.teacherId = ?
+        `, [userId]);
+        const activeAssignments = assignmentsResult[0].count;
 
         res.json({
             assignedCourses: assignedCourses[0].count,
@@ -125,8 +140,9 @@ const deleteTeacher = async (req, res) => {
 const getEnrolledStudents = async (req, res) => {
     try {
         const { userId } = req.user; // Teacher's userId
+        const { courseId } = req.query;
 
-        const [students] = await pool.execute(`
+        let query = `
             SELECT 
                 u.id,
                 u.fullName,
@@ -139,13 +155,75 @@ const getEnrolledStudents = async (req, res) => {
             JOIN course c ON e.courseId = c.id
             JOIN teachercourse tc ON c.id = tc.courseId
             WHERE tc.teacherId = ?
-            GROUP BY u.id
-        `, [userId]);
+        `;
 
+        const params = [userId];
+
+        if (courseId) {
+            query += " AND c.id = ? ";
+            params.push(courseId);
+        }
+
+        query += " GROUP BY u.id";
+
+        const [students] = await pool.execute(query, params);
         res.json(students);
     } catch (error) {
         console.error('Get Enrolled Students Error:', error);
         res.status(500).json({ message: 'Failed to fetch students', error: error.message });
+    }
+};
+
+const getStudentCourseDetail = async (req, res) => {
+    try {
+        const { studentId, courseId } = req.params;
+        const { userId: teacherId } = req.user;
+
+        // Verify this teacher is actually teaching this course
+        const [teachingCheck] = await pool.execute(
+            'SELECT id FROM teachercourse WHERE teacherId = ? AND courseId = ?',
+            [teacherId, courseId]
+        );
+
+        if (teachingCheck.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized. You do not teach this course.' });
+        }
+
+        // Get student basic info and progress in this specific course
+        const [studentInfo] = await pool.execute(`
+            SELECT 
+                u.fullName, u.email,
+                e.progressPercentage, e.status, e.enrolledAt,
+                s.schoolName, s.classLevel
+            FROM user u
+            JOIN student s ON u.id = s.userId
+            JOIN enrollment e ON s.id = e.studentId
+            WHERE u.id = ? AND e.courseId = ?
+        `, [studentId, courseId]);
+
+        if (studentInfo.length === 0) {
+            return res.status(404).json({ message: 'Student enrollment not found' });
+        }
+
+        // Get project submissions for this student and course
+        const [submissions] = await pool.execute(`
+            SELECT 
+                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.feedback, sub.submittedAt,
+                a.title as assignmentTitle, a.description as assignmentDescription
+            FROM assignmentsubmission sub
+            JOIN assignment a ON sub.assignmentId = a.id
+            JOIN student s ON sub.studentId = s.id
+            WHERE s.userId = ? AND a.courseId = ?
+            ORDER BY sub.submittedAt DESC
+        `, [studentId, courseId]);
+
+        res.json({
+            student: studentInfo[0],
+            submissions
+        });
+    } catch (error) {
+        console.error('Get Student Course Detail Error:', error);
+        res.status(500).json({ message: 'Failed to fetch student details', error: error.message });
     }
 };
 
@@ -154,6 +232,7 @@ module.exports = {
     getDashboard,
     getAssignedCourses,
     getEnrolledStudents,
+    getStudentCourseDetail,
     deleteTeacher
 };
 

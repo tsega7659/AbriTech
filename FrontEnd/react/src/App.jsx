@@ -28,6 +28,8 @@ import {
 import CourseDetail from "./pages/dashboard/CourseDetail";
 import LessonPlayer from "./pages/dashboard/LessonPlayer";
 import { AuthProvider } from "./context/AuthContext";
+import { StudentProvider } from "./context/StudentContext";
+import { ParentProvider } from "./context/ParentContext";
 
 import './index.css'
 
@@ -66,7 +68,11 @@ function App() {
           </Route>
 
           {/* Dashboard Routes */}
-          <Route path="/dashboard/student" element={<DashboardLayout role="student" />}>
+          <Route path="/dashboard/student" element={
+            <StudentProvider>
+              <DashboardLayout role="student" />
+            </StudentProvider>
+          }>
             <Route index element={<StudentDashboard />} />
             <Route path="courses" element={<StudentCourses />} />
             <Route path="courses/:courseId" element={<CourseDetail />} />
@@ -78,7 +84,11 @@ function App() {
             <Route path="ai-tutor" element={<StudentAITutor />} />
           </Route>
 
-          <Route path="/dashboard/parent" element={<DashboardLayout role="parent" />}>
+          <Route path="/dashboard/parent" element={
+            <ParentProvider>
+              <DashboardLayout role="parent" />
+            </ParentProvider>
+          }>
             <Route index element={<ParentDashboard />} />
             <Route path="children" element={<ParentChildren />} />
             <Route path="reports" element={<ParentReports />} />

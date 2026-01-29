@@ -3,35 +3,12 @@ import { useAuth } from "../../context/AuthContext";
 import LinkStudentForm from "../../components/LinkStudentForm";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { useState, useEffect } from "react";
-import api from "../../lib/api";
-import Loading from "../../components/Loading";
+import { useParent } from "../../context/ParentContext";
 
 export default function ParentDashboard() {
     const { user } = useAuth();
-    const [dashboardData, setDashboardData] = useState(null);
-    const [linkedStudents, setLinkedStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { linkedStudents, dashboardStats: dashboardData, loading } = useParent();
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [statsResponse, studentsResponse] = await Promise.all([
-                    api.get('/parents/dashboard'),
-                    api.get('/parents/linked-students')
-                ]);
-
-                setDashboardData(statsResponse.data);
-                setLinkedStudents(studentsResponse.data);
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
 
     if (loading) {
         return <Loading fullScreen={false} message="Loading your dashboard..." />;
