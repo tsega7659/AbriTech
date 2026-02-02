@@ -4,6 +4,7 @@ import LinkStudentForm from "../../components/LinkStudentForm";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { useParent } from "../../context/ParentContext";
+import Loading from "../../components/Loading";
 
 export default function ParentDashboard() {
     const { user } = useAuth();

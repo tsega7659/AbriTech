@@ -28,7 +28,7 @@ export default function Footer() {
                             <a href="https://t.me/abritechsolutions" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <Send className="h-5 w-5" />
                             </a>
-                            <a href="#" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
+                            <a href="https://www.linkedin.com/company/abritech/" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <Linkedin className="h-5 w-5" />
                             </a>
                             <a href="https://www.tiktok.com/@abritech_solutions?is_from_webapp=1&sender_device=pc" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
