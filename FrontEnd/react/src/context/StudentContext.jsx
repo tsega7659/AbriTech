@@ -36,7 +36,7 @@ export const StudentProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [user, enrolledCourses.length, dashboardStats]);
+    }, [user?.id]);
 
     // Initial fetch when user changes or on mount
     useEffect(() => {

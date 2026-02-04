@@ -61,7 +61,7 @@ export default function Footer() {
                             </li>
                             <li className="flex items-start gap-3">
                                 <span className="text-white font-medium">Email:</span>
-                                abritechet@gmail.com
+                                info@abritechet.com
                             </li>
                             <li className="flex items-start gap-3">
                                 <span className="text-white font-medium">Address:</span>

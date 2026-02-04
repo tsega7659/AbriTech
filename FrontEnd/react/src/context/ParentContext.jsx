@@ -35,7 +35,7 @@ export const ParentProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [user, linkedStudents.length, dashboardStats]);
+    }, [user?.id]);
 
     useEffect(() => {
         if (user && user.role === 'parent') {

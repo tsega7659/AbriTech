@@ -26,6 +26,7 @@ const schema = [
       { name: 'parentPhone', type: 'VARCHAR(255)' },
       { name: 'address', type: 'TEXT' },
       { name: 'roleId', type: 'INT NOT NULL' },
+      { name: 'firstLogin', type: 'TINYINT(1) DEFAULT 1' },
       { name: 'createdAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
     ],
     foreignKeys: [
@@ -42,6 +43,7 @@ const schema = [
       parentPhone VARCHAR(255),
       address TEXT,
       roleId INT NOT NULL,
+      firstLogin TINYINT(1) DEFAULT 1,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (roleId) REFERENCES role(id) ON DELETE CASCADE
     )`

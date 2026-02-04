@@ -55,7 +55,7 @@ export const InstructorProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [assignedCourses.length, dashboardStats, students.length]);
+    }, []);
 
     useEffect(() => {
         fetchInstructorData();

@@ -31,7 +31,7 @@ export default function Contact() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-2">Email Us</h3>
                         <p className="text-sm text-gray-500 mb-4">Send us an email anytime</p>
-                        <p className="text-primary font-medium">abritechet@gmail.com</p>
+                        <p className="text-primary font-medium">info@abritechet.com</p>
                     </div>
 
                     {/* Phone Card */}
@@ -51,7 +51,7 @@ export default function Contact() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-2">Visit Us</h3>
                         <p className="text-sm text-gray-500 mb-4">Come say hello at our office</p>
-                        <p className="text-gray-900 font-medium">Bole, Addis Ababa, Ethiopia</p>
+                        <p className="text-gray-900 font-medium">Bole Dembel, Addis Ababa, Ethiopia</p>
                     </div>
 
                     {/* Hours Card */}
@@ -91,7 +91,7 @@ export default function Contact() {
                                 <textarea rows={4} className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Type your message..."></textarea>
                             </div>
 
-                            <button type="button" className="w-full bg-text-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-text-[#00B4D8]/90 transition-all  hover:-translate-y-1">
+                            <button type="button" className="w-full bg-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-[#00B4D8]/90 transition-all  hover:-translate-y-1">
                                 Send Message
                             </button>
                         </form>

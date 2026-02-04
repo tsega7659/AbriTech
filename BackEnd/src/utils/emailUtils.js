@@ -16,7 +16,7 @@ const sendEmail = async (to, subject, text, html) => {
         console.log(`[EmailUtils] Using API Key: ${process.env.EMAIL_API_KEY ? 'Present' : 'MISSING'}`);
 
         const { data, error } = await resend.emails.send({
-            from: 'AbriTech LMS <onboarding@resend.dev>',
+            from: 'info@abritechet.com',
             to,
             subject,
             text,
