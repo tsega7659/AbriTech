@@ -28,7 +28,7 @@ const CourseManagement = () => {
     const { courses, registerCourse, updateCourse, deleteCourse, loading } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
-    const [isEditing, setIsEditing] = useState(null); // Stores the course ID being edited
+    const [isEditing, setIsEditing] = useState(null); 
     const [newCourse, setNewCourse] = useState({
         name: '',
         description: '',
@@ -65,14 +65,15 @@ const CourseManagement = () => {
     };
 
     const categories = [
-        'Web Development',
-        'Mobile App Development',
-        'Robotics',
-        'AI & Machine Learning',
-        'Data Science',
-        'UI/UX Design',
         'STEM',
-        'Other'
+        'Programming',
+        'Robotics',
+        'Web Development',
+        'AI & Machine Learning',
+        '3D Design',
+        'Mobile App Development',
+        'UI/UX Design',
+        'other',
     ];
 
     const levels = ['beginner', 'intermediate', 'advanced','all levels'];
@@ -88,9 +89,6 @@ const CourseManagement = () => {
         formData.append('name', newCourse.name);
         formData.append('category', newCourse.category);
         formData.append('level', levelToSend);
-
-        // Merge duration into description if it's a new course or being updated
-        // For simplicity, we just send description as is if it already contains duration
         formData.append('description', newCourse.description);
 
         if (newCourse.image) {
@@ -111,7 +109,7 @@ const CourseManagement = () => {
                 name: '',
                 description: '',
                 level: 'beginner',
-                category: 'Web Development',
+                category: 'STEM',
                 duration: '',
                 image: '',
                 youtubeLink: ''
@@ -129,7 +127,7 @@ const CourseManagement = () => {
             name: course.name,
             description: course.description,
             level: course.level === 'advanced' ? 'all levels' : course.level,
-            category: course.category || 'Web Development',
+            category: course.category || 'STEM',
             duration: '', // Duration is merged in description in the database currently
             image: '', // Don't pre-fill the file input
             youtubeLink: course.youtubeLink || ''
@@ -143,7 +141,7 @@ const CourseManagement = () => {
             name: '',
             description: '',
             level: 'beginner',
-            category: 'Web Development',
+            category: 'STEM',
             duration: '',
             image: '',
             youtubeLink: ''

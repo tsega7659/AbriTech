@@ -1,59 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Link as LinkIcon, FileText, CheckCircle2, Video, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Link as LinkIcon, FileText, CheckCircle2, Video, Image as ImageIcon, Plus, Trash2, File, GripVertical } from 'lucide-react';
 
 const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
-    const [formData, setFormData] = useState({
+    const [lessonData, setLessonData] = useState({
         title: '',
         description: '',
         orderNumber: '',
-        type: 'video', // Default
-        contentUrl: '',
-        textContent: '',
+        resources: [
+            { type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }
+        ]
     });
-    const [file, setFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        if (lessonToEdit) {
-            setFormData({
+        if (lessonToEdit && isOpen) {
+            setLessonData({
                 title: lessonToEdit.title,
                 description: lessonToEdit.description,
                 orderNumber: lessonToEdit.orderNumber,
-                type: lessonToEdit.type,
-                contentUrl: lessonToEdit.type === 'link' ? lessonToEdit.contentUrl : '',
-                textContent: lessonToEdit.textContent || ''
+                resources: lessonToEdit.resources && lessonToEdit.resources.length > 0
+                    ? lessonToEdit.resources.map(r => ({ ...r, file: null }))
+                    : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }]
             });
-            // Note: We can't pre-fill file inputs
-        } else {
-            setFormData({
+        } else if (isOpen) {
+            setLessonData({
                 title: '',
                 description: '',
-                orderNumber: '', // Ideally, auto-increment based on list length + 1
-                type: 'video',
-                contentUrl: '',
-                textContent: ''
+                orderNumber: '',
+                resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }]
             });
-            setFile(null);
         }
     }, [lessonToEdit, isOpen]);
 
+    const handleAddResource = () => {
+        setLessonData(prev => ({
+            ...prev,
+            resources: [...prev.resources, { type: 'video', contentUrl: '', textContent: '', file: null, id: `new-${Date.now()}-${Math.random()}` }]
+        }));
+    };
+
+    const handleRemoveResource = (index) => {
+        const newResources = lessonData.resources.filter((_, i) => i !== index);
+        setLessonData({ ...lessonData, resources: newResources });
+    };
+
+    const handleResourceChange = (index, field, value) => {
+        setLessonData(prev => {
+            const newResources = [...prev.resources];
+            newResources[index] = { ...newResources[index], [field]: value };
+            return { ...prev, resources: newResources };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (lessonData.resources.length === 0) {
+            alert("Please add at least one resource.");
+            return;
+        }
         setIsSubmitting(true);
 
         const data = new FormData();
-        data.append('title', formData.title);
-        data.append('description', formData.description);
-        data.append('orderNumber', formData.orderNumber);
-        data.append('type', formData.type);
+        data.append('title', lessonData.title);
+        data.append('description', lessonData.description);
+        data.append('orderNumber', lessonData.orderNumber);
 
-        if (formData.type === 'link') {
-            data.append('contentUrl', formData.contentUrl);
-        } else if (formData.type === 'text') {
-            data.append('textContent', formData.textContent);
-        } else if (file) {
-            data.append('file', file);
-        }
+        // Prepare resources metadata (excluding files)
+        const resourcesMetadata = lessonData.resources.map((res, index) => {
+            const metadata = {
+                type: res.type,
+                contentUrl: res.contentUrl,
+                textContent: res.textContent,
+                orderNumber: index + 1
+            };
+
+            // If there's a file, we'll append it to FormData separately
+            if (res.file) {
+                data.append(`file_${index}`, res.file);
+            }
+
+            return metadata;
+        });
+
+        data.append('resources', JSON.stringify(resourcesMetadata));
 
         await onSave(data);
         setIsSubmitting(false);
@@ -63,9 +92,9 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            <div className="bg-white rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
                 {/* Header */}
-                <div className="p-8 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur z-10">
+                <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white/90 backdrop-blur z-10">
                     <div>
                         <h2 className="text-2xl font-black text-slate-800">
                             {lessonToEdit ? 'Edit Lesson' : 'Add New Lesson'}
@@ -78,30 +107,18 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Title</label>
                             <input
                                 required
                                 type="text"
                                 placeholder="e.g., Introduction to React"
                                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={formData.title}
-                                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Description</label>
-                            <textarea
-                                required
-                                rows="3"
-                                placeholder="Brief summary of the lesson..."
-                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                                value={formData.description}
-                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                value={lessonData.title}
+                                onChange={e => setLessonData({ ...lessonData, title: e.target.value })}
                             />
                         </div>
 
@@ -112,86 +129,129 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                                 type="number"
                                 placeholder="1"
                                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={formData.orderNumber}
-                                onChange={e => setFormData({ ...formData, orderNumber: e.target.value })}
+                                value={lessonData.orderNumber}
+                                onChange={e => setLessonData({ ...lessonData, orderNumber: e.target.value })}
                             />
                         </div>
 
-                        <div>
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Content Type</label>
-                            <select
-                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                                value={formData.type}
-                                onChange={e => setFormData({ ...formData, type: e.target.value })}
-                            >
-                                <option value="video">Video</option>
-                                <option value="image">Image</option>
-                                <option value="text">Text / Article</option>
-                                <option value="link">External Link</option>
-                                <option value="file">File (PDF/Doc)</option>
-                            </select>
+                        <div className="md:col-span-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Description</label>
+                            <textarea
+                                required
+                                rows="2"
+                                placeholder="Brief summary of the lesson..."
+                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                                value={lessonData.description}
+                                onChange={e => setLessonData({ ...lessonData, description: e.target.value })}
+                            />
                         </div>
                     </div>
 
-                    {/* Dynamic Content Fields */}
-                    <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                        {formData.type === 'link' ? (
-                            <div>
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2">
-                                    <LinkIcon className="w-4 h-4" /> External URL
-                                </label>
-                                <input
-                                    required
-                                    type="url"
-                                    placeholder="https://youtube.com/..."
-                                    className="w-full p-4 bg-white rounded-2xl font-bold text-slate-700 outline-none border border-slate-200 focus:border-primary transition-all"
-                                    value={formData.contentUrl}
-                                    onChange={e => setFormData({ ...formData, contentUrl: e.target.value })}
-                                />
-                            </div>
-                        ) : formData.type === 'text' ? (
-                            <div>
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2">
-                                    <FileText className="w-4 h-4" /> Text Content
-                                </label>
-                                <textarea
-                                    required
-                                    rows="10"
-                                    placeholder="Write your lesson content here using Markdown..."
-                                    className="w-full p-4 bg-white rounded-2xl font-medium text-slate-700 outline-none border border-slate-200 focus:border-primary transition-all resize-y"
-                                    value={formData.textContent}
-                                    onChange={e => setFormData({ ...formData, textContent: e.target.value })}
-                                />
-                            </div>
-                        ) : (
-                            <div>
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2">
-                                    {formData.type === 'video' && <Video className="w-4 h-4" />}
-                                    {formData.type === 'image' && <ImageIcon className="w-4 h-4" />}
-                                    Upload {formData.type}
-                                </label>
-                                <div className="relative group">
-                                    <input
-                                        type="file"
-                                        required={!lessonToEdit} // Only required if new, otherwise optional to keep existing
-                                        accept={
-                                            formData.type === 'video' ? 'video/*' :
-                                                formData.type === 'image' ? 'image/*' :
-                                                    '.pdf,.doc,.docx'
-                                        }
-                                        className="w-full p-4 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-primary/10 file:text-primary file:font-bold hover:border-primary/50 transition-colors cursor-pointer"
-                                        onChange={e => setFile(e.target.files[0])}
-                                    />
-                                    {lessonToEdit && !file && (
-                                        <p className="text-xs text-slate-400 mt-2 ml-2">Leave empty to keep existing file</p>
-                                    )}
+                    {/* Resources Section */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center px-2">
+                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Lesson Resources</h3>
+                            <button
+                                type="button"
+                                onClick={handleAddResource}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-xs transition-all"
+                            >
+                                <Plus className="w-4 h-4" /> Add Resource
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {lessonData.resources.map((res, index) => (
+                                <div key={res.id || index} className="relative group bg-slate-50/50 rounded-3xl border border-slate-100 p-6 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300">
+                                                <GripVertical className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-xs font-black text-slate-400">RESOURCE #{index + 1}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveResource(index)}
+                                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div className="md:col-span-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Type</label>
+                                            <select
+                                                className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
+                                                value={res.type}
+                                                onChange={e => handleResourceChange(index, 'type', e.target.value)}
+                                            >
+                                                <option value="video">Video</option>
+                                                <option value="image">Image</option>
+                                                <option value="text">Text / Article</option>
+                                                <option value="link">External Link</option>
+                                                <option value="file">File (PDF/Doc)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="md:col-span-3">
+                                            {res.type === 'link' ? (
+                                                <>
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">External URL</label>
+                                                    <input
+                                                        required
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
+                                                        value={res.contentUrl}
+                                                        onChange={e => handleResourceChange(index, 'contentUrl', e.target.value)}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">
+                                                        {res.contentUrl && !res.file ? 'Current File' : `Upload ${res.type}`}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="file"
+                                                            accept={
+                                                                res.type === 'video' ? 'video/*' :
+                                                                    res.type === 'image' ? 'image/*' :
+                                                                        '.pdf,.doc,.docx'
+                                                            }
+                                                            className="w-full p-2.5 bg-white rounded-xl border border-slate-100 text-xs font-bold text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-primary/5 file:text-primary file:font-black cursor-pointer"
+                                                            onChange={e => handleResourceChange(index, 'file', e.target.files[0])}
+                                                        />
+                                                        {res.contentUrl && !res.file && (
+                                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg">
+                                                                <CheckCircle2 className="w-3 h-3" /> ATTACHED
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <div className="md:col-span-4">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Text content / description for this resource</label>
+                                            <textarea
+                                                rows="3"
+                                                placeholder="Add some context or text for this specific resource..."
+                                                className="w-full p-3 bg-white rounded-xl font-medium text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm resize-y"
+                                                value={res.textContent}
+                                                onChange={e => handleResourceChange(index, 'textContent', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-white/90 backdrop-blur pb-2">
                         <button
                             type="button"
                             onClick={onClose}

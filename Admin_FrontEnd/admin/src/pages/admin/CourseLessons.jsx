@@ -88,13 +88,13 @@ const CourseLessons = () => {
         }
     };
 
-    const getTypeIcon = (type) => {
+    const getTypeIcon = (type, size = "w-5 h-5") => {
         switch (type) {
-            case 'video': return <Video className="w-5 h-5 text-blue-500" />;
-            case 'image': return <ImageIcon className="w-5 h-5 text-purple-500" />;
-            case 'text': return <FileText className="w-5 h-5 text-green-500" />;
-            case 'link': return <LinkIcon className="w-5 h-5 text-orange-500" />;
-            default: return <File className="w-5 h-5 text-gray-500" />;
+            case 'video': return <Video className={`${size} text-blue-500`} />;
+            case 'image': return <ImageIcon className={`${size} text-purple-500`} />;
+            case 'text': return <FileText className={`${size} text-green-500`} />;
+            case 'link': return <LinkIcon className={`${size} text-orange-500`} />;
+            default: return <File className={`${size} text-gray-500`} />;
         }
     };
 
@@ -141,8 +141,22 @@ const CourseLessons = () => {
                                         <GripVertical className="w-5 h-5" />
                                     </div>
 
-                                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-                                        {getTypeIcon(lesson.type)}
+                                    <div className="flex -space-x-2 shrink-0">
+                                        {lesson.resources && lesson.resources.slice(0, 4).map((res, i) => (
+                                            <div key={i} className="w-10 h-10 bg-white border-2 border-slate-50 rounded-xl flex items-center justify-center shadow-sm" title={res.type}>
+                                                {getTypeIcon(res.type, "w-4 h-4")}
+                                            </div>
+                                        ))}
+                                        {lesson.resources && lesson.resources.length > 4 && (
+                                            <div className="w-10 h-10 bg-slate-100 border-2 border-slate-50 rounded-xl flex items-center justify-center shadow-sm text-[10px] font-black text-slate-400">
+                                                +{lesson.resources.length - 4}
+                                            </div>
+                                        )}
+                                        {(!lesson.resources || lesson.resources.length === 0) && (
+                                            <div className="w-10 h-10 bg-slate-50 border-2 border-slate-50 rounded-xl flex items-center justify-center text-slate-200">
+                                                <File className="w-4 h-4" />
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex-1 min-w-0">

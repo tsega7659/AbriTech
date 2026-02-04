@@ -159,77 +159,97 @@ export default function LessonPlayer() {
 
         if (!activeLesson) return <div className="text-gray-500 text-center py-20">Select a lesson or project from the sidebar to continue.</div>;
 
-        const { type, contentUrl, textContent, title, description } = activeLesson;
-        const fullContentUrl = contentUrl?.startsWith('http') ? contentUrl : `${API_BASE_URL}/${contentUrl}`;
+        const { title, description, resources } = activeLesson;
+        const lessonResources = resources || (activeLesson.type ? [{
+            type: activeLesson.type,
+            contentUrl: activeLesson.contentUrl,
+            textContent: activeLesson.textContent
+        }] : []);
 
         return (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+                {/* Mobile Back Button */}
+                <button
+                    onClick={() => { setActiveLesson(null); setActiveAssignment(null); }}
+                    className="lg:hidden flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-4 bg-primary/5 px-4 py-2 rounded-xl"
+                >
+                    <ChevronLeft className="w-4 h-4" /> Back to Playlist
+                </button>
+
                 <div className="border-b border-gray-100 pb-6">
                     <h1 className="text-3xl font-black text-gray-900 mb-2">{title}</h1>
                     <p className="text-gray-500 font-medium">{description}</p>
                 </div>
 
-                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm min-h-[400px]">
-                    {type === 'video' && fullContentUrl && (
-                        <video key={fullContentUrl} controls className="w-full h-full object-contain bg-black max-h-[600px]">
-                            <source src={fullContentUrl} />
-                            Your browser does not support the video tag.
-                        </video>
-                    )}
+                {lessonResources.map((res, index) => {
+                    const fullContentUrl = res.contentUrl?.startsWith('http') ? res.contentUrl : `${API_BASE_URL}/${res.contentUrl}`;
 
-                    {type === 'image' && fullContentUrl && (
-                        <img src={fullContentUrl} alt={title} className="w-full h-auto object-contain" />
-                    )}
+                    return (
+                        <div key={index} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm mb-8 last:mb-0">
+                            {/* Main Content Rendering */}
+                            {res.type === 'video' && fullContentUrl && (
+                                <video key={fullContentUrl} controls className="w-full h-full object-contain bg-black max-h-[600px]">
+                                    <source src={fullContentUrl} />
+                                    Your browser does not support the video tag.
+                                </video>
+                            )}
 
-                    {type === 'text' && (
-                        <div className="p-8 md:p-12 prose prose-slate max-w-none">
-                            <div className="whitespace-pre-wrap font-medium text-gray-600 leading-relaxed text-lg">{textContent}</div>
+                            {res.type === 'image' && fullContentUrl && (
+                                <img src={fullContentUrl} alt={title} className="w-full h-auto object-contain" />
+                            )}
+
+                            {res.type === 'link' && fullContentUrl && (
+                                <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-50 gap-6 p-8 text-center border-b border-slate-50">
+                                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-500">
+                                        <LinkIcon className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">External Content</h3>
+                                        <a
+                                            href={fullContentUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 bg-[#00B4D8] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all"
+                                        >
+                                            Open Link <LinkIcon className="w-4 h-4" />
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {res.type === 'file' && fullContentUrl && (
+                                <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-50 gap-6 p-8 text-center border-b border-slate-50">
+                                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-purple-500">
+                                        <File className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">Downloadable Resource</h3>
+                                        <a
+                                            href={fullContentUrl}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition-all"
+                                        >
+                                            Download File <File className="w-4 h-4" />
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Text Content Rendering (Always if exists, or if type is text) */}
+                            {(res.textContent || res.type === 'text') && (
+                                <div className={`p-8 md:p-10 prose prose-slate max-w-none ${res.type !== 'text' ? 'bg-slate-50/20' : ''}`}>
+                                    <div className={`whitespace-pre-wrap font-medium text-gray-600 leading-relaxed ${res.type === 'text' ? 'text-lg' : 'text-base'}`}>
+                                        {res.textContent}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    );
+                })}
 
-                    {type === 'link' && fullContentUrl && (
-                        <div className="flex flex-col items-center justify-center h-[400px] bg-slate-50 gap-6 p-8 text-center">
-                            <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-blue-500">
-                                <LinkIcon className="w-10 h-10" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">External Content</h3>
-                                <p className="text-gray-500 max-w-md mx-auto mb-6">This lesson content is hosted on an external site.</p>
-                                <a
-                                    href={fullContentUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 bg-[#00B4D8] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#0096B4] transition-all"
-                                >
-                                    Open Link <LinkIcon className="w-4 h-4" />
-                                </a>
-                            </div>
-                        </div>
-                    )}
-
-                    {type === 'file' && fullContentUrl && (
-                        <div className="flex flex-col items-center justify-center h-[400px] bg-slate-50 gap-6 p-8 text-center">
-                            <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-purple-500">
-                                <File className="w-10 h-10" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">Downloadable Resource</h3>
-                                <p className="text-gray-500 max-w-md mx-auto mb-6">Download the attached file to complete this lesson.</p>
-                                <a
-                                    href={fullContentUrl}
-                                    download
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-purple-700 transition-all"
-                                >
-                                    Download File <File className="w-4 h-4" />
-                                </a>
-                            </div>
-                        </div>
-                    )}
-
-                    {!type && <div className="p-10 text-center text-gray-400 font-bold">No content available.</div>}
-                </div>
+                {lessonResources.length === 0 && <div className="p-10 text-center text-gray-400 font-bold">No content available for this lesson.</div>}
 
                 <div className="flex justify-end pt-4">
                     {!activeLesson.isCompleted && (
@@ -261,7 +281,7 @@ export default function LessonPlayer() {
         <div className="min-h-screen bg-white">
             <div className="flex flex-col lg:flex-row h-screen overflow-hidden">
                 {/* Sidebar (Lesson & Assignment List) */}
-                <div className="w-full lg:w-96 border-r border-gray-100 bg-gray-50/50 flex flex-col h-full lg:h-auto overflow-hidden">
+                <div className={`w-full lg:w-96 border-r border-gray-100 bg-gray-50/50 flex flex-col h-full lg:h-auto overflow-hidden ${(activeLesson || activeAssignment) ? 'hidden lg:flex' : 'flex'}`}>
                     <div className="p-6 border-b border-gray-100 bg-white">
                         <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-900 font-bold flex items-center gap-2 mb-4 transition-colors">
                             <ChevronLeft className="w-4 h-4" /> Back to Course
@@ -370,7 +390,7 @@ export default function LessonPlayer() {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 h-full overflow-y-auto bg-white p-6 lg:p-10">
+                <div className={`flex-1 h-full overflow-y-auto bg-white p-6 lg:p-10 ${(activeLesson || activeAssignment) ? 'flex' : 'hidden lg:flex'}`}>
                     <div className="max-w-4xl mx-auto">
                         {renderContent()}
                     </div>

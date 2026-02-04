@@ -1,4 +1,4 @@
-import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers, Clock } from "lucide-react";
+import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers, Clock,Laptop } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -19,7 +19,9 @@ const categories = [
     { name: "STEM", icon: Code },
     { name: "Robotics", icon: Cpu },
     { name: "Programming", icon: Globe },
-    { name: "3D Design", icon: Boxes }
+    { name: "3D Design", icon: Boxes },
+    { name: "Web Development", icon: Laptop },
+
 ];
 const levels = ["All", "Beginner", "Intermediate", "Advanced", "All Levels"];
 

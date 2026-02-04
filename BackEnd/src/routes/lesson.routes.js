@@ -14,7 +14,7 @@ router.post(
     '/',
     authenticateToken,
     authorizeRole('admin', 'teacher'),
-    upload('lessons').single('file'), // 'file' is the field name for upload
+    upload('lessons').any(), // Allow multiple resources
     lessonController.createLesson
 );
 
@@ -22,7 +22,7 @@ router.put(
     '/:id',
     authenticateToken,
     authorizeRole('admin', 'teacher'),
-    upload('lessons').single('file'),
+    upload('lessons').any(),
     lessonController.updateLesson
 );
 

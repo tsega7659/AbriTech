@@ -12,53 +12,78 @@ const getContentUrl = (req, type) => {
 };
 
 const createLesson = async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    const { courseId, title, description, summaryText, orderNumber, type, textContent, contentUrl: linkUrl } = req.body;
+    await connection.beginTransaction();
+
+    const { courseId, title, description, summaryText, orderNumber, resources: resourcesJson } = req.body;
 
     // Validate required fields
     if (!courseId || !title || !description || !orderNumber) {
       return res.status(400).json({ message: 'CourseId, Title, Description, and OrderNumber are required.' });
     }
 
-    let finalContentUrl = null;
-    if (type === 'link') {
-      finalContentUrl = linkUrl;
-    } else if (req.file) {
-      finalContentUrl = req.file.path;
+    let resources = [];
+    if (resourcesJson) {
+      try {
+        resources = JSON.parse(resourcesJson);
+      } catch (e) {
+        console.error('Failed to parse resources JSON:', e);
+      }
     }
 
-    // Default type if not provided but file exists
-    let finalType = type || 'text';
-    if (req.file) {
-      if (req.file.mimetype.startsWith('image/')) finalType = 'image';
-      else if (req.file.mimetype.startsWith('video/')) finalType = 'video';
-      else finalType = 'file';
-    } else if (linkUrl) {
-      finalType = 'link';
-    }
-
-    const [result] = await pool.execute(
-      'INSERT INTO lesson (courseId, title, description, summaryText, orderNumber, type, contentUrl, textContent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [courseId, title, description, summaryText || null, orderNumber, finalType, finalContentUrl, textContent || null]
+    // Insert Lesson first (Keeping old columns for backward compatibility using first resource if available)
+    const firstResource = resources[0] || {};
+    const [lessonResult] = await connection.execute(
+      'INSERT INTO lesson (courseId, title, description, summaryText, orderNumber) VALUES (?, ?, ?, ?, ?)',
+      [courseId, title, description, summaryText || null, orderNumber]
     );
+
+    const lessonId = lessonResult.insertId;
+
+    // Handle Resources
+    if (resources.length > 0) {
+      for (let i = 0; i < resources.length; i++) {
+        const resItem = resources[i];
+        let contentUrl = resItem.contentUrl || null;
+
+        // If it's a file-based resource and not a link
+        if (['video', 'image', 'file'].includes(resItem.type) && !contentUrl) {
+          // Look for file in req.files matched by index or fieldname like 'file_0'
+          const file = req.files.find(f => f.fieldname === `file_${i}` || f.fieldname === 'file');
+          if (file) {
+            contentUrl = file.path;
+          }
+        }
+
+        await connection.execute(
+          'INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber) VALUES (?, ?, ?, ?, ?)',
+          [lessonId, resItem.type, contentUrl, resItem.textContent || null, i + 1]
+        );
+      }
+    }
+
+    await connection.commit();
 
     res.status(201).json({
       message: 'Lesson created successfully',
-      lessonId: result.insertId,
+      lessonId: lessonId,
       lesson: {
-        id: result.insertId,
+        id: lessonId,
         courseId,
         title,
         description,
-        type: finalType,
-        contentUrl: finalContentUrl,
-        orderNumber
+        orderNumber,
+        resourcesCount: resources.length
       }
     });
 
   } catch (error) {
+    await connection.rollback();
     console.error('Create Lesson Error:', error);
     res.status(500).json({ message: 'Failed to create lesson', error: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -73,12 +98,9 @@ const getLessons = async (req, res) => {
 
     // specific handling for student
     let studentId = null;
-    console.log(`[getLessons] Request from UserID: ${userId}, Role: ${role}, CourseID: ${courseId}`);
-
     if (role === 'student' && userId) {
       const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
       if (students.length > 0) studentId = students[0].id;
-      console.log(`[getLessons] Resolved StudentID: ${studentId}`);
     }
 
     // Fetch lessons ordered by orderNumber
@@ -87,35 +109,45 @@ const getLessons = async (req, res) => {
       [courseId]
     );
 
-    // If not a student or no studentId found (e.g. admin/teacher), return all lessons unlocked
-    if (!studentId) {
-      return res.json({ lessons: lessons.map(l => ({ ...l, isLocked: false, isCompleted: false })) });
+    if (lessons.length === 0) {
+      return res.json({ lessons: [] });
     }
 
-    // Fetch progress for this student and course lessons
-    const [progress] = await pool.execute(
-      `SELECT lessonId, completed FROM lessonprogress 
-       WHERE studentId = ? AND lessonId IN (SELECT id FROM lesson WHERE courseId = ?)`,
-      [studentId, courseId]
+    // Fetch resources for all these lessons
+    const lessonIds = lessons.map(l => l.id);
+    const [resources] = await pool.execute(
+      `SELECT * FROM lesson_resource WHERE lessonId IN (${lessonIds.join(',')}) ORDER BY lessonId, orderNumber ASC`
     );
 
-    const progressMap = {};
-    progress.forEach(p => {
-      progressMap[p.lessonId] = p.completed === 1;
+    // Map resources to lessons
+    const resourcesMap = {};
+    resources.forEach(r => {
+      if (!resourcesMap[r.lessonId]) resourcesMap[r.lessonId] = [];
+      resourcesMap[r.lessonId].push(r);
     });
 
-    // Calculate locked status:
-    // Lesson N is locked if Lesson N-1 is NOT completed.
-    // Lesson 1 is always unlocked.
+    // Handle progress for students
+    let progressMap = {};
+    if (studentId) {
+      const [progress] = await pool.execute(
+        `SELECT lessonId, completed FROM lessonprogress 
+         WHERE studentId = ? AND lessonId IN (${lessonIds.join(',')})`,
+        [studentId]
+      );
+      progress.forEach(p => {
+        progressMap[p.lessonId] = p.completed === 1;
+      });
+    }
+
     const processedLessons = [];
-    let previousCompleted = true; // First lesson is accessible
+    let previousCompleted = true;
 
     for (let i = 0; i < lessons.length; i++) {
       const l = lessons[i];
-      const isCompleted = !!progressMap[l.id];
+      l.resources = resourcesMap[l.id] || [];
 
-      // Locked if previous is not completed
-      const isLocked = !previousCompleted;
+      const isCompleted = !!progressMap[l.id];
+      const isLocked = studentId ? !previousCompleted : false;
 
       processedLessons.push({
         ...l,
@@ -123,9 +155,6 @@ const getLessons = async (req, res) => {
         isLocked
       });
 
-      // Update previousCompleted for next iteration
-      // Logic: To unlock N+1, N must be completed.
-      // But what if N is not completed? Then N+1 is locked.
       previousCompleted = isCompleted;
     }
 
@@ -146,16 +175,26 @@ const getLessonById = async (req, res) => {
       return res.status(404).json({ message: 'Lesson not found' });
     }
 
-    res.json(lessons[0]);
+    const lesson = lessons[0];
+    const [resources] = await pool.execute(
+      'SELECT * FROM lesson_resource WHERE lessonId = ? ORDER BY orderNumber ASC',
+      [id]
+    );
+    lesson.resources = resources;
+
+    res.json(lesson);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching lesson', error: error.message });
   }
 };
 
 const updateLesson = async (req, res) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { id } = req.params;
-    const { title, description, summaryText, orderNumber, type, textContent, contentUrl: linkUrl } = req.body;
+    const { title, description, summaryText, orderNumber, resources: resourcesJson } = req.body;
 
     let updateFields = [];
     let updateValues = [];
@@ -164,32 +203,62 @@ const updateLesson = async (req, res) => {
     if (description) { updateFields.push('description = ?'); updateValues.push(description); }
     if (summaryText) { updateFields.push('summaryText = ?'); updateValues.push(summaryText); }
     if (orderNumber) { updateFields.push('orderNumber = ?'); updateValues.push(orderNumber); }
-    if (textContent) { updateFields.push('textContent = ?'); updateValues.push(textContent); }
 
-    // Handle type and content updates
-    if (type) { updateFields.push('type = ?'); updateValues.push(type); }
-
-    if (linkUrl && type === 'link') {
-      updateFields.push('contentUrl = ?'); updateValues.push(linkUrl);
-    } else if (req.file) {
-      updateFields.push('contentUrl = ?'); updateValues.push(req.file.path);
+    if (updateFields.length > 0) {
+      updateValues.push(id);
+      const query = `UPDATE lesson SET ${updateFields.join(', ')} WHERE id = ?`;
+      await connection.execute(query, updateValues);
     }
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({ message: 'No fields to update' });
+    // Handle Resources Update
+    if (resourcesJson) {
+      let resources = [];
+      try {
+        resources = JSON.parse(resourcesJson);
+      } catch (e) {
+        console.error('Failed to parse resources JSON:', e);
+      }
+
+      if (resources.length > 0) {
+        // Simple approach: Delete old resources and insert new ones
+        // In a production app, we might want to be more surgical, but this is cleaner for now.
+        await connection.execute('DELETE FROM lesson_resource WHERE lessonId = ?', [id]);
+
+        for (let i = 0; i < resources.length; i++) {
+          const resItem = resources[i];
+          let contentUrl = resItem.contentUrl || null;
+
+          // If it has a file (new upload)
+          const file = req.files.find(f => f.fieldname === `file_${i}` || (resources.length === 1 && f.fieldname === 'file'));
+          if (file) {
+            contentUrl = file.path;
+          }
+
+          await connection.execute(
+            'INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber) VALUES (?, ?, ?, ?, ?)',
+            [id, resItem.type, contentUrl, resItem.textContent || null, i + 1]
+          );
+        }
+      }
     }
 
-    updateValues.push(id);
-    const query = `UPDATE lesson SET ${updateFields.join(', ')} WHERE id = ?`;
+    await connection.commit();
 
-    await pool.execute(query, updateValues);
+    // Fetch updated lesson with resources
+    const [updated] = await connection.execute('SELECT * FROM lesson WHERE id = ?', [id]);
+    const [newResources] = await connection.execute('SELECT * FROM lesson_resource WHERE lessonId = ? ORDER BY orderNumber ASC', [id]);
 
-    const [updated] = await pool.execute('SELECT * FROM lesson WHERE id = ?', [id]);
-    res.json({ message: 'Lesson updated', lesson: updated[0] });
+    const finalLesson = updated[0];
+    finalLesson.resources = newResources;
+
+    res.json({ message: 'Lesson updated', lesson: finalLesson });
 
   } catch (error) {
+    await connection.rollback();
     console.error('Update Lesson Error:', error);
     res.status(500).json({ message: 'Failed to update lesson', error: error.message });
+  } finally {
+    connection.release();
   }
 }
 
