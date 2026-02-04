@@ -8,6 +8,7 @@ router.use(authenticateToken);
 router.use(authorizeRole('admin'));
 
 router.get('/users', adminController.getAllUsers);
+router.get('/dashboard', adminController.getDashboardStats);
 router.delete('/users/:id', adminController.deleteUser);
 
 module.exports = router;

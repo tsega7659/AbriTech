@@ -52,6 +52,32 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
         }
 
         console.log('--- Database Schema Initialized Successfully ---');
+
+        // Post-initialization migration: Move existing lesson content to lesson_resource if applicable
+        try {
+          const [resources] = await conn.query('SELECT COUNT(*) as count FROM lesson_resource');
+          if (resources[0].count === 0) {
+            console.log('lesson_resource table is empty. Checking for legacy content in lesson table...');
+
+            // Check if legacy columns exist in lesson table
+            const [lessonCols] = await conn.query('SHOW COLUMNS FROM lesson');
+            const colNames = lessonCols.map(c => c.Field);
+
+            if (colNames.includes('type') && (colNames.includes('contentUrl') || colNames.includes('textContent'))) {
+              console.log('Legacy content found. Migrating to lesson_resource...');
+              await conn.query(`
+                INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber)
+                SELECT id, type, contentUrl, textContent, 1
+                FROM lesson
+                WHERE type IS NOT NULL AND (contentUrl IS NOT NULL OR textContent IS NOT NULL)
+              `);
+              console.log('Data migration to lesson_resource completed.');
+            }
+          }
+        } catch (migrationError) {
+          console.error('Data migration skipped or failed:', migrationError.message);
+        }
+
         return true;
       } catch (error) {
         console.error(`Database Initialization Attempt ${attempt} failed:`, error.message);

@@ -216,10 +216,32 @@ const schema = [
       description TEXT NOT NULL,
       summaryText TEXT,
       orderNumber INT NOT NULL,
-      type ENUM('text', 'video', 'image', 'link', 'file') DEFAULT 'text',
-      contentUrl VARCHAR(255),
-      textContent TEXT,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
+    )`
+  },
+  {
+    table: 'lesson_resource',
+    columns: [
+      { name: 'id', type: 'BIGINT AUTO_INCREMENT PRIMARY KEY' },
+      { name: 'lessonId', type: 'BIGINT NOT NULL' },
+      { name: 'type', type: "ENUM('video', 'image', 'text', 'link', 'file') NOT NULL" },
+      { name: 'contentUrl', type: 'VARCHAR(1000)' },
+      { name: 'textContent', type: 'LONGTEXT' },
+      { name: 'orderNumber', type: 'INT DEFAULT 1' },
+      { name: 'createdAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
+    ],
+    foreignKeys: [
+      'FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE'
+    ],
+    sql: `CREATE TABLE IF NOT EXISTS lesson_resource (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      lessonId BIGINT NOT NULL,
+      type ENUM('video', 'image', 'text', 'link', 'file') NOT NULL,
+      contentUrl VARCHAR(1000),
+      textContent LONGTEXT,
+      orderNumber INT DEFAULT 1,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (lessonId) REFERENCES lesson(id) ON DELETE CASCADE
     )`
   },
   {

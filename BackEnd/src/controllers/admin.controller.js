@@ -41,7 +41,34 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+const getDashboardStats = async (req, res) => {
+    try {
+        const [[{ totalStudents }]] = await pool.execute('SELECT COUNT(*) as totalStudents FROM student');
+        const [[{ totalTeachers }]] = await pool.execute('SELECT COUNT(*) as totalTeachers FROM teacher');
+        const [[{ totalCourses }]] = await pool.execute('SELECT COUNT(*) as totalCourses FROM course');
+        const [[{ totalEnrollments }]] = await pool.execute('SELECT COUNT(*) as totalEnrollments FROM enrollment');
+        const [[{ totalParents }]] = await pool.execute('SELECT COUNT(*) as totalParents FROM parent');
+
+        res.json({
+            totalStudents,
+            totalTeachers,
+            totalCourses,
+            totalEnrollments,
+            totalParents,
+            pendingReviews: 0, // Placeholder
+            enrollmentChange: '+0% this month',
+            completionRate: '0% completion rate',
+            topCourses: [],
+            categoryStats: []
+        });
+    } catch (error) {
+        console.error('Get Dashboard Stats Error:', error);
+        res.status(500).json({ message: 'Failed to fetch dashboard stats', error: error.message });
+    }
+};
+
 module.exports = {
     deleteUser,
-    getAllUsers
+    getAllUsers,
+    getDashboardStats
 };
