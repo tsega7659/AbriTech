@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Calendar, FileText, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, Calendar, FileText, Send, CheckCircle2 } from 'lucide-react';
 import { useInstructor } from '../../context/InstructorContext';
+import Loading from '../Loading';
 
 const AddProjectModal = ({ isOpen, onClose, courseId }) => {
     const { addCourseProject, refreshInstructorData } = useInstructor();
@@ -122,7 +123,7 @@ const AddProjectModal = ({ isOpen, onClose, courseId }) => {
                             className="flex-[2] flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
                         >
                             {submitting ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loading size="small" fullScreen={false} message="Assigning..." />
                             ) : (
                                 <>
                                     <Send className="w-5 h-5" />

@@ -9,9 +9,8 @@ const upload = require('../middleware/upload.middleware');
 router.get('/', blogController.getAllBlogs);
 
 // Protected route to create a blog (Admin only)
-// Note: Frontend should send 'image' field for the file
-router.post('/', authenticateToken, authorizeRole('admin'), upload('blog_covers').single('image'), blogController.createBlog);
-router.put('/:id', authenticateToken, authorizeRole('admin'), upload('blog_covers').single('image'), blogController.updateBlog);
+router.post('/', authenticateToken, authorizeRole('admin'), upload('blog_media').fields([{ name: 'image', maxCount: 1 }, { name: 'sectionMedia', maxCount: 10 }]), blogController.createBlog);
+router.put('/:id', authenticateToken, authorizeRole('admin'), upload('blog_media').fields([{ name: 'image', maxCount: 1 }, { name: 'sectionMedia', maxCount: 10 }]), blogController.updateBlog);
 router.delete('/:id', authenticateToken, authorizeRole('admin'), blogController.deleteBlog);
 
 router.get('/:id', blogController.getBlogById);

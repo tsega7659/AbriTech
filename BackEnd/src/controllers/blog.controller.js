@@ -15,16 +15,38 @@ const getAllBlogs = async (req, res) => {
 const createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const coverImage = req.file ? req.file.path : null;
-    const createdBy = req.user.userId; // Assumes authenticateToken middleware adds user to req
+    const coverImage = req.files && req.files['image'] ? req.files['image'][0].path : null;
+    const sectionFiles = req.files && req.files['sectionMedia'] ? req.files['sectionMedia'] : [];
+    const createdBy = req.user.userId;
 
     if (!title || !content) {
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
+    // Parse content and attach media URLs
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(content);
+      if (Array.isArray(parsedContent)) {
+        let fileIndex = 0;
+        parsedContent = parsedContent.map(section => {
+          // If section expects a file upload (mediaType is image or video and it's not a link)
+          if ((section.mediaType === 'image' || section.mediaType === 'video') && !section.mediaUrl && fileIndex < sectionFiles.length) {
+            section.mediaUrl = sectionFiles[fileIndex].path;
+            fileIndex++;
+          }
+          return section;
+        });
+      }
+    } catch (e) {
+      parsedContent = content; // Fallback to plain text
+    }
+
+    const finalContent = typeof parsedContent === 'string' ? parsedContent : JSON.stringify(parsedContent);
+
     const [result] = await pool.execute(
       'INSERT INTO blog (title, content, coverImage, createdBy) VALUES (?, ?, ?, ?)',
-      [title, content, coverImage, createdBy]
+      [title, finalContent, coverImage, createdBy]
     );
 
     const newBlogId = result.insertId;
@@ -60,7 +82,8 @@ const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    let coverImage = req.file ? req.file.path : undefined;
+    const coverImage = req.files && req.files['image'] ? req.files['image'][0].path : undefined;
+    const sectionFiles = req.files && req.files['sectionMedia'] ? req.files['sectionMedia'] : [];
 
     console.log('Update Blog Hit:', { id, title, content, coverImage });
 
@@ -68,6 +91,28 @@ const updateBlog = async (req, res) => {
     const [existing] = await pool.execute('SELECT * FROM blog WHERE id = ?', [id]);
     if (existing.length === 0) {
       return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    // Process Content
+    let finalContent = content;
+    if (content) {
+      try {
+        let parsedContent = JSON.parse(content);
+        if (Array.isArray(parsedContent)) {
+          let fileIndex = 0;
+          parsedContent = parsedContent.map(section => {
+            // If section is image/video and HAS NO mediaUrl, it's a new upload
+            if ((section.mediaType === 'image' || section.mediaType === 'video') && !section.mediaUrl && fileIndex < sectionFiles.length) {
+              section.mediaUrl = sectionFiles[fileIndex].path;
+              fileIndex++;
+            }
+            return section;
+          });
+          finalContent = JSON.stringify(parsedContent);
+        }
+      } catch (e) {
+        finalContent = content;
+      }
     }
 
     // Prepare update query
@@ -78,9 +123,9 @@ const updateBlog = async (req, res) => {
       query += 'title = ?, ';
       params.push(title);
     }
-    if (content) {
+    if (finalContent) {
       query += 'content = ?, ';
-      params.push(content);
+      params.push(finalContent);
     }
     if (coverImage) {
       query += 'coverImage = ?, ';

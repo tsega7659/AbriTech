@@ -28,7 +28,7 @@ const CourseManagement = () => {
     const { courses, registerCourse, updateCourse, deleteCourse, loading } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
-    const [isEditing, setIsEditing] = useState(null); 
+    const [isEditing, setIsEditing] = useState(null);
     const [newCourse, setNewCourse] = useState({
         name: '',
         description: '',
@@ -39,6 +39,7 @@ const CourseManagement = () => {
         youtubeLink: ''
     });
     const [submitting, setSubmitting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -76,7 +77,7 @@ const CourseManagement = () => {
         'other',
     ];
 
-    const levels = ['beginner', 'intermediate', 'advanced','all levels'];
+    const levels = ['beginner', 'intermediate', 'advanced', 'all levels'];
 
     const handleAddOrUpdateCourse = async (e) => {
         e.preventDefault();
@@ -96,10 +97,11 @@ const CourseManagement = () => {
         }
 
         let result;
+        setUploadProgress(0);
         if (isEditing) {
-            result = await updateCourse(isEditing, formData);
+            result = await updateCourse(isEditing, formData, (p) => setUploadProgress(p));
         } else {
-            result = await registerCourse(formData);
+            result = await registerCourse(formData, (p) => setUploadProgress(p));
         }
 
         if (result.success) {
@@ -118,6 +120,7 @@ const CourseManagement = () => {
             alert(result.message || (isEditing ? 'Course update failed' : 'Course creation failed'));
         }
         setSubmitting(false);
+        setUploadProgress(0);
     };
 
     const handleEditClick = (course) => {
@@ -174,10 +177,29 @@ const CourseManagement = () => {
             {isAdding && (
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-                            <BookOpen className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Course' : 'Create New Course'}
-                        </h3>
-                        <button onClick={() => { setIsAdding(false); setIsEditing(null); }} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
+                                <BookOpen className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Course' : 'Create New Course'}
+                            </h3>
+                            {submitting && (
+                                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300 max-w-md">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                                            {uploadProgress < 100 ? 'Uploading course assets...' : 'Finalizing course...'}
+                                        </span>
+                                        <span className="text-[10px] font-black text-primary">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-primary to-[#00CED1] transition-all duration-300 ease-out"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={() => { setIsAdding(false); setIsEditing(null); }} disabled={submitting} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl disabled:opacity-50">
                             <XCircle className="w-6 h-6" />
                         </button>
                     </div>

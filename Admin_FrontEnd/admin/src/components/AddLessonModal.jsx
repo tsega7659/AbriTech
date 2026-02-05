@@ -11,9 +11,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
         ]
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     useEffect(() => {
         if (lessonToEdit && isOpen) {
+            setUploadProgress(0);
             setLessonData({
                 title: lessonToEdit.title,
                 description: lessonToEdit.description,
@@ -23,6 +25,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                     : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }]
             });
         } else if (isOpen) {
+            setUploadProgress(0);
             setLessonData({
                 title: '',
                 description: '',
@@ -83,9 +86,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
         });
 
         data.append('resources', JSON.stringify(resourcesMetadata));
+        setUploadProgress(0);
 
-        await onSave(data);
+        await onSave(data, (p) => setUploadProgress(p));
         setIsSubmitting(false);
+        setUploadProgress(0);
     };
 
     if (!isOpen) return null;
@@ -95,13 +100,31 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
             <div className="bg-white rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
                 {/* Header */}
                 <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white/90 backdrop-blur z-10">
-                    <div>
+                    <div className="flex-1">
                         <h2 className="text-2xl font-black text-slate-800">
                             {lessonToEdit ? 'Edit Lesson' : 'Add New Lesson'}
                         </h2>
-                        <p className="text-slate-400 font-bold text-sm">Create content for your students</p>
+                        {isSubmitting ? (
+                            <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                                        {uploadProgress < 100 ? 'Uploading lesson content...' : 'Finalizing...'}
+                                    </span>
+                                    <span className="text-[10px] font-black text-primary">{uploadProgress}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/30">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-primary to-[#00CED1] transition-all duration-300 ease-out"
+                                        style={{ width: `${uploadProgress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-slate-400 font-bold text-sm">Create content for your students</p>
+                        )}
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+                    <button onClick={onClose} disabled={isSubmitting} className="p-2 hover:bg-slate-50 rounded-full transition-colors disabled:opacity-50">
                         <X className="w-6 h-6 text-slate-400" />
                     </button>
                 </div>
@@ -255,7 +278,8 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-8 py-4 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest text-xs"
+                            disabled={isSubmitting}
+                            className="px-8 py-4 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -264,7 +288,13 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                             disabled={isSubmitting}
                             className="px-8 py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all flex items-center gap-2 uppercase tracking-widest text-xs"
                         >
-                            {isSubmitting ? 'Saving...' : (lessonToEdit ? 'Update Lesson' : 'Create Lesson')}
+                            {isSubmitting ? (
+                                <>
+                                    <CheckCircle2 className="w-4 h-4 animate-pulse" /> Saving {uploadProgress}%
+                                </>
+                            ) : (
+                                (lessonToEdit ? 'Update Lesson' : 'Create Lesson')
+                            )}
                         </button>
                     </div>
                 </form>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import Loading from './Loading';
 
 const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, title, message, itemName, loading }) => {
     if (!isOpen) return null;
@@ -51,10 +52,10 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, title, message, itemNa
                             className="px-6 py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-500/20 hover:shadow-rose-500/30 hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {loading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                    Deleting...
-                                </>
+                                <div className="flex items-center gap-2">
+                                    <Loading size="small" fullScreen={false} message="" />
+                                    <span>Deleting...</span>
+                                </div>
                             ) : (
                                 'Confirm Delete'
                             )}

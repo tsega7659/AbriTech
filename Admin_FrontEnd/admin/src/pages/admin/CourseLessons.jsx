@@ -67,16 +67,16 @@ const CourseLessons = () => {
         }
     };
 
-    const handleSaveLesson = async (formData) => {
+    const handleSaveLesson = async (formData, onProgress) => {
         if (!formData.has('courseId')) {
             formData.append('courseId', courseId);
         }
 
         let result;
         if (editingLesson) {
-            result = await lessonService.updateLesson(editingLesson.id, formData);
+            result = await lessonService.updateLesson(editingLesson.id, formData, onProgress);
         } else {
-            result = await lessonService.createLesson(formData);
+            result = await lessonService.createLesson(formData, onProgress);
         }
 
         if (result.success) {

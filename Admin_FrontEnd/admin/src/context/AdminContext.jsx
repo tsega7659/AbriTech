@@ -225,101 +225,102 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const registerCourse = async (courseData) => {
+    const xhrRequest = (url, method, data, onProgress) => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+
+            // Set Headers
+            const token = localStorage.getItem('token');
+            if (token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            }
+
+            const isFormData = data instanceof FormData;
+            if (!isFormData) {
+                xhr.setRequestHeader('Content-Type', 'application/json');
+            }
+
+            // Progress Tracking
+            if (onProgress && xhr.upload) {
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        onProgress(percent);
+                    }
+                };
+            }
+
+            xhr.onload = () => {
+                let responseData;
+                try {
+                    responseData = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    responseData = xhr.responseText;
+                }
+
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve({ ok: true, data: responseData });
+                } else {
+                    resolve({ ok: false, message: responseData.message || 'Request failed' });
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error('Network error'));
+            };
+
+            xhr.send(isFormData ? data : JSON.stringify(data));
+        });
+    };
+
+    const registerCourse = async (courseData, onProgress) => {
         try {
-            const isFormData = courseData instanceof FormData;
-            const headers = getAuthHeaders();
-
-            if (isFormData) {
-                delete headers['Content-Type'];
-            }
-
-            const response = await fetch(`${API_BASE_URL}/courses`, {
-                method: 'POST',
-                headers: headers,
-                body: isFormData ? courseData : JSON.stringify(courseData)
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const result = await xhrRequest(`${API_BASE_URL}/courses`, 'POST', courseData, onProgress);
+            if (result.ok) {
                 await fetchCourses();
-                return { success: true, data };
+                return { success: true, data: result.data };
             }
-            return { success: false, message: data.message };
+            return { success: false, message: result.message };
         } catch (err) {
             return { success: false, message: 'Network error during course creation' };
         }
     };
 
-    const createBlog = async (blogData) => {
+    const createBlog = async (blogData, onProgress) => {
         try {
-            const isFormData = blogData instanceof FormData;
-            const headers = getAuthHeaders();
-
-            if (isFormData) {
-                delete headers['Content-Type'];
-            }
-
-            const response = await fetch(`${API_BASE_URL}/blogs`, {
-                method: 'POST',
-                headers: headers,
-                body: isFormData ? blogData : JSON.stringify(blogData)
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const result = await xhrRequest(`${API_BASE_URL}/blogs`, 'POST', blogData, onProgress);
+            if (result.ok) {
                 await fetchBlogs();
-                return { success: true, data };
+                return { success: true, data: result.data };
             }
-            return { success: false, message: data.message };
+            return { success: false, message: result.message };
         } catch (err) {
             return { success: false, message: 'Network error during blog creation' };
         }
     };
 
-    const updateBlog = async (id, blogData) => {
+    const updateBlog = async (id, blogData, onProgress) => {
         try {
-            const isFormData = blogData instanceof FormData;
-            const headers = getAuthHeaders();
-
-            if (isFormData) {
-                delete headers['Content-Type'];
-            }
-
-            const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
-                method: 'PUT',
-                headers: headers,
-                body: isFormData ? blogData : JSON.stringify(blogData)
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const result = await xhrRequest(`${API_BASE_URL}/blogs/${id}`, 'PUT', blogData, onProgress);
+            if (result.ok) {
                 await fetchBlogs();
-                return { success: true, data };
+                return { success: true, data: result.data };
             }
-            return { success: false, message: data.message };
+            return { success: false, message: result.message };
         } catch (err) {
             return { success: false, message: 'Network error during blog update' };
         }
     };
 
-    const updateCourse = async (id, courseData) => {
+    const updateCourse = async (id, courseData, onProgress) => {
         try {
-            const isFormData = courseData instanceof FormData;
-            const headers = getAuthHeaders();
-
-            if (isFormData) {
-                delete headers['Content-Type'];
-            }
-
-            const response = await fetch(`${API_BASE_URL}/courses/${id}`, {
-                method: 'PUT',
-                headers: headers,
-                body: isFormData ? courseData : JSON.stringify(courseData)
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const result = await xhrRequest(`${API_BASE_URL}/courses/${id}`, 'PUT', courseData, onProgress);
+            if (result.ok) {
                 await fetchCourses();
-                return { success: true, data };
+                return { success: true, data: result.data };
             }
-            return { success: false, message: data.message };
+            return { success: false, message: result.message };
         } catch (err) {
             return { success: false, message: 'Network error during course update' };
         }

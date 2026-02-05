@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { Calendar, User, ArrowLeft, Tag } from "lucide-react";
+import { Calendar, User, ArrowLeft, Tag, ExternalLink, Video, Link as LinkCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import Loading from "../components/Loading";
 
@@ -121,6 +121,43 @@ export default function BlogDetail() {
                                                 <h2 className="text-2xl font-bold text-[#00B4D8] hover:underline mb-3 mt-8">
                                                     {section.subtitle}
                                                 </h2>
+                                            )}
+                                            {section.mediaType && section.mediaType !== 'none' && (
+                                                <div className="my-8 rounded-3xl overflow-hidden shadow-lg border border-gray-100 bg-gray-50">
+                                                    {section.mediaType === 'image' && section.mediaUrl && (
+                                                        <img
+                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL.replace('/api', '')}${section.mediaUrl}`}
+                                                            alt={section.subtitle}
+                                                            className="w-full h-auto object-cover max-h-[600px]"
+                                                        />
+                                                    )}
+                                                    {section.mediaType === 'video' && section.mediaUrl && (
+                                                        <video
+                                                            controls
+                                                            className="w-full aspect-video bg-black"
+                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL.replace('/api', '')}${section.mediaUrl}`}
+                                                        ></video>
+                                                    )}
+                                                    {section.mediaType === 'link' && section.mediaUrl && (
+                                                        <div className="p-6 flex flex-col items-center gap-4 py-10">
+                                                            <div className="w-16 h-16 bg-[#00B4D8]/10 rounded-2xl flex items-center justify-center text-[#00B4D8]">
+                                                                <LinkCircle className="w-8 h-8" />
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <h4 className="font-bold text-gray-900 mb-1">External Resource</h4>
+                                                                <p className="text-sm text-gray-500 mb-4 truncate max-w-xs">{section.mediaUrl}</p>
+                                                                <a
+                                                                    href={section.mediaUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-2 px-6 py-2 bg-[#00B4D8] text-white rounded-xl font-bold text-sm hover:bg-[#0094b3] transition-all shadow-lg shadow-[#00B4D8]/20"
+                                                                >
+                                                                    Visit Link <ExternalLink className="w-4 h-4" />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                             <p className="whitespace-pre-line text-lg leading-relaxed text-gray-600 w-full text-justify px-2 md:px-0">
                                                 {section.body}

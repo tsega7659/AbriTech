@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, TrendingUp, Eye, Loader2 } from 'lucide-react';
+import { Users, TrendingUp, Eye } from 'lucide-react';
 import { useInstructor } from '../../context/InstructorContext';
+import Loading from '../../components/Loading';
 
 const InstructorCourses = () => {
     const { assignedCourses: courses, loading } = useInstructor();
@@ -9,11 +10,7 @@ const InstructorCourses = () => {
 
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <Loading fullScreen={false} message="Loading courses..." />;
     }
     return (
         <div className="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto">

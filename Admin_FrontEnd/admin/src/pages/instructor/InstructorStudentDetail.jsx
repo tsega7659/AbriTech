@@ -9,11 +9,11 @@ import {
     ExternalLink,
     Clock,
     AlertCircle,
-    Loader2,
     FileText,
     School
 } from 'lucide-react';
 import { useInstructor } from '../../context/InstructorContext';
+import Loading from '../../components/Loading';
 
 const InstructorStudentDetail = () => {
     const { courseId, studentId } = useParams();
@@ -34,11 +34,7 @@ const InstructorStudentDetail = () => {
     }, [courseId, studentId, fetchStudentCourseDetail]);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <Loading fullScreen={false} message="Loading student details..." />;
     }
 
     if (!data) {
@@ -161,7 +157,7 @@ const InstructorStudentDetail = () => {
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
                                             </div>
                                             <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${sub.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    sub.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                                                sub.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                                                 }`}>
                                                 {sub.status === 'approved' ? <CheckCircle2 className="w-3 h-3" /> :
                                                     sub.status === 'pending' ? <Clock className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}

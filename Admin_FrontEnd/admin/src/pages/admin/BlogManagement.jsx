@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
-    Plus, Search, Filter, MoreHorizontal, FileText,
-    XCircle, Image as ImageIcon, Loader2, Calendar, User
+    XCircle, Image as ImageIcon, Loader2, Calendar, User,
+    Trash2, Video, Link, Paperclip, ChevronDown, Plus, FileText
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
@@ -20,6 +20,7 @@ const BlogManagement = () => {
     });
     const [previewUrl, setPreviewUrl] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -58,10 +59,10 @@ const BlogManagement = () => {
         }
     };
 
-    const [sections, setSections] = useState([{ subtitle: '', body: '' }]);
+    const [sections, setSections] = useState([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
 
     const handleAddSection = () => {
-        setSections([...sections, { subtitle: '', body: '' }]);
+        setSections([...sections, { subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
     };
 
     const handleRemoveSection = (index) => {
@@ -81,25 +82,41 @@ const BlogManagement = () => {
 
         const formData = new FormData();
         formData.append('title', newBlog.title);
-        // Serialize sections to JSON
-        formData.append('content', JSON.stringify(sections));
         if (newBlog.coverImage) {
             formData.append('image', newBlog.coverImage);
         }
 
+        // Append section media files
+        sections.forEach((section) => {
+            if (section.file) {
+                formData.append('sectionMedia', section.file);
+            }
+        });
+
+        // Prepare sections for JSON (remove file objects and reset mediaUrl if new file)
+        const sectionsData = sections.map(s => ({
+            subtitle: s.subtitle,
+            body: s.body,
+            mediaType: s.mediaType,
+            mediaUrl: s.file ? '' : s.mediaUrl // Empty means new upload from sectionMedia array to backend
+        }));
+        formData.append('content', JSON.stringify(sectionsData));
+
         let result;
+        setUploadProgress(0);
         if (isEditing) {
-            result = await updateBlog(isEditing, formData);
+            result = await updateBlog(isEditing, formData, (p) => setUploadProgress(p));
         } else {
-            result = await createBlog(formData);
+            result = await createBlog(formData, (p) => setUploadProgress(p));
         }
 
         setSubmitting(false);
+        setUploadProgress(0);
         if (result.success) {
             setIsAdding(false);
             setIsEditing(null);
             setNewBlog({ title: '', content: '', coverImage: null });
-            setSections([{ subtitle: '', body: '' }]); // Reset sections
+            setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]); // Reset sections
             setPreviewUrl(null);
         } else {
             alert(result.message);
@@ -119,12 +136,15 @@ const BlogManagement = () => {
         try {
             const parsedContent = JSON.parse(blog.content);
             if (Array.isArray(parsedContent)) {
-                setSections(parsedContent);
+                setSections(parsedContent.map(s => ({
+                    ...s,
+                    file: null // Files are never returned from API as File objects
+                })));
             } else {
-                setSections([{ subtitle: '', body: blog.content }]);
+                setSections([{ subtitle: '', body: blog.content, mediaType: 'none', mediaUrl: '', file: null }]);
             }
         } catch (e) {
-            setSections([{ subtitle: '', body: blog.content }]);
+            setSections([{ subtitle: '', body: blog.content, mediaType: 'none', mediaUrl: '', file: null }]);
         }
     };
 
@@ -132,7 +152,7 @@ const BlogManagement = () => {
         setIsAdding(false);
         setIsEditing(null);
         setNewBlog({ title: '', content: '', coverImage: null });
-        setSections([{ subtitle: '', body: '' }]);
+        setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
         setPreviewUrl(null);
     };
 
@@ -162,10 +182,29 @@ const BlogManagement = () => {
             {isAdding && (
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-                            <FileText className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Article' : 'New Article'}
-                        </h3>
-                        <button onClick={handleCancel} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
+                                <FileText className="w-7 h-7 text-primary" /> {isEditing ? 'Edit Article' : 'New Article'}
+                            </h3>
+                            {submitting && (
+                                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                                            {uploadProgress < 100 ? 'Uploading content...' : 'Finalizing publication...'}
+                                        </span>
+                                        <span className="text-[10px] font-black text-primary">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-primary to-[#00CED1] transition-all duration-300 ease-out"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={handleCancel} disabled={submitting} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl disabled:opacity-50">
                             <XCircle className="w-6 h-6" />
                         </button>
                     </div>
@@ -210,40 +249,116 @@ const BlogManagement = () => {
                             </div>
 
                             {sections.map((section, index) => (
-                                <div key={index} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 relative group hover:border-primary/20 transition-all">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Subtitle (Optional)</label>
+                                <div key={index} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Section {index + 1}</h4>
+                                        {sections.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveSection(index)}
+                                                className="text-rose-500 hover:text-rose-600 transition-colors p-1"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Subtitle (Optional)</label>
                                             <input
                                                 type="text"
                                                 placeholder="Section subtitle..."
-                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
+                                                className="w-full px-6 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
                                                 value={section.subtitle}
                                                 onChange={(e) => handleSectionChange(index, 'subtitle', e.target.value)}
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Content</label>
+
+                                        {/* Media Type Selection */}
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Section Media</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['none', 'image', 'video', 'link'].map(type => (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => handleSectionChange(index, 'mediaType', type)}
+                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${section.mediaType === type
+                                                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                                            : 'bg-white text-slate-400 border border-slate-200 hover:border-primary/30'
+                                                            }`}
+                                                    >
+                                                        {type}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Media Input */}
+                                        {section.mediaType !== 'none' && (
+                                            <div className="space-y-2 animate-in slide-in-from-left-2 duration-200">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                                                    {section.mediaType === 'link' ? 'External URL' : `Upload ${section.mediaType}`}
+                                                </label>
+                                                <div className="relative group">
+                                                    {section.mediaType === 'link' ? (
+                                                        <>
+                                                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                            <input
+                                                                type="url"
+                                                                placeholder="https://..."
+                                                                className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-medium text-slate-700"
+                                                                value={section.mediaUrl}
+                                                                onChange={(e) => handleSectionChange(index, 'mediaUrl', e.target.value)}
+                                                            />
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="relative flex-1">
+                                                                <Paperclip className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                                <input
+                                                                    type="file"
+                                                                    accept={section.mediaType === 'image' ? 'image/*' : 'video/*'}
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            const newSections = [...sections];
+                                                                            newSections[index].file = file;
+                                                                            newSections[index].mediaUrl = URL.createObjectURL(file);
+                                                                            setSections(newSections);
+                                                                        }
+                                                                    }}
+                                                                    className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-medium text-slate-700 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary/10 file:text-primary"
+                                                                />
+                                                            </div>
+                                                            {section.mediaUrl && (
+                                                                <div className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0">
+                                                                    {section.mediaType === 'image' ? (
+                                                                        <img src={section.mediaUrl.startsWith('http') ? section.mediaUrl : (section.mediaUrl.startsWith('blob') ? section.mediaUrl : `${API_BASE_URL.replace('/api', '')}${section.mediaUrl}`)} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Video className="w-6 h-6 text-primary" />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Section Content</label>
                                             <textarea
                                                 required
                                                 rows="5"
-                                                placeholder="Section content..."
-                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-primary focus:outline-none transition-all font-medium text-slate-600 resize-none leading-relaxed"
+                                                placeholder="Write your section content here..."
+                                                className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:border-primary focus:outline-none transition-all font-medium text-slate-700 leading-relaxed"
                                                 value={section.body}
                                                 onChange={(e) => handleSectionChange(index, 'body', e.target.value)}
                                             ></textarea>
                                         </div>
                                     </div>
-
-                                    {sections.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveSection(index)}
-                                            className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <XCircle className="w-5 h-5" />
-                                        </button>
-                                    )}
                                 </div>
                             ))}
 

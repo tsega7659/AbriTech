@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import Loading from '../../components/Loading';
 import { API_BASE_URL } from '../../config/apiConfig';
 import logo from '../../assets/logo.png';
 
@@ -127,7 +128,7 @@ const LoginPage = () => {
                             className="w-full bg-primary hover:bg-primary-hover disabled:bg-primary/50 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group transition-all"
                         >
                             {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loading size="small" fullScreen={false} message="Signing in..." />
                             ) : (
                                 <>
                                     Sign In

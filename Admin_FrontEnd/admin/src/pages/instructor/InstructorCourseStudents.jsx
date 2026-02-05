@@ -9,8 +9,7 @@ import {
     Mail,
     BookOpen,
     TrendingUp,
-    ChevronRight,
-    Loader2
+    ChevronRight
 } from 'lucide-react';
 import { useInstructor } from '../../context/InstructorContext';
 import AddProjectModal from '../../components/modals/AddProjectModal';
@@ -43,11 +42,7 @@ const InstructorCourseStudents = () => {
     );
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <Loading fullScreen={false} message="Loading student list..." />;
     }
 
     return (

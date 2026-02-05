@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight, Info, X, Loader2 } from 'lucide-react';
+import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight, Info, X } from 'lucide-react';
+import Loading from '../../components/Loading';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/apiConfig';
 
@@ -22,11 +23,7 @@ const InstructorDashboard = () => {
     }, [loading]);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <Loading fullScreen={false} message="Loading dashboard data..." />;
     }
 
     const stats = [

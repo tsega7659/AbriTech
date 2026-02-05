@@ -9,17 +9,18 @@ import {
     Users2,
     CheckCircle2,
     AlertCircle,
+    Check,
+    XCircle,
     ArrowRight,
     BookOpen,
     Phone,
     MapPin,
     School,
     Layers,
-    Copy,
-    Check,
-    XCircle
+    Copy
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import Loading from '../../components/Loading';
 
 const UserRegistration = () => {
     const {
@@ -342,7 +343,7 @@ const UserRegistration = () => {
                                     className="w-full py-4 mt-4 bg-primary text-white rounded-[1.5rem] font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 uppercase tracking-widest text-xs"
                                 >
                                     {isSubmitting ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <Loading size="small" fullScreen={false} message="Registering..." />
                                     ) : (
                                         <>
                                             Register {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
