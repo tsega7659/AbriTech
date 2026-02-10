@@ -16,7 +16,7 @@ const createLesson = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { courseId, title, description, summaryText, orderNumber, resources: resourcesJson } = req.body;
+    const { courseId, title, description, summaryText, orderNumber, contentType, resources: resourcesJson, quiz: quizJson } = req.body;
 
     // Validate required fields
     if (!courseId || !title || !description || !orderNumber) {
@@ -24,7 +24,7 @@ const createLesson = async (req, res) => {
     }
 
     let resources = [];
-    if (resourcesJson) {
+    if (resourcesJson && contentType !== 'quiz') {
       try {
         resources = JSON.parse(resourcesJson);
       } catch (e) {
@@ -32,11 +32,10 @@ const createLesson = async (req, res) => {
       }
     }
 
-    // Insert Lesson first (Keeping old columns for backward compatibility using first resource if available)
-    const firstResource = resources[0] || {};
+    // Insert Lesson first
     const [lessonResult] = await connection.execute(
-      'INSERT INTO lesson (courseId, title, description, summaryText, orderNumber) VALUES (?, ?, ?, ?, ?)',
-      [courseId, title, description, summaryText || null, orderNumber]
+      'INSERT INTO lesson (courseId, title, description, summaryText, orderNumber, contentType) VALUES (?, ?, ?, ?, ?, ?)',
+      [courseId, title, description, summaryText || null, orderNumber, contentType || 'lesson']
     );
 
     const lessonId = lessonResult.insertId;
@@ -47,10 +46,8 @@ const createLesson = async (req, res) => {
         const resItem = resources[i];
         let contentUrl = resItem.contentUrl || null;
 
-        // If it's a file-based resource and not a link
         if (['video', 'image', 'file'].includes(resItem.type) && !contentUrl) {
-          // Look for file in req.files matched by index or fieldname like 'file_0'
-          const file = req.files.find(f => f.fieldname === `file_${i}` || f.fieldname === 'file');
+          const file = req.files && req.files.find(f => f.fieldname === `file_${i}` || f.fieldname === 'file');
           if (file) {
             contentUrl = file.path;
           }
@@ -59,6 +56,25 @@ const createLesson = async (req, res) => {
         await connection.execute(
           'INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber) VALUES (?, ?, ?, ?, ?)',
           [lessonId, resItem.type, contentUrl, resItem.textContent || null, i + 1]
+        );
+      }
+    }
+
+    // Handle Quiz
+    let quizQuestions = [];
+    if (quizJson && (contentType === 'quiz' || contentType === 'lesson')) {
+      try {
+        quizQuestions = JSON.parse(quizJson);
+      } catch (e) {
+        console.error('Failed to parse quiz JSON:', e);
+      }
+    }
+
+    if (quizQuestions.length > 0) {
+      for (const q of quizQuestions) {
+        await connection.execute(
+          'INSERT INTO lessonquiz (lessonId, question, optionA, optionB, optionC, optionD, correctOption) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [lessonId, q.question, q.optionA, q.optionB, q.optionC, q.optionD, q.correctOption]
         );
       }
     }
@@ -74,16 +90,18 @@ const createLesson = async (req, res) => {
         title,
         description,
         orderNumber,
-        resourcesCount: resources.length
+        contentType: contentType || 'lesson',
+        resourcesCount: resources.length,
+        quizQuestionsCount: quizQuestions.length
       }
     });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error('Create Lesson Error:', error);
     res.status(500).json({ message: 'Failed to create lesson', error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
@@ -96,14 +114,12 @@ const getLessons = async (req, res) => {
       return res.status(400).json({ message: 'Course ID is required' });
     }
 
-    // specific handling for student
     let studentId = null;
     if (role === 'student' && userId) {
       const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
       if (students.length > 0) studentId = students[0].id;
     }
 
-    // Fetch lessons ordered by orderNumber
     const [lessons] = await pool.execute(
       'SELECT * FROM lesson WHERE courseId = ? ORDER BY orderNumber ASC',
       [courseId]
@@ -113,20 +129,17 @@ const getLessons = async (req, res) => {
       return res.json({ lessons: [] });
     }
 
-    // Fetch resources for all these lessons
     const lessonIds = lessons.map(l => l.id);
     const [resources] = await pool.execute(
       `SELECT * FROM lesson_resource WHERE lessonId IN (${lessonIds.join(',')}) ORDER BY lessonId, orderNumber ASC`
     );
 
-    // Map resources to lessons
     const resourcesMap = {};
     resources.forEach(r => {
       if (!resourcesMap[r.lessonId]) resourcesMap[r.lessonId] = [];
       resourcesMap[r.lessonId].push(r);
     });
 
-    // Handle progress for students
     let progressMap = {};
     if (studentId) {
       const [progress] = await pool.execute(
@@ -139,12 +152,46 @@ const getLessons = async (req, res) => {
       });
     }
 
+    const [quizzes] = await pool.execute(
+      `SELECT * FROM lessonquiz WHERE lessonId IN (${lessonIds.join(',')})`
+    );
+
+    // Fetch Quiz Results for the student
+    let quizResultsMap = {};
+    if (studentId) {
+      const [results] = await pool.execute(`
+          SELECT 
+            lq.lessonId,
+            SUM(qa.isCorrect) as correctCount,
+            COUNT(qa.id) as totalQuestions
+          FROM quizattempt qa
+          JOIN lessonquiz lq ON qa.quizId = lq.id
+          WHERE qa.studentId = ? AND lq.lessonId IN (${lessonIds.join(',')})
+          GROUP BY lq.lessonId
+      `, [studentId]);
+
+      results.forEach(r => {
+        quizResultsMap[r.lessonId] = {
+          correctCount: r.correctCount,
+          totalQuestions: r.totalQuestions,
+          passed: r.correctCount === r.totalQuestions // Or whatever pass criteria
+        };
+      });
+    }
+
+    const quizMap = {};
+    quizzes.forEach(q => {
+      if (!quizMap[q.lessonId]) quizMap[q.lessonId] = [];
+      quizMap[q.lessonId].push(q);
+    });
+
     const processedLessons = [];
     let previousCompleted = true;
 
     for (let i = 0; i < lessons.length; i++) {
       const l = lessons[i];
       l.resources = resourcesMap[l.id] || [];
+      l.quiz = quizMap[l.id] || [];
 
       const isCompleted = !!progressMap[l.id];
       const isLocked = studentId ? !previousCompleted : false;
@@ -152,7 +199,8 @@ const getLessons = async (req, res) => {
       processedLessons.push({
         ...l,
         isCompleted,
-        isLocked
+        isLocked,
+        quizResult: quizResultsMap[l.id] || null
       });
 
       previousCompleted = isCompleted;
@@ -182,6 +230,12 @@ const getLessonById = async (req, res) => {
     );
     lesson.resources = resources;
 
+    const [quiz] = await pool.execute(
+      'SELECT * FROM lessonquiz WHERE lessonId = ?',
+      [id]
+    );
+    lesson.quiz = quiz;
+
     res.json(lesson);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching lesson', error: error.message });
@@ -194,7 +248,7 @@ const updateLesson = async (req, res) => {
     await connection.beginTransaction();
 
     const { id } = req.params;
-    const { title, description, summaryText, orderNumber, resources: resourcesJson } = req.body;
+    const { title, description, summaryText, orderNumber, contentType, resources: resourcesJson, quiz: quizJson } = req.body;
 
     let updateFields = [];
     let updateValues = [];
@@ -203,6 +257,7 @@ const updateLesson = async (req, res) => {
     if (description) { updateFields.push('description = ?'); updateValues.push(description); }
     if (summaryText) { updateFields.push('summaryText = ?'); updateValues.push(summaryText); }
     if (orderNumber) { updateFields.push('orderNumber = ?'); updateValues.push(orderNumber); }
+    if (contentType) { updateFields.push('contentType = ?'); updateValues.push(contentType); }
 
     if (updateFields.length > 0) {
       updateValues.push(id);
@@ -210,7 +265,6 @@ const updateLesson = async (req, res) => {
       await connection.execute(query, updateValues);
     }
 
-    // Handle Resources Update
     if (resourcesJson) {
       let resources = [];
       try {
@@ -219,17 +273,16 @@ const updateLesson = async (req, res) => {
         console.error('Failed to parse resources JSON:', e);
       }
 
+      // If switching to quiz, we might want to keep or clear resources.
+      // For now, let's just process if provided.
       if (resources.length > 0) {
-        // Simple approach: Delete old resources and insert new ones
-        // In a production app, we might want to be more surgical, but this is cleaner for now.
         await connection.execute('DELETE FROM lesson_resource WHERE lessonId = ?', [id]);
 
         for (let i = 0; i < resources.length; i++) {
           const resItem = resources[i];
           let contentUrl = resItem.contentUrl || null;
 
-          // If it has a file (new upload)
-          const file = req.files.find(f => f.fieldname === `file_${i}` || (resources.length === 1 && f.fieldname === 'file'));
+          const file = req.files && req.files.find(f => f.fieldname === `file_${i}` || (resources.length === 1 && f.fieldname === 'file'));
           if (file) {
             contentUrl = file.path;
           }
@@ -242,9 +295,27 @@ const updateLesson = async (req, res) => {
       }
     }
 
+    if (quizJson) {
+      let quizQuestions = [];
+      try {
+        quizQuestions = JSON.parse(quizJson);
+      } catch (e) {
+        console.error('Failed to parse quiz JSON:', e);
+      }
+
+      await connection.execute('DELETE FROM lessonquiz WHERE lessonId = ?', [id]);
+      if (quizQuestions.length > 0) {
+        for (const q of quizQuestions) {
+          await connection.execute(
+            'INSERT INTO lessonquiz (lessonId, question, optionA, optionB, optionC, optionD, correctOption) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [id, q.question, q.optionA, q.optionB, q.optionC, q.optionD, q.correctOption]
+          );
+        }
+      }
+    }
+
     await connection.commit();
 
-    // Fetch updated lesson with resources
     const [updated] = await connection.execute('SELECT * FROM lesson WHERE id = ?', [id]);
     const [newResources] = await connection.execute('SELECT * FROM lesson_resource WHERE lessonId = ? ORDER BY orderNumber ASC', [id]);
 
@@ -254,13 +325,13 @@ const updateLesson = async (req, res) => {
     res.json({ message: 'Lesson updated', lesson: finalLesson });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error('Update Lesson Error:', error);
     res.status(500).json({ message: 'Failed to update lesson', error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
-}
+};
 
 const deleteLesson = async (req, res) => {
   try {
@@ -271,54 +342,54 @@ const deleteLesson = async (req, res) => {
     console.error('Delete Lesson Error:', error);
     res.status(500).json({ message: 'Failed to delete lesson', error: error.message });
   }
-}
+};
 
 const markLessonComplete = async (req, res) => {
   try {
-    const { id } = req.params; // Lesson ID
+    const { id } = req.params;
     const { userId } = req.user;
 
-    // Get student ID
     const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
     if (students.length === 0) {
       return res.status(403).json({ message: 'Not a student' });
     }
     const studentId = students[0].id;
 
-    // Check if record exists
+    // Check if it's a quiz content type. If so, completion might be handled via submitQuiz.
+    // However, keeping this for manual completion if needed, but usually quizzes are auto-completed on pass.
+    const [lessonInfo] = await pool.execute('SELECT contentType FROM lesson WHERE id = ?', [id]);
+    if (lessonInfo.length > 0 && lessonInfo[0].contentType === 'quiz') {
+      // For quizzes, we might require passing before allowing this endpoint to work manually?
+      // Or just allow it. Let's allow it for now.
+    }
+
     const [existing] = await pool.execute(
       'SELECT id FROM lessonprogress WHERE studentId = ? AND lessonId = ?',
       [studentId, id]
     );
 
     if (existing.length > 0) {
-      // Update
       await pool.execute(
         'UPDATE lessonprogress SET completed = 1, completedAt = NOW() WHERE id = ?',
         [existing[0].id]
       );
     } else {
-      // Insert
       await pool.execute(
         'INSERT INTO lessonprogress (studentId, lessonId, completed, completedAt) VALUES (?, ?, 1, NOW())',
         [studentId, id]
       );
     }
 
-    // --- Update Course Progress ---
-    // 1. Get Course ID for this lesson
     const [lessonData] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
     if (lessonData.length > 0) {
       const courseId = lessonData[0].courseId;
 
-      // 2. Count total lessons in this course
       const [totalLessonsResult] = await pool.execute(
         'SELECT COUNT(*) as total FROM lesson WHERE courseId = ?',
         [courseId]
       );
       const totalLessons = totalLessonsResult[0].total;
 
-      // 3. Count completed lessons for this student in this course
       const [completedLessonsResult] = await pool.execute(
         `SELECT COUNT(*) as completed 
          FROM lessonprogress lp
@@ -328,17 +399,13 @@ const markLessonComplete = async (req, res) => {
       );
       const completedLessons = completedLessonsResult[0].completed;
 
-      // 4. Calculate percentage
       const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
       const status = progressPercentage === 100 ? 'completed' : 'active';
 
-      // 5. Update Enrollment
       await pool.execute(
         'UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?',
         [progressPercentage, status, studentId, courseId]
       );
-
-      console.log(`[Progress Update] Student: ${studentId}, Course: ${courseId}, Progress: ${progressPercentage}%`);
     }
 
     res.json({ message: 'Lesson marked as complete' });
@@ -347,7 +414,93 @@ const markLessonComplete = async (req, res) => {
     console.error('Complete Lesson Error:', error);
     res.status(500).json({ message: 'Error marking lesson complete', error: error.message });
   }
-}
+};
+
+const submitQuiz = async (req, res) => {
+  try {
+    const { id: lessonId } = req.params;
+    const { userId } = req.user;
+    const { answers } = req.body;
+
+    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    if (students.length === 0) return res.status(403).json({ message: 'Not a student' });
+    const studentId = students[0].id;
+
+    // CHECK FOR EXISTING ATTEMPTS
+    // If any question in this lesson has an attempt by this student, block submission.
+    const [existingAttempts] = await pool.execute(
+      `SELECT qa.id FROM quizattempt qa 
+       JOIN lessonquiz lq ON qa.quizId = lq.id 
+       WHERE qa.studentId = ? AND lq.lessonId = ? LIMIT 1`,
+      [studentId, lessonId]
+    );
+
+    if (existingAttempts.length > 0) {
+      return res.status(403).json({ message: 'You have already attempted this quiz. Only one attempt is allowed.' });
+    }
+
+    const [questions] = await pool.execute('SELECT id, correctOption FROM lessonquiz WHERE lessonId = ?', [lessonId]);
+
+    let correctCount = 0;
+    const totalQuestions = questions.length;
+
+    for (const q of questions) {
+      const selectedOption = answers[q.id];
+      const isCorrect = String(selectedOption) === String(q.correctOption);
+      if (isCorrect) correctCount++;
+
+      const [attempts] = await pool.execute(
+        'SELECT COALESCE(MAX(attemptNumber), 0) as maxAttempt FROM quizattempt WHERE studentId = ? AND quizId = ?',
+        [studentId, q.id]
+      );
+      const nextAttempt = attempts[0].maxAttempt + 1;
+
+      await pool.execute(
+        'INSERT INTO quizattempt (studentId, quizId, selectedOption, isCorrect, attemptNumber, result) VALUES (?, ?, ?, ?, ?, ?)',
+        [studentId, q.id, selectedOption || 'NONE', isCorrect ? 1 : 0, nextAttempt, isCorrect ? 'pass' : 'fail']
+      );
+    }
+
+    const passed = correctCount === totalQuestions;
+
+    // Auto-mark lesson/quiz as complete after any submission
+    const [existing] = await pool.execute('SELECT id FROM lessonprogress WHERE studentId = ? AND lessonId = ?', [studentId, lessonId]);
+    if (existing.length > 0) {
+      await pool.execute('UPDATE lessonprogress SET completed = 1, completedAt = NOW() WHERE id = ?', [existing[0].id]);
+    } else {
+      await pool.execute('INSERT INTO lessonprogress (studentId, lessonId, completed, completedAt) VALUES (?, ?, 1, NOW())', [studentId, lessonId]);
+    }
+
+    // Update Overall Course Progress
+    const [lesson] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [lessonId]);
+    if (lesson.length > 0) {
+      const courseId = lesson[0].courseId;
+      // ... same progress calculation logic as before ...
+      const [totalLessonsResult] = await pool.execute('SELECT COUNT(*) as total FROM lesson WHERE courseId = ?', [courseId]);
+      const totalLessons = totalLessonsResult[0].total;
+      const [completedLessonsResult] = await pool.execute(
+        `SELECT COUNT(*) as completed FROM lessonprogress lp JOIN lesson l ON lp.lessonId = l.id 
+           WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
+        [studentId, courseId]
+      );
+      const completedLessons = completedLessonsResult[0].completed;
+      const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+      const status = progressPercentage === 100 ? 'completed' : 'active';
+      await pool.execute('UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?', [progressPercentage, status, studentId, courseId]);
+    }
+
+    res.json({
+      passed,
+      correctCount,
+      totalQuestions,
+      message: 'Quiz submitted successfully. You can now mark this as complete.'
+    });
+
+  } catch (error) {
+    console.error('Submit Quiz Error:', error);
+    res.status(500).json({ message: 'Error submitting quiz', error: error.message });
+  }
+};
 
 module.exports = {
   getLessons,
@@ -355,5 +508,6 @@ module.exports = {
   createLesson,
   updateLesson,
   deleteLesson,
-  markLessonComplete
+  markLessonComplete,
+  submitQuiz
 };

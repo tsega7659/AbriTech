@@ -8,6 +8,7 @@ router.get('/', authenticateToken, authorizeRole('admin'), teacherController.get
 router.get('/dashboard', authenticateToken, authorizeRole('teacher'), teacherController.getDashboard);
 router.get('/courses', authenticateToken, authorizeRole('teacher'), teacherController.getAssignedCourses);
 router.get('/students', authenticateToken, authorizeRole('teacher'), teacherController.getEnrolledStudents);
+router.get('/submissions', authenticateToken, authorizeRole('teacher'), teacherController.getAllSubmissions);
 router.get('/students/:studentId/course/:courseId', authenticateToken, authorizeRole('teacher'), teacherController.getStudentCourseDetail);
 router.delete('/:id', authenticateToken, authorizeRole('admin'), teacherController.deleteTeacher);
 

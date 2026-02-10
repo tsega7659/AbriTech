@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import Loading from '../../components/Loading';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const UserRegistration = () => {
     const {
@@ -52,6 +53,11 @@ const UserRegistration = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successData, setSuccessData] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     const roles = [
         { id: 'admin', label: 'Administrator', icon: Shield, desc: 'Full platform access' },
@@ -101,7 +107,7 @@ const UserRegistration = () => {
                 });
             }
         } else {
-            alert(result.message || 'Registration failed');
+            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
         }
     };
 
@@ -356,6 +362,13 @@ const UserRegistration = () => {
                     </div>
                 </div>
             </div>
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
+            />
         </div>
     );
 };

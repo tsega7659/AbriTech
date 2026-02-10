@@ -17,8 +17,8 @@ import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import StudentCourses from "./pages/dashboard/StudentCourses";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
 import ParentChildren from "./pages/dashboard/ParentChildren";
+import Grades from "./pages/dashboard/Grades";
 import {
-  StudentProgress,
   StudentPortfolio,
   StudentProjects,
   StudentAITutor,
@@ -77,7 +77,7 @@ function App() {
             <Route path="courses" element={<StudentCourses />} />
             <Route path="courses/:courseId" element={<CourseDetail />} />
             <Route path="courses/:courseId/learn/:lessonId" element={<LessonPlayer />} />
-            <Route path="progress" element={<StudentProgress />} />
+            <Route path="grades" element={<Grades />} />
 
             <Route path="portfolio" element={<StudentPortfolio />} />
             <Route path="projects" element={<StudentProjects />} />

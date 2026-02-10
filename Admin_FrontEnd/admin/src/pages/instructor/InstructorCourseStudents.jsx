@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useInstructor } from '../../context/InstructorContext';
 import AddProjectModal from '../../components/modals/AddProjectModal';
+import Loading from '../../components/Loading';
 
 const InstructorCourseStudents = () => {
     const { courseId } = useParams();

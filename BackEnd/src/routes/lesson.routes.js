@@ -8,6 +8,7 @@ const upload = require('../middleware/upload.middleware');
 router.get('/course/:courseId', authenticateToken, lessonController.getLessons);
 router.get('/:id', authenticateToken, lessonController.getLessonById);
 router.post('/:id/complete', authenticateToken, authorizeRole('student'), lessonController.markLessonComplete);
+router.post('/:id/quiz/submit', authenticateToken, authorizeRole('student'), lessonController.submitQuiz);
 
 // Admin/Teacher routes
 router.post(

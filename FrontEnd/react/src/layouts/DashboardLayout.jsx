@@ -31,7 +31,7 @@ export default function DashboardLayout({ role = "student" }) {
     const studentLinks = [
         { name: "Dashboard", href: "/dashboard/student", icon: LayoutDashboard },
         { name: "My Courses", href: "/dashboard/student/courses", icon: BookOpen },
-        { name: "Progress", href: "/dashboard/student/progress", icon: TrendingUp },
+        { name: "Grades", href: "/dashboard/student/grades", icon: TrendingUp },
         { name: "Portfolio", href: "/dashboard/student/portfolio", icon: Briefcase },
         { name: "Projects", href: "/dashboard/student/projects", icon: Briefcase },
         { name: "AI Tutor", href: "/dashboard/student/ai-tutor", icon: MessageSquare },

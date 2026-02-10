@@ -6,9 +6,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
         title: '',
         description: '',
         orderNumber: '',
+        contentType: 'lesson',
         resources: [
             { type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }
-        ]
+        ],
+        quiz: []
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -20,9 +22,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                 title: lessonToEdit.title,
                 description: lessonToEdit.description,
                 orderNumber: lessonToEdit.orderNumber,
+                contentType: lessonToEdit.contentType || 'lesson',
                 resources: lessonToEdit.resources && lessonToEdit.resources.length > 0
                     ? lessonToEdit.resources.map(r => ({ ...r, file: null }))
-                    : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }]
+                    : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
+                quiz: lessonToEdit.quiz || []
             });
         } else if (isOpen) {
             setUploadProgress(0);
@@ -30,7 +34,9 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                 title: '',
                 description: '',
                 orderNumber: '',
-                resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }]
+                contentType: 'lesson',
+                resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
+                quiz: []
             });
         }
     }, [lessonToEdit, isOpen]);
@@ -55,18 +61,56 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
         });
     };
 
+    const handleAddQuizQuestion = () => {
+        setLessonData(prev => ({
+            ...prev,
+            quiz: [...prev.quiz, {
+                question: '',
+                optionA: '',
+                optionB: '',
+                optionC: '',
+                optionD: '',
+                correctOption: 'optionA',
+                id: Date.now()
+            }]
+        }));
+    };
+
+    const handleRemoveQuizQuestion = (index) => {
+        setLessonData(prev => ({
+            ...prev,
+            quiz: prev.quiz.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleQuizChange = (index, field, value) => {
+        setLessonData(prev => {
+            const newQuiz = [...prev.quiz];
+            newQuiz[index] = { ...newQuiz[index], [field]: value };
+            return { ...prev, quiz: newQuiz };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (lessonData.resources.length === 0) {
+
+        if (lessonData.contentType === 'lesson' && lessonData.resources.length === 0) {
             alert("Please add at least one resource.");
             return;
         }
+
+        if (lessonData.contentType === 'quiz' && lessonData.quiz.length === 0) {
+            alert("Please add at least one quiz question.");
+            return;
+        }
+
         setIsSubmitting(true);
 
         const data = new FormData();
         data.append('title', lessonData.title);
         data.append('description', lessonData.description);
         data.append('orderNumber', lessonData.orderNumber);
+        data.append('contentType', lessonData.contentType);
 
         // Prepare resources metadata (excluding files)
         const resourcesMetadata = lessonData.resources.map((res, index) => {
@@ -86,11 +130,17 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
         });
 
         data.append('resources', JSON.stringify(resourcesMetadata));
+        data.append('quiz', JSON.stringify(lessonData.quiz));
         setUploadProgress(0);
 
-        await onSave(data, (p) => setUploadProgress(p));
-        setIsSubmitting(false);
-        setUploadProgress(0);
+        try {
+            await onSave(data, (p) => setUploadProgress(p));
+        } catch (error) {
+            console.error("Save error:", error);
+        } finally {
+            setIsSubmitting(false);
+            setUploadProgress(0);
+        }
     };
 
     if (!isOpen) return null;
@@ -146,6 +196,18 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                         </div>
 
                         <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Content Type</label>
+                            <select
+                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                value={lessonData.contentType}
+                                onChange={e => setLessonData({ ...lessonData, contentType: e.target.value })}
+                            >
+                                <option value="lesson">Lesson (Video/Text)</option>
+                                <option value="quiz">Independent Quiz</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Order Number</label>
                             <input
                                 required
@@ -171,107 +233,192 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                     </div>
 
                     {/* Resources Section */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center px-2">
-                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Lesson Resources</h3>
-                            <button
-                                type="button"
-                                onClick={handleAddResource}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-xs transition-all"
-                            >
-                                <Plus className="w-4 h-4" /> Add Resource
-                            </button>
-                        </div>
+                    {lessonData.contentType === 'lesson' && (
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center px-2">
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Lesson Resources</h3>
+                                <button
+                                    type="button"
+                                    onClick={handleAddResource}
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-xs transition-all"
+                                >
+                                    <Plus className="w-4 h-4" /> Add Resource
+                                </button>
+                            </div>
 
-                        <div className="space-y-6">
-                            {lessonData.resources.map((res, index) => (
-                                <div key={res.id || index} className="relative group bg-slate-50/50 rounded-3xl border border-slate-100 p-6 space-y-4">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300">
-                                                <GripVertical className="w-4 h-4" />
+                            <div className="space-y-6">
+                                {lessonData.resources.map((res, index) => (
+                                    <div key={res.id || index} className="relative group bg-slate-50/50 rounded-3xl border border-slate-100 p-6 space-y-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300">
+                                                    <GripVertical className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-xs font-black text-slate-400">RESOURCE #{index + 1}</span>
                                             </div>
-                                            <span className="text-xs font-black text-slate-400">RESOURCE #{index + 1}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveResource(index)}
-                                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="md:col-span-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Type</label>
-                                            <select
-                                                className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
-                                                value={res.type}
-                                                onChange={e => handleResourceChange(index, 'type', e.target.value)}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveResource(index)}
+                                                className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                                             >
-                                                <option value="video">Video</option>
-                                                <option value="image">Image</option>
-                                                <option value="text">Text / Article</option>
-                                                <option value="link">External Link</option>
-                                                <option value="file">File (PDF/Doc)</option>
-                                            </select>
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
 
-                                        <div className="md:col-span-3">
-                                            {res.type === 'link' ? (
-                                                <>
-                                                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">External URL</label>
-                                                    <input
-                                                        required
-                                                        type="url"
-                                                        placeholder="https://..."
-                                                        className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
-                                                        value={res.contentUrl}
-                                                        onChange={e => handleResourceChange(index, 'contentUrl', e.target.value)}
-                                                    />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">
-                                                        {res.contentUrl && !res.file ? 'Current File' : `Upload ${res.type}`}
-                                                    </label>
-                                                    <div className="relative">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <div className="md:col-span-1">
+                                                <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Type</label>
+                                                <select
+                                                    className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
+                                                    value={res.type}
+                                                    onChange={e => handleResourceChange(index, 'type', e.target.value)}
+                                                >
+                                                    <option value="video">Video</option>
+                                                    <option value="image">Image</option>
+                                                    <option value="text">Text / Article</option>
+                                                    <option value="link">External Link</option>
+                                                    <option value="file">File (PDF/Doc)</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                {res.type === 'link' ? (
+                                                    <>
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">External URL</label>
                                                         <input
-                                                            type="file"
-                                                            accept={
-                                                                res.type === 'video' ? 'video/*' :
-                                                                    res.type === 'image' ? 'image/*' :
-                                                                        '.pdf,.doc,.docx'
-                                                            }
-                                                            className="w-full p-2.5 bg-white rounded-xl border border-slate-100 text-xs font-bold text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-primary/5 file:text-primary file:font-black cursor-pointer"
-                                                            onChange={e => handleResourceChange(index, 'file', e.target.files[0])}
+                                                            required
+                                                            type="url"
+                                                            placeholder="https://..."
+                                                            className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm"
+                                                            value={res.contentUrl}
+                                                            onChange={e => handleResourceChange(index, 'contentUrl', e.target.value)}
                                                         />
-                                                        {res.contentUrl && !res.file && (
-                                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg">
-                                                                <CheckCircle2 className="w-3 h-3" /> ATTACHED
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">
+                                                            {res.contentUrl && !res.file ? 'Current File' : `Upload ${res.type}`}
+                                                        </label>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="file"
+                                                                accept={
+                                                                    res.type === 'video' ? 'video/*' :
+                                                                        res.type === 'image' ? 'image/*' :
+                                                                            '.pdf,.doc,.docx'
+                                                                }
+                                                                className="w-full p-2.5 bg-white rounded-xl border border-slate-100 text-xs font-bold text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-primary/5 file:text-primary file:font-black cursor-pointer"
+                                                                onChange={e => handleResourceChange(index, 'file', e.target.files[0])}
+                                                            />
+                                                            {res.contentUrl && !res.file && (
+                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg">
+                                                                    <CheckCircle2 className="w-3 h-3" /> ATTACHED
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
 
-                                        <div className="md:col-span-4">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Text content / description for this resource</label>
-                                            <textarea
-                                                rows="3"
-                                                placeholder="Add some context or text for this specific resource..."
-                                                className="w-full p-3 bg-white rounded-xl font-medium text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm resize-y"
-                                                value={res.textContent}
-                                                onChange={e => handleResourceChange(index, 'textContent', e.target.value)}
-                                            />
+                                            <div className="md:col-span-4">
+                                                <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">Text content / description for this resource</label>
+                                                <textarea
+                                                    rows="3"
+                                                    placeholder="Add some context or text for this specific resource..."
+                                                    className="w-full p-3 bg-white rounded-xl font-medium text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm resize-y"
+                                                    value={res.textContent}
+                                                    onChange={e => handleResourceChange(index, 'textContent', e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Quiz Section */}
+                    {(lessonData.contentType === 'quiz' || (lessonData.contentType === 'lesson' && lessonData.quiz.length > 0)) && (
+                        <div className="space-y-4 pt-4 border-t border-slate-100">
+                            <div className="flex justify-between items-center px-2">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Lesson Quiz (MCQ)</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1">Students must pass this quiz to complete the lesson.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleAddQuizQuestion}
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-xs transition-all"
+                                >
+                                    <Plus className="w-4 h-4" /> Add Question
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                {lessonData.quiz.map((q, qIndex) => (
+                                    <div key={q.id || qIndex} className="bg-slate-50/50 rounded-3xl border border-slate-100 p-6 space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-black text-slate-400">QUESTION #{qIndex + 1}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveQuizQuestion(qIndex)}
+                                                className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">The Question</label>
+                                                <textarea
+                                                    required
+                                                    rows="2"
+                                                    placeholder="What is the output of this code?..."
+                                                    className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border border-slate-100 focus:border-primary transition-all text-sm resize-none"
+                                                    value={q.question}
+                                                    onChange={e => handleQuizChange(qIndex, 'question', e.target.value)}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {['optionA', 'optionB', 'optionC', 'optionD'].map((optKey) => (
+                                                    <div key={optKey} className="relative group">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block ml-1">
+                                                            {optKey.replace('option', 'Choice ')}
+                                                        </label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                required
+                                                                type="text"
+                                                                placeholder={`Option ${optKey.slice(-1)}`}
+                                                                className={`w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none border transition-all text-sm ${q.correctOption === optKey ? 'border-primary ring-2 ring-primary/10' : 'border-slate-100 focus:border-primary'}`}
+                                                                value={q[optKey]}
+                                                                onChange={e => handleQuizChange(qIndex, optKey, e.target.value)}
+                                                            />
+                                                            <input
+                                                                type="radio"
+                                                                name={`correct-${qIndex}`}
+                                                                checked={q.correctOption === optKey}
+                                                                onChange={() => handleQuizChange(qIndex, 'correctOption', optKey)}
+                                                                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 cursor-pointer"
+                                                                title="Mark as correct answer"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {lessonData.quiz.length === 0 && (
+                                    <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-3xl">
+                                        <p className="text-slate-400 font-bold text-sm italic">No quiz questions added yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Footer */}
                     <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-white/90 backdrop-blur pb-2">

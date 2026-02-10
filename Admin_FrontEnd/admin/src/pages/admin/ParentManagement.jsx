@@ -17,6 +17,7 @@ import {
 import { useAdmin } from '../../context/AdminContext';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const ParentManagement = () => {
     const { parents, registerParent, deleteParent, loading } = useAdmin();
@@ -35,12 +36,18 @@ const ParentManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [parentToDelete, setParentToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
 
     const handleRegister = async (e) => {
         e.preventDefault();
         const result = await registerParent(newParent);
         if (result.success) {
+            showFeedback("Success", "Parent registered successfully!", "success");
             setIsRegistering(false);
             setNewParent({
                 fullName: '',
@@ -52,7 +59,7 @@ const ParentManagement = () => {
                 address: ''
             });
         } else {
-            alert(result.message || 'Registration failed');
+            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
         }
     };
 
@@ -71,7 +78,7 @@ const ParentManagement = () => {
         setParentToDelete(null);
 
         if (!result.success) {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to delete parent", "error");
         }
     };
 
@@ -314,6 +321,13 @@ const ParentManagement = () => {
                 message="Are you sure you want to delete this parent? This will permanently remove their account and links to their children."
                 itemName={parentToDelete?.fullName}
                 loading={isDeleting}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
     );

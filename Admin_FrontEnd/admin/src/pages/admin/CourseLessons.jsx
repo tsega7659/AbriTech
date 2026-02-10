@@ -4,23 +4,35 @@ import {
     ArrowLeft, Plus, Video, Image as ImageIcon, FileText, Link as LinkIcon,
     MoreHorizontal, Trash2, Edit, CheckCircle2, GripVertical, File
 } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
 import { lessonService } from '../../services/lessonService';
 import AddLessonModal from '../../components/AddLessonModal';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const CourseLessons = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const { courses } = useAdmin();
 
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingLesson, setEditingLesson] = useState(null);
 
+    // Find course name
+    const currentCourse = courses.find(c => String(c.id) === String(courseId));
+    const courseName = currentCourse ? currentCourse.name : `ID: ${courseId}`;
+
     // Delete State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [lessonToDelete, setLessonToDelete] = useState(null);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     useEffect(() => {
         fetchLessons();
@@ -34,7 +46,7 @@ const CourseLessons = () => {
             const sorted = result.data.sort((a, b) => a.orderNumber - b.orderNumber);
             setLessons(sorted);
         } else {
-            alert('Failed to load lessons');
+            showFeedback("Load Error", "Failed to load lessons for this course.", "error");
         }
         setLoading(false);
     };
@@ -61,8 +73,9 @@ const CourseLessons = () => {
                 setLessons(lessons.filter(l => l.id !== lessonToDelete.id));
                 setIsDeleteModalOpen(false);
                 setLessonToDelete(null);
+                showFeedback("Success", "Lesson deleted successfully!", "success");
             } else {
-                alert(result.message);
+                showFeedback("Operation Failed", result.message || "Failed to delete lesson", "error");
             }
         }
     };
@@ -83,8 +96,9 @@ const CourseLessons = () => {
             fetchLessons(); // Refresh list to get updated order and data
             setIsAddModalOpen(false);
             setEditingLesson(null);
+            showFeedback("Success", `Lesson ${editingLesson ? 'updated' : 'created'} successfully!`, "success");
         } else {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to save lesson", "error");
         }
     };
 
@@ -110,7 +124,7 @@ const CourseLessons = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-black text-slate-800">Lessons Management</h1>
-                    <p className="text-slate-500 font-medium">Manage curriculum content for Course ID: {courseId}</p>
+                    <p className="text-slate-500 font-medium">Manage curriculum content for: <span className="text-primary font-black">{courseName}</span></p>
                 </div>
                 <button
                     onClick={handleAddClick}
@@ -208,6 +222,13 @@ const CourseLessons = () => {
                 title="Delete Lesson"
                 message="Are you sure you want to delete this lesson? This action cannot be undone."
                 itemName={lessonToDelete?.title}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
     );

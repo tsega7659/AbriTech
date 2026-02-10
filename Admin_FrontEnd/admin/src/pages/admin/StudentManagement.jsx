@@ -25,6 +25,7 @@ import {
 import { useAdmin } from '../../context/AdminContext';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const StudentManagement = () => {
     const { students, registerStudent, deleteStudent, loading } = useAdmin();
@@ -51,6 +52,11 @@ const StudentManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     const handleDeleteClick = (student) => {
         setStudentToDelete(student);
@@ -67,7 +73,7 @@ const StudentManagement = () => {
         setStudentToDelete(null);
 
         if (!result.success) {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to delete student", "error");
         }
     };
 
@@ -75,6 +81,7 @@ const StudentManagement = () => {
         e.preventDefault();
         const result = await registerStudent(newStudent);
         if (result.success) {
+            showFeedback("Success", "Student registered successfully!", "success");
             setIsRegistering(false);
             setNewStudent({
                 fullName: '',
@@ -93,7 +100,7 @@ const StudentManagement = () => {
                 courseLevel: 'beginner'
             });
         } else {
-            alert(result.message || 'Registration failed');
+            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
         }
     };
 
@@ -436,6 +443,13 @@ const StudentManagement = () => {
                 message="Are you sure you want to delete this student? This will permanently remove their account, enrollment history, and all associated data."
                 itemName={studentToDelete?.fullName}
                 loading={isDeleting}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
     );

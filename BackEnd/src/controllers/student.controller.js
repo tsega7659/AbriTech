@@ -105,6 +105,87 @@ const getEnrolledCourses = async (req, res) => {
   }
 };
 
+const getStudentGrades = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
+    const studentId = students[0].id;
+
+    // Fetch quiz results grouped by course
+    const [quizzes] = await pool.execute(`
+      SELECT 
+        c.id as courseId,
+        c.name as courseName,
+        l.id as lessonId,
+        l.title as lessonTitle,
+        SUM(qa.isCorrect) as correctAnswers,
+        COUNT(qa.id) as totalQuestions,
+        MAX(qa.attemptedAt) as lastAttempted
+      FROM enrollment e
+      JOIN course c ON e.courseId = c.id
+      JOIN lesson l ON c.id = l.courseId
+      JOIN lessonquiz lq ON l.id = lq.lessonId
+      JOIN quizattempt qa ON lq.id = qa.quizId
+      WHERE e.studentId = ? AND qa.studentId = ?
+      GROUP BY c.id, l.id
+      ORDER BY lastAttempted DESC
+    `, [studentId, studentId]);
+
+    // Fetch assignment submissions
+    const [assignments] = await pool.execute(`
+      SELECT 
+        c.id as courseId,
+        c.name as courseName,
+        a.title as assignmentTitle,
+        asub.status,
+        asub.result,
+        asub.feedback,
+        asub.submittedAt
+      FROM enrollment e
+      JOIN course c ON e.courseId = c.id
+      JOIN assignment a ON c.id = a.courseId
+      JOIN assignmentsubmission asub ON a.id = asub.assignmentId
+      WHERE e.studentId = ? AND asub.studentId = ?
+      ORDER BY asub.submittedAt DESC
+    `, [studentId, studentId]);
+
+    // Structure data for frontend tables
+    const courseGrades = {};
+
+    // Process Quizzes
+    quizzes.forEach(q => {
+      if (!courseGrades[q.courseId]) {
+        courseGrades[q.courseId] = { courseName: q.courseName, quizzes: [], assignments: [] };
+      }
+      courseGrades[q.courseId].quizzes.push({
+        lessonTitle: q.lessonTitle,
+        score: Math.round((q.correctAnswers / q.totalQuestions) * 100),
+        date: q.lastAttempted
+      });
+    });
+
+    // Process Assignments
+    assignments.forEach(a => {
+      if (!courseGrades[a.courseId]) {
+        courseGrades[a.courseId] = { courseName: a.courseName, quizzes: [], assignments: [] };
+      }
+      courseGrades[a.courseId].assignments.push({
+        title: a.assignmentTitle,
+        status: a.status,
+        result: a.result,
+        feedback: a.feedback,
+        date: a.submittedAt
+      });
+    });
+
+    res.json(Object.values(courseGrades));
+  } catch (error) {
+    console.error('Get Student Grades Error:', error);
+    res.status(500).json({ message: 'Failed to fetch grades', error: error.message });
+  }
+};
+
 const deleteStudent = async (req, res) => {
   const conn = await pool.getConnection();
   try {
@@ -141,5 +222,6 @@ module.exports = {
   getAllStudents,
   getDashboard,
   getEnrolledCourses,
+  getStudentGrades,
   deleteStudent
 };

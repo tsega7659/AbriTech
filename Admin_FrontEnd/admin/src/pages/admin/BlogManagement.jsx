@@ -7,6 +7,7 @@ import {
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const BlogManagement = () => {
     const { blogs, createBlog, updateBlog, deleteBlog, loading } = useAdmin();
@@ -26,6 +27,11 @@ const BlogManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [blogToDelete, setBlogToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     const handleDeleteClick = (blog) => {
         setBlogToDelete(blog);
@@ -42,7 +48,7 @@ const BlogManagement = () => {
         setBlogToDelete(null);
 
         if (!result.success) {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to delete article", "error");
         }
     };
 
@@ -50,7 +56,7 @@ const BlogManagement = () => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size exceeds 5MB limit');
+                showFeedback("File Too Large", "Maximum image size is 5MB. Please choose a smaller file.", "warning");
                 e.target.value = null;
                 return;
             }
@@ -118,8 +124,9 @@ const BlogManagement = () => {
             setNewBlog({ title: '', content: '', coverImage: null });
             setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]); // Reset sections
             setPreviewUrl(null);
+            showFeedback("Success", `Article ${isEditing ? 'updated' : 'published'} successfully!`, "success");
         } else {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to save article", "error");
         }
     };
 
@@ -479,6 +486,13 @@ const BlogManagement = () => {
                 message="Are you sure you want to delete this article? This action will permanently remove the post and its cover image."
                 itemName={blogToDelete?.title}
                 loading={isDeleting}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
     );

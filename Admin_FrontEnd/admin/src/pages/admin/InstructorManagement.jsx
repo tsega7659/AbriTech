@@ -20,6 +20,7 @@ import {
 import { useAdmin } from '../../context/AdminContext';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import Loading from '../../components/Loading';
+import FeedbackModal from '../../components/FeedbackModal';
 
 
 const InstructorManagement = () => {
@@ -40,6 +41,11 @@ const InstructorManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [teacherToDelete, setTeacherToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     const handleDeleteClick = (teacher) => {
         setTeacherToDelete(teacher);
@@ -56,7 +62,7 @@ const InstructorManagement = () => {
         setTeacherToDelete(null);
 
         if (!result.success) {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to delete instructor", "error");
         }
     };
 
@@ -78,7 +84,7 @@ const InstructorManagement = () => {
                 courseIds: []
             });
         } else {
-            alert(result.message || 'Registration failed');
+            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
         }
     };
 
@@ -394,6 +400,13 @@ const InstructorManagement = () => {
                 message="Are you sure you want to delete this instructor? This will also remove their user account and all course assignments. This action cannot be undone."
                 itemName={teacherToDelete?.fullName}
                 loading={isDeleting}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
 

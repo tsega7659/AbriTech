@@ -21,5 +21,16 @@ export const lessonService = {
             console.error('Error marking lesson complete:', error);
             throw error;
         }
+    },
+
+    // Submit quiz answers
+    submitQuiz: async (lessonId, answers) => {
+        try {
+            const response = await api.post(`/lessons/${lessonId}/quiz/submit`, { answers });
+            return response.data; // { passed: true/false, correctCount: X, totalQuestions: Y, ... }
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            throw error;
+        }
     }
 };

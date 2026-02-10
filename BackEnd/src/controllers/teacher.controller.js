@@ -247,17 +247,65 @@ const getStudentCourseDetail = async (req, res) => {
             FROM assignmentsubmission sub
             JOIN assignment a ON sub.assignmentId = a.id
             JOIN student s ON sub.studentId = s.id
-            WHERE s.userId = ? AND a.courseId = ?
+            AND s.userId = ? AND a.courseId = ? AND sub.status != 'draft'
             ORDER BY sub.submittedAt DESC
+        `, [studentId, courseId]);
+
+        // Get quiz results for this student and course
+        const [quizResults] = await pool.execute(`
+            SELECT 
+                l.title as lessonTitle,
+                SUM(qa.isCorrect) as correctAnswers,
+                COUNT(qa.id) as totalQuestions,
+                MAX(qa.attemptedAt) as attemptedAt
+            FROM lesson l
+            JOIN lessonquiz lq ON l.id = lq.lessonId
+            JOIN quizattempt qa ON lq.id = qa.quizId
+            JOIN student s ON qa.studentId = s.id
+            WHERE s.userId = ? AND l.courseId = ?
+            GROUP BY l.id
         `, [studentId, courseId]);
 
         res.json({
             student: studentInfo[0],
-            submissions
+            submissions,
+            quizzes: quizResults.map(q => ({
+                lessonTitle: q.lessonTitle,
+                score: Math.round((q.correctAnswers / q.totalQuestions) * 100),
+                date: q.attemptedAt
+            }))
         });
     } catch (error) {
         console.error('Get Student Course Detail Error:', error);
         res.status(500).json({ message: 'Failed to fetch student details', error: error.message });
+    }
+};
+
+const getAllSubmissions = async (req, res) => {
+    try {
+        const { userId: teacherId } = req.user;
+
+        const [submissions] = await pool.execute(`
+            SELECT 
+                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.feedback, sub.submittedAt,
+                a.title as assignmentTitle,
+                c.name as courseName,
+                u.fullName as studentName,
+                u.email as studentEmail
+            FROM assignmentsubmission sub
+            JOIN assignment a ON sub.assignmentId = a.id
+            JOIN course c ON a.courseId = c.id
+            JOIN teachercourse tc ON c.id = tc.courseId
+            JOIN student s ON sub.studentId = s.id
+            JOIN user u ON s.userId = u.id
+            WHERE tc.teacherId = ? AND sub.status != 'draft'
+            ORDER BY sub.submittedAt DESC
+        `, [teacherId]);
+
+        res.json(submissions);
+    } catch (error) {
+        console.error('Get All Submissions Error:', error);
+        res.status(500).json({ message: 'Failed to fetch submissions', error: error.message });
     }
 };
 
@@ -267,6 +315,7 @@ module.exports = {
     getAssignedCourses,
     getEnrolledStudents,
     getStudentCourseDetail,
+    getAllSubmissions,
     deleteTeacher
 };
 

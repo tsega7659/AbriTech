@@ -204,6 +204,7 @@ const schema = [
       { name: 'description', type: 'TEXT NOT NULL' },
       { name: 'summaryText', type: 'TEXT' },
       { name: 'orderNumber', type: 'INT NOT NULL' },
+      { name: 'contentType', type: "ENUM('lesson', 'quiz') DEFAULT 'lesson'" },
       { name: 'type', type: "ENUM('text', 'video', 'image', 'link', 'file') DEFAULT 'text'" },
       { name: 'contentUrl', type: 'VARCHAR(255)' },
       { name: 'textContent', type: 'TEXT' }
@@ -218,6 +219,7 @@ const schema = [
       description TEXT NOT NULL,
       summaryText TEXT,
       orderNumber INT NOT NULL,
+      contentType ENUM('lesson', 'quiz') DEFAULT 'lesson',
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
   },
@@ -377,7 +379,7 @@ const schema = [
       studentId BIGINT NOT NULL,
       submissionType ENUM('file', 'link', 'text') NOT NULL,
       submissionContent TEXT NOT NULL,
-      status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      status ENUM('draft', 'pending', 'approved', 'rejected') DEFAULT 'draft',
       result ENUM('pass', 'fail'),
       feedback TEXT,
       submittedAt DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -23,6 +23,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import FeedbackModal from '../../components/FeedbackModal';
 
 const CourseManagement = () => {
     const { courses, registerCourse, updateCourse, deleteCourse, loading } = useAdmin();
@@ -45,6 +46,11 @@ const CourseManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     const handleDeleteClick = (course) => {
         setCourseToDelete(course);
@@ -61,7 +67,7 @@ const CourseManagement = () => {
         setCourseToDelete(null);
 
         if (!result.success) {
-            alert(result.message);
+            showFeedback("Operation Failed", result.message || "Failed to delete course", "error");
         }
     };
 
@@ -116,8 +122,9 @@ const CourseManagement = () => {
                 image: '',
                 youtubeLink: ''
             });
+            showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
         } else {
-            alert(result.message || (isEditing ? 'Course update failed' : 'Course creation failed'));
+            showFeedback("Operation Failed", result.message || (isEditing ? 'Course update failed' : 'Course creation failed'), "error");
         }
         setSubmitting(false);
         setUploadProgress(0);
@@ -289,7 +296,7 @@ const CourseManagement = () => {
                                     onChange={(e) => {
                                         const file = e.target.files[0];
                                         if (file && file.size > 5 * 1024 * 1024) {
-                                            alert('File size exceeds 5MB limit');
+                                            showFeedback("File Too Large", "Maximum image size is 5MB. Please choose a smaller file.", "warning");
                                             e.target.value = null;
                                             return;
                                         }
@@ -478,6 +485,13 @@ const CourseManagement = () => {
                 message="Are you sure you want to delete this course? This action cannot be undone and will remove all student enrollments for this course."
                 itemName={courseToDelete?.name}
                 loading={isDeleting}
+            />
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
             />
         </div>
     );

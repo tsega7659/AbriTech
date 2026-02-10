@@ -1,4 +1,4 @@
-import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers, Clock,Laptop } from "lucide-react";
+import { ArrowRight, Star, Filter, CheckCircle2, Code, Cpu, Globe, Boxes, Layers, Clock, Laptop } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -9,6 +9,7 @@ import { FaPeopleGroup, FaPeopleLine } from "react-icons/fa6";
 import Loading from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import FeedbackModal from "../components/FeedbackModal";
 
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
@@ -34,6 +35,11 @@ export default function Courses() {
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(null);
     const [enrollSuccess, setEnrollSuccess] = useState(false);
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+    const showFeedback = (title, message, type = 'success') => {
+        setFeedbackModal({ isOpen: true, title, message, type });
+    };
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -69,7 +75,7 @@ export default function Courses() {
             }, 2000);
         } catch (error) {
             console.error("Failed to enroll:", error);
-            alert(error.response?.data?.message || 'Failed to enroll in course');
+            showFeedback("Enrollment Failed", error.response?.data?.message || 'Failed to enroll in course', "error");
             setEnrolling(null);
         }
     };
@@ -367,6 +373,13 @@ export default function Courses() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                type={feedbackModal.type}
+                title={feedbackModal.title}
+                message={feedbackModal.message}
+            />
         </div>
     );
 }
