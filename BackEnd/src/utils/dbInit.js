@@ -35,12 +35,32 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
             const existingColumnNames = columns.map(c => c.Field);
 
             for (const colDef of item.columns) {
-              if (!existingColumnNames.includes(colDef.name)) {
+              const existingCol = columns.find(c => c.Field === colDef.name);
+
+              if (!existingCol) {
                 console.log(`Table '${tableName}': Adding missing column '${colDef.name}'`);
                 try {
                   await conn.query(`ALTER TABLE ?? ADD COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
                 } catch (alterError) {
                   console.error(`Error adding column '${colDef.name}' to '${tableName}':`, alterError.message);
+                }
+              } else {
+                // Column exists, but we might need to update ENUMs or other types
+                // We'll focus on the 'status' and 'result' columns which often change ENUM values
+                if (colDef.name === 'status' || colDef.name === 'result' || colDef.name === 'submissionType') {
+                  // Compare types roughly (lowercase to avoid case issues)
+                  const schemaType = colDef.type.toLowerCase();
+                  const dbType = existingCol.Type.toLowerCase();
+
+                  // If the schema definition is an ENUM and it's different, update it
+                  if (schemaType.startsWith('enum') && schemaType !== dbType) {
+                    console.log(`Table '${tableName}': Updating column '${colDef.name}' type to match schema`);
+                    try {
+                      await conn.query(`ALTER TABLE ?? MODIFY COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
+                    } catch (modifyError) {
+                      console.error(`Error updating column '${colDef.name}' in '${tableName}':`, modifyError.message);
+                    }
+                  }
                 }
               }
             }

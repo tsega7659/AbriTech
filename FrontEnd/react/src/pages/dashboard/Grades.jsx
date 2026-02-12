@@ -92,103 +92,87 @@ export default function Grades() {
 
                                 {isExpanded && (
                                     <div className="p-8 pt-0 border-t border-gray-50 animate-in slide-in-from-top-2 duration-300">
-                                        {/* Quizzes Table */}
-                                        <div className="mt-8">
-                                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                <Award className="w-4 h-4 text-amber-500" /> Quiz Results
-                                            </h4>
-                                            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/30">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead>
-                                                        <tr className="bg-gray-50 border-b border-gray-100">
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Topic / Lesson</th>
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Score</th>
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-100">
-                                                        {course.quizzes.map((q, qIdx) => (
-                                                            <tr key={qIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
-                                                                <td className="p-4">
-                                                                    <p className="font-bold text-gray-800">{q.lessonTitle}</p>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="flex-1 max-w-[100px] h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                                            <div
-                                                                                className={`h-full rounded-full ${q.score >= 70 ? 'bg-green-500' : q.score >= 40 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                                                                style={{ width: `${q.score}%` }}
-                                                                            />
-                                                                        </div>
-                                                                        <span className="text-sm font-black text-gray-900">{q.score}%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <p className="text-xs font-bold text-gray-400">{new Date(q.date).toLocaleDateString()}</p>
-                                                                </td>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                                            {/* Quizzes Table */}
+                                            <div>
+                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                                    <Award className="w-4 h-4 text-amber-500" /> Quiz Results
+                                                </h4>
+                                                <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/30">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-gray-50 border-b border-gray-100">
+                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Topic</th>
+                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Score</th>
                                                             </tr>
-                                                        ))}
-                                                        {course.quizzes.length === 0 && (
-                                                            <tr>
-                                                                <td colSpan="3" className="p-8 text-center text-gray-400 italic">No quizzes attempted yet.</td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {course.quizzes.map((q, qIdx) => (
+                                                                <tr key={qIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
+                                                                    <td className="p-4">
+                                                                        <p className="font-bold text-gray-800">{q.lessonTitle}</p>
+                                                                        <p className="text-[10px] font-bold text-gray-400 mt-0.5">{new Date(q.date).toLocaleDateString()}</p>
+                                                                    </td>
+                                                                    <td className="p-4 text-right">
+                                                                        <span className={`text-sm font-black ${q.score >= 70 ? 'text-green-500' : q.score >= 40 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                                            {q.score}%
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            {course.quizzes.length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="2" className="p-8 text-center text-gray-400 italic text-xs">No quizzes yet.</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        {/* Projects Table */}
-                                        <div className="mt-10">
-                                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-blue-500" /> Project Submissions
-                                            </h4>
-                                            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/30">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead>
-                                                        <tr className="bg-gray-50 border-b border-gray-100">
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Project Name</th>
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Grade</th>
-                                                            <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Feedback</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-100">
-                                                        {course.assignments.map((a, aIdx) => (
-                                                            <tr key={aIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
-                                                                <td className="p-4">
-                                                                    <p className="font-bold text-gray-800">{a.title}</p>
-                                                                    <p className="text-[10px] font-bold text-gray-400 mt-0.5">{new Date(a.date).toLocaleDateString()}</p>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${a.status === 'approved' ? 'bg-green-50 text-green-600' :
-                                                                        a.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
-                                                                            a.status === 'draft' ? 'bg-slate-100 text-slate-500' :
-                                                                                'bg-yellow-50 text-yellow-600'
-                                                                        }`}>
-                                                                        {a.status}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <span className={`text-xs font-black uppercase tracking-widest ${a.result === 'pass' ? 'text-green-500' : a.result === 'fail' ? 'text-rose-500' : 'text-gray-400'
-                                                                        }`}>
-                                                                        {a.result || 'Pending'}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <p className="text-xs text-gray-500 font-medium italic max-w-xs truncate" title={a.feedback}>
-                                                                        {a.feedback ? `"${a.feedback}"` : "No feedback yet"}
-                                                                    </p>
-                                                                </td>
+                                            {/* Projects Table */}
+                                            <div>
+                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-blue-500" /> Project Submissions
+                                                </h4>
+                                                <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/30">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-gray-50 border-b border-gray-100">
+                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Project</th>
+                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Result</th>
                                                             </tr>
-                                                        ))}
-                                                        {course.assignments.length === 0 && (
-                                                            <tr>
-                                                                <td colSpan="4" className="p-8 text-center text-gray-400 italic">No projects submitted yet.</td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {course.assignments.map((a, aIdx) => (
+                                                                <tr key={aIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
+                                                                    <td className="p-4">
+                                                                        <p className="font-bold text-gray-800">{a.title}</p>
+                                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                                            <span className={`text-[9px] font-black uppercase tracking-tighter ${a.status === 'approved' ? 'text-green-500' : 'text-amber-500'}`}>{a.status}</span>
+                                                                            <span className="text-[10px] text-gray-300">•</span>
+                                                                            <p className="text-[10px] font-bold text-gray-400">{new Date(a.date).toLocaleDateString()}</p>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-4 text-center">
+                                                                        {a.score !== null ? (
+                                                                            <span className="text-sm font-black text-primary">{a.score}/{a.maxScore}</span>
+                                                                        ) : (
+                                                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${a.status === 'pending' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'}`}>
+                                                                                {a.status === 'pending' ? 'Reviewing' : 'Draft'}
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            {course.assignments.length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="2" className="p-8 text-center text-gray-400 italic text-xs">No projects yet.</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

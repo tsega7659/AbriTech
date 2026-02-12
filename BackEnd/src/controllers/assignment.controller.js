@@ -115,14 +115,24 @@ const submitAssignment = async (req, res) => {
         'UPDATE assignmentsubmission SET submissionType = ?, submissionContent = ?, status = ?, submittedAt = NOW() WHERE id = ?',
         [type, content, newStatus, existing[0].id]
       );
+
+      const [updated] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [existing[0].id]);
+      res.json({
+        message: isFinal === 'true' ? 'Assignment submitted for review successfully' : 'Draft saved successfully',
+        submission: updated[0]
+      });
     } else {
-      await pool.execute(
+      const [result] = await pool.execute(
         'INSERT INTO assignmentsubmission (assignmentId, studentId, submissionType, submissionContent, status) VALUES (?, ?, ?, ?, ?)',
         [assignmentId, studentId, type, content, newStatus]
       );
-    }
 
-    res.json({ message: isFinal === 'true' ? 'Assignment submitted for review successfully' : 'Draft saved successfully' });
+      const [newSub] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [result.insertId]);
+      res.json({
+        message: isFinal === 'true' ? 'Assignment submitted for review successfully' : 'Draft saved successfully',
+        submission: newSub[0]
+      });
+    }
   } catch (error) {
     console.error('Submit Assignment Error:', error);
     res.status(500).json({ message: 'Failed to submit assignment', error: error.message });
@@ -132,15 +142,15 @@ const submitAssignment = async (req, res) => {
 const assessSubmission = async (req, res) => {
   try {
     const { id: submissionId } = req.params;
-    const { status, result, feedback } = req.body;
+    const { status, result, feedback, score, maxScore } = req.body;
 
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
     await pool.execute(
-      'UPDATE assignmentsubmission SET status = ?, result = ?, feedback = ? WHERE id = ?',
-      [status, result || null, feedback || null, submissionId]
+      'UPDATE assignmentsubmission SET status = ?, result = ?, feedback = ?, score = ?, maxScore = ? WHERE id = ?',
+      [status, result || null, feedback || null, score !== undefined ? score : null, maxScore || 100, submissionId]
     );
 
     res.json({ message: 'Submission assessed successfully' });

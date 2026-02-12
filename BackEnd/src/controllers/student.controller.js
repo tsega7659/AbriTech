@@ -56,7 +56,7 @@ const getDashboard = async (req, res) => {
       'SELECT AVG(isCorrect * 100) as average FROM quizattempt WHERE studentId = ?',
       [studentId]
     );
-    const averageScore = quizResult[0].average !== null ? Math.round(quizResult[0].average) : null;
+    const averageScore = quizResult[0].average !== null ? Math.round(quizResult[0].average) : 0;
 
     // Placeholder for learning time (can be estimated later)
     const learningTime = 'Est. 2h';
@@ -112,12 +112,23 @@ const getStudentGrades = async (req, res) => {
     if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
     const studentId = students[0].id;
 
+    // Fetch all enrolled courses first to ensure they are all listed
+    const [enrollments] = await pool.execute(`
+      SELECT c.id, c.name 
+      FROM enrollment e
+      JOIN course c ON e.courseId = c.id
+      WHERE e.studentId = ?
+    `, [studentId]);
+
+    const courseGrades = {};
+    enrollments.forEach(e => {
+      courseGrades[e.id] = { courseId: e.id, courseName: e.name, quizzes: [], assignments: [] };
+    });
+
     // Fetch quiz results grouped by course
     const [quizzes] = await pool.execute(`
       SELECT 
         c.id as courseId,
-        c.name as courseName,
-        l.id as lessonId,
         l.title as lessonTitle,
         SUM(qa.isCorrect) as correctAnswers,
         COUNT(qa.id) as totalQuestions,
@@ -136,10 +147,11 @@ const getStudentGrades = async (req, res) => {
     const [assignments] = await pool.execute(`
       SELECT 
         c.id as courseId,
-        c.name as courseName,
         a.title as assignmentTitle,
         asub.status,
         asub.result,
+        asub.score,
+        asub.maxScore,
         asub.feedback,
         asub.submittedAt
       FROM enrollment e
@@ -150,33 +162,30 @@ const getStudentGrades = async (req, res) => {
       ORDER BY asub.submittedAt DESC
     `, [studentId, studentId]);
 
-    // Structure data for frontend tables
-    const courseGrades = {};
-
     // Process Quizzes
     quizzes.forEach(q => {
-      if (!courseGrades[q.courseId]) {
-        courseGrades[q.courseId] = { courseName: q.courseName, quizzes: [], assignments: [] };
+      if (courseGrades[q.courseId]) {
+        courseGrades[q.courseId].quizzes.push({
+          lessonTitle: q.lessonTitle,
+          score: Math.round((Number(q.correctAnswers) / Number(q.totalQuestions)) * 100),
+          date: q.lastAttempted
+        });
       }
-      courseGrades[q.courseId].quizzes.push({
-        lessonTitle: q.lessonTitle,
-        score: Math.round((q.correctAnswers / q.totalQuestions) * 100),
-        date: q.lastAttempted
-      });
     });
 
     // Process Assignments
     assignments.forEach(a => {
-      if (!courseGrades[a.courseId]) {
-        courseGrades[a.courseId] = { courseName: a.courseName, quizzes: [], assignments: [] };
+      if (courseGrades[a.courseId]) {
+        courseGrades[a.courseId].assignments.push({
+          title: a.assignmentTitle,
+          status: a.status,
+          result: a.result,
+          score: a.score,
+          maxScore: a.maxScore,
+          feedback: a.feedback,
+          date: a.submittedAt
+        });
       }
-      courseGrades[a.courseId].assignments.push({
-        title: a.assignmentTitle,
-        status: a.status,
-        result: a.result,
-        feedback: a.feedback,
-        date: a.submittedAt
-      });
     });
 
     res.json(Object.values(courseGrades));

@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^1.41.0",
+    "@google/generative-ai": "^0.24.1",
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
@@ -25,6 +27,7 @@
     "mysql2": "^3.6.5",
     "nodemailer": "^7.0.12",
     "postmark": "^4.0.5",
+    "react-markdown": "^10.1.0",
     "resend": "^6.6.0"
   },
   "devDependencies": {

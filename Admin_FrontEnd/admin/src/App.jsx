@@ -21,6 +21,7 @@ import InstructorProjects from './pages/instructor/InstructorProjects';
 import InstructorStudents from './pages/instructor/InstructorStudents';
 import { AdminProvider } from './context/AdminContext';
 import { InstructorProvider } from './context/InstructorContext';
+import ChatWidget from './components/ChatWidget';
 import './index.css';
 
 function App() {
@@ -45,7 +46,6 @@ function App() {
             <Route path="projects" element={<ProjectReview />} />
             <Route path="blogs" element={<BlogManagement />} />
             <Route path="analytics" element={<div>Analytics (Refinement Pending)</div>} />
-            <Route path="ai-insights" element={<div>AI Insights (Refinement Pending)</div>} />
             <Route path="settings" element={<Settings />} />
           </Route>
 
@@ -70,6 +70,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <ChatWidget />
       </AdminProvider>
     </Router>
   );

@@ -141,6 +141,7 @@ CREATE TABLE assignment (
   description TEXT NOT NULL,
   dueDate DATETIME,
   requiresApproval TINYINT(1) DEFAULT 1,
+  maxPoints INT DEFAULT 100,
   FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
 );
 
@@ -152,6 +153,8 @@ CREATE TABLE assignment_submission (
   submissionContent TEXT NOT NULL,
   status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   result ENUM('pass', 'fail'),
+  score FLOAT DEFAULT NULL,
+  maxScore INT DEFAULT 100,
   feedback TEXT,
   submittedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (assignmentId) REFERENCES assignment(id) ON DELETE CASCADE,

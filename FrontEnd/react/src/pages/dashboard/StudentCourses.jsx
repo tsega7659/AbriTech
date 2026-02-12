@@ -61,7 +61,7 @@ export default function StudentCourses() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCourses.map((course) => (
-                        <div key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all group flex flex-col">
+                        <Link to={`/dashboard/student/courses/${course.id}/learn/1`} key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all group flex flex-col">
                             <div className="h-48 relative overflow-hidden">
                                 <img
                                     src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : "https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600"}
@@ -92,15 +92,14 @@ export default function StudentCourses() {
                                     <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
                                         <div className="h-full bg-[#00B4D8] rounded-full transition-all duration-1000" style={{ width: `${course.progress || 0}%` }}></div>
                                     </div>
-                                    <Link
-                                        to={`/dashboard/student/courses/${course.id}/learn/1`}
+                                    <div
                                         className="block w-full text-center bg-[#00B4D8] text-white font-bold py-2.5 rounded-xl hover:bg-[#0096B4] transition-colors"
                                     >
                                         Continue Learning
-                                    </Link>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}

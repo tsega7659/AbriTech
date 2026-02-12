@@ -39,7 +39,9 @@ const InstructorProjects = () => {
         try {
             await api.post(`/assignments/submissions/${assessing}/assess`, {
                 status: assessmentData.status,
-                result: assessmentData.result,
+                result: assessmentData.score >= (assessmentData.maxScore / 2) ? 'pass' : 'fail',
+                score: assessmentData.score,
+                maxScore: assessmentData.maxScore,
                 feedback: assessmentData.feedback
             });
             setAssessing(null);
@@ -168,7 +170,12 @@ const InstructorProjects = () => {
                                             <button
                                                 onClick={() => {
                                                     setAssessing(sub.id);
-                                                    setAssessmentData({ status: 'approved', result: 'pass', feedback: '' });
+                                                    setAssessmentData({
+                                                        status: sub.status || 'approved',
+                                                        score: sub.score,
+                                                        maxScore: sub.maxScore || 10,
+                                                        feedback: sub.feedback || ''
+                                                    });
                                                 }}
                                                 className="px-6 py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
                                             >
@@ -181,7 +188,7 @@ const InstructorProjects = () => {
                                 {assessing === sub.id && (
                                     <div className="mt-8 pt-8 border-t border-slate-50 animate-in slide-in-from-top-4 duration-300">
                                         <form onSubmit={handleAssess} className="space-y-6 max-w-2xl">
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Status</label>
                                                     <select
@@ -194,15 +201,26 @@ const InstructorProjects = () => {
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Final Grade</label>
-                                                    <select
-                                                        value={assessmentData.result}
-                                                        onChange={(e) => setAssessmentData({ ...assessmentData, result: e.target.value })}
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score</label>
+                                                    <input
+                                                        type="number"
+                                                        value={assessmentData.score || ''}
+                                                        onChange={(e) => setAssessmentData({ ...assessmentData, score: e.target.value })}
+                                                        placeholder="e.g. 10"
                                                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
-                                                    >
-                                                        <option value="pass">Pass</option>
-                                                        <option value="fail">Fail</option>
-                                                    </select>
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Max Mark</label>
+                                                    <input
+                                                        type="number"
+                                                        value={assessmentData.maxScore || 10}
+                                                        onChange={(e) => setAssessmentData({ ...assessmentData, maxScore: e.target.value })}
+                                                        placeholder="e.g. 15"
+                                                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
+                                                        required
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -236,7 +254,10 @@ const InstructorProjects = () => {
                                             <MessageCircle className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Feedback Given</p>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assessment Detail</p>
+                                                <span className="text-sm font-black text-primary">{sub.score}/{sub.maxScore}</span>
+                                            </div>
                                             <p className="text-sm font-medium text-slate-600 leading-relaxed italic">"{sub.feedback}"</p>
                                         </div>
                                     </div>

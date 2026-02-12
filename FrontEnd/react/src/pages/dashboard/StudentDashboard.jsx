@@ -18,7 +18,7 @@ export default function StudentDashboard() {
     const stats = [
         { label: "Enrolled Courses", value: dashboardData?.enrolledCourses || "0", icon: BookOpen, color: "text-[#00B4D8]", bg: "bg-blue-50" },
         { label: "Lessons Completed", value: dashboardData?.lessonsCompleted || "0", icon: Trophy, color: "text-green-500", bg: "bg-green-50" },
-        { label: "Average Score", value: (dashboardData?.averageScore !== null && dashboardData?.averageScore !== undefined) ? `${dashboardData.averageScore}%` : "N/A", icon: TrendingUp, color: "text-[#FDB813]", bg: "bg-yellow-50" },
+        { label: "Average Score", value: (dashboardData?.averageScore !== null && dashboardData?.averageScore !== undefined) ? `${dashboardData.averageScore}%` : "0%", icon: TrendingUp, color: "text-[#FDB813]", bg: "bg-yellow-50" },
         { label: "Learning Time", value: dashboardData?.learningTime || "0h", icon: Clock, color: "text-purple-500", bg: "bg-purple-50" },
     ];
 

@@ -46,7 +46,16 @@ const InstructorStudentDetail = () => {
 
     const handleAssess = async (e) => {
         e.preventDefault();
+        if (!assessing) return;
+
         try {
+            await api.post(`/assignments/submissions/${assessing}/assess`, {
+                status: assessmentData.status,
+                result: assessmentData.score >= (assessmentData.maxScore / 2) ? 'pass' : 'fail',
+                score: assessmentData.score,
+                maxScore: assessmentData.maxScore,
+                feedback: assessmentData.feedback
+            });
             showFeedback("Success", "Assessment saved successfully!", "success");
             setAssessing(null);
             loadData();
@@ -176,11 +185,16 @@ const InstructorStudentDetail = () => {
                                 {submissions.map((sub) => (
                                     <div key={sub.id} className="p-6 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all space-y-4 bg-slate-50/30">
                                         <div className="flex items-start justify-between">
-                                            <div>
-                                                <h4 className="font-bold text-slate-800 text-lg">{sub.assignmentTitle}</h4>
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="font-bold text-slate-800 text-lg">{sub.assignmentTitle}</h4>
+                                                    {sub.score !== null && (
+                                                        <span className="text-lg font-black text-primary">{sub.score}/{sub.maxScore}</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
                                             </div>
-                                            <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${sub.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                            <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest h-fit ${sub.status === 'approved' ? 'bg-green-100 text-green-700' :
                                                 sub.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                                                 }`}>
                                                 {sub.status}
@@ -198,26 +212,50 @@ const InstructorStudentDetail = () => {
                                         </div>
 
                                         {assessing === sub.id ? (
-                                            <form onSubmit={handleAssess} className="mt-4 p-6 bg-white rounded-2xl border border-slate-100 space-y-4 animate-in slide-in-from-top-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                            <form onSubmit={handleAssess} className="mt-4 p-6 bg-white rounded-2xl border border-slate-100 space-y-6 animate-in slide-in-from-top-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <div className="space-y-1">
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                        <select value={assessmentData.status} onChange={(e) => setAssessmentData({ ...assessmentData, status: e.target.value })} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest focus:outline-none">
+                                                        <select
+                                                            value={assessmentData.status}
+                                                            onChange={(e) => setAssessmentData({ ...assessmentData, status: e.target.value })}
+                                                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest focus:outline-none"
+                                                        >
                                                             <option value="approved">Approve</option>
                                                             <option value="rejected">Reject</option>
                                                         </select>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade</label>
-                                                        <select value={assessmentData.result} onChange={(e) => setAssessmentData({ ...assessmentData, result: e.target.value })} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest focus:outline-none">
-                                                            <option value="pass">Pass</option>
-                                                            <option value="fail">Fail</option>
-                                                        </select>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score</label>
+                                                        <input
+                                                            type="number"
+                                                            value={assessmentData.score || ''}
+                                                            onChange={(e) => setAssessmentData({ ...assessmentData, score: e.target.value })}
+                                                            placeholder="Grade"
+                                                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Max Mark</label>
+                                                        <input
+                                                            type="number"
+                                                            value={assessmentData.maxScore || 10}
+                                                            onChange={(e) => setAssessmentData({ ...assessmentData, maxScore: e.target.value })}
+                                                            placeholder="Out of"
+                                                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
+                                                            required
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Feedback</label>
-                                                    <textarea value={assessmentData.feedback} onChange={(e) => setAssessmentData({ ...assessmentData, feedback: e.target.value })} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-medium text-sm focus:outline-none min-h-[100px]" placeholder="Add comments..." />
+                                                    <textarea
+                                                        value={assessmentData.feedback}
+                                                        onChange={(e) => setAssessmentData({ ...assessmentData, feedback: e.target.value })}
+                                                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-medium text-sm focus:outline-none min-h-[100px]"
+                                                        placeholder="Add comments..."
+                                                    />
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button type="submit" className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all">Save Changes</button>
@@ -225,10 +263,26 @@ const InstructorStudentDetail = () => {
                                                 </div>
                                             </form>
                                         ) : sub.status === 'pending' ? (
-                                            <button onClick={() => { setAssessing(sub.id); setAssessmentData({ status: 'approved', result: 'pass', feedback: '' }); }} className="w-full py-4 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">Assess This Project</button>
+                                            <button
+                                                onClick={() => {
+                                                    setAssessing(sub.id);
+                                                    setAssessmentData({
+                                                        status: sub.status || 'approved',
+                                                        score: sub.score,
+                                                        maxScore: sub.maxScore || 10,
+                                                        feedback: sub.feedback || ''
+                                                    });
+                                                }}
+                                                className="w-full py-4 bg-primary text-black rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                            >
+                                                Assess This Project
+                                            </button>
                                         ) : sub.feedback && (
                                             <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                                                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Feedback Given</p>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">Feedback Given</p>
+                                                    {sub.score !== null && <span className="text-[10px] font-black text-primary">{sub.score}/{sub.maxScore}</span>}
+                                                </div>
                                                 <p className="text-sm font-medium text-slate-700 italic">"{sub.feedback}"</p>
                                             </div>
                                         )}

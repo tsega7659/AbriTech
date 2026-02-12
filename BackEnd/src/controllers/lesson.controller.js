@@ -81,6 +81,9 @@ const createLesson = async (req, res) => {
 
     await connection.commit();
 
+    // Update progress for all enrolled students since a new lesson was added
+    await updateCourseProgressForAllStudents(courseId);
+
     res.status(201).json({
       message: 'Lesson created successfully',
       lessonId: lessonId,
@@ -336,7 +339,19 @@ const updateLesson = async (req, res) => {
 const deleteLesson = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get courseId before deleting
+    const [lesson] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
+    if (lesson.length === 0) {
+      return res.status(404).json({ message: 'Lesson not found' });
+    }
+    const courseId = lesson[0].courseId;
+
     await pool.execute('DELETE FROM lesson WHERE id = ?', [id]);
+
+    // Update progress for all enrolled students since a lesson was removed
+    await updateCourseProgressForAllStudents(courseId);
+
     res.json({ message: 'Lesson deleted successfully' });
   } catch (error) {
     console.error('Delete Lesson Error:', error);
@@ -382,30 +397,7 @@ const markLessonComplete = async (req, res) => {
 
     const [lessonData] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
     if (lessonData.length > 0) {
-      const courseId = lessonData[0].courseId;
-
-      const [totalLessonsResult] = await pool.execute(
-        'SELECT COUNT(*) as total FROM lesson WHERE courseId = ?',
-        [courseId]
-      );
-      const totalLessons = totalLessonsResult[0].total;
-
-      const [completedLessonsResult] = await pool.execute(
-        `SELECT COUNT(*) as completed 
-         FROM lessonprogress lp
-         JOIN lesson l ON lp.lessonId = l.id
-         WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
-        [studentId, courseId]
-      );
-      const completedLessons = completedLessonsResult[0].completed;
-
-      const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-      const status = progressPercentage === 100 ? 'completed' : 'active';
-
-      await pool.execute(
-        'UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?',
-        [progressPercentage, status, studentId, courseId]
-      );
+      await updateStudentCourseProgress(studentId, lessonData[0].courseId);
     }
 
     res.json({ message: 'Lesson marked as complete' });
@@ -474,19 +466,7 @@ const submitQuiz = async (req, res) => {
     // Update Overall Course Progress
     const [lesson] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [lessonId]);
     if (lesson.length > 0) {
-      const courseId = lesson[0].courseId;
-      // ... same progress calculation logic as before ...
-      const [totalLessonsResult] = await pool.execute('SELECT COUNT(*) as total FROM lesson WHERE courseId = ?', [courseId]);
-      const totalLessons = totalLessonsResult[0].total;
-      const [completedLessonsResult] = await pool.execute(
-        `SELECT COUNT(*) as completed FROM lessonprogress lp JOIN lesson l ON lp.lessonId = l.id 
-           WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
-        [studentId, courseId]
-      );
-      const completedLessons = completedLessonsResult[0].completed;
-      const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-      const status = progressPercentage === 100 ? 'completed' : 'active';
-      await pool.execute('UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?', [progressPercentage, status, studentId, courseId]);
+      await updateStudentCourseProgress(studentId, lesson[0].courseId);
     }
 
     res.json({
@@ -499,6 +479,50 @@ const submitQuiz = async (req, res) => {
   } catch (error) {
     console.error('Submit Quiz Error:', error);
     res.status(500).json({ message: 'Error submitting quiz', error: error.message });
+  }
+};
+
+const updateCourseProgressForAllStudents = async (courseId) => {
+  try {
+    const [enrollments] = await pool.execute(
+      'SELECT studentId FROM enrollment WHERE courseId = ?',
+      [courseId]
+    );
+
+    for (const enrollment of enrollments) {
+      await updateStudentCourseProgress(enrollment.studentId, courseId);
+    }
+  } catch (error) {
+    console.error('Update All Students Progress Error:', error);
+  }
+};
+
+const updateStudentCourseProgress = async (studentId, courseId) => {
+  try {
+    const [totalLessonsResult] = await pool.execute(
+      'SELECT COUNT(*) as total FROM lesson WHERE courseId = ?',
+      [courseId]
+    );
+    const totalLessons = Number(totalLessonsResult[0].total);
+
+    const [completedLessonsResult] = await pool.execute(
+      `SELECT COUNT(*) as completed 
+       FROM lessonprogress lp
+       JOIN lesson l ON lp.lessonId = l.id
+       WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
+      [studentId, courseId]
+    );
+    const completedLessons = Number(completedLessonsResult[0].completed);
+
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const status = (progressPercentage === 100 && totalLessons > 0) ? 'completed' : 'active';
+
+    await pool.execute(
+      'UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?',
+      [progressPercentage, status, studentId, courseId]
+    );
+  } catch (error) {
+    console.error('Update Student Progress Error:', error);
   }
 };
 

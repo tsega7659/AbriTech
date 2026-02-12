@@ -109,12 +109,13 @@ export default function LessonPlayer() {
                 return;
             }
 
-            if (activeLesson.type === 'video') {
+            // Check if lesson has video content (either type='video' or has a video resource)
+            const hasVideo = activeLesson.type === 'video' || activeLesson.resources?.some(r => r.type === 'video');
+
+            if (hasVideo) {
                 setCanComplete(false);
                 setTimeLeft(0);
-                // If there's a quiz, video play + quiz pass is needed.
-                // But for now, let's keep it simple: canComplete depends on timer OR video play OR quiz pass.
-                // Wait, if there is a quiz, we should DEFINITELY require quiz pass regardless of video/timer.
+                return;
             }
 
             // Reset quiz states for new lesson if it has a quiz
@@ -369,11 +370,12 @@ export default function LessonPlayer() {
                                 <span className="text-[10px] font-black uppercase tracking-widest">Project Assignment</span>
                             </div>
                             {activeAssignment.status && (
-                                <div className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border ${activeAssignment.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100' :
-                                    activeAssignment.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                        'bg-yellow-50 text-yellow-600 border-yellow-100'
+                                <div className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${activeAssignment.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100 shadow-green-100/50' :
+                                    activeAssignment.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100/50' :
+                                        activeAssignment.status === 'pending' ? 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50' :
+                                            'bg-yellow-50 text-yellow-600 border-yellow-100 shadow-yellow-100/50'
                                     }`}>
-                                    Status: {activeAssignment.status}
+                                    Status: {activeAssignment.status === 'pending' ? 'Reviewing' : activeAssignment.status === 'approved' ? 'Graded' : activeAssignment.status || 'Draft'}
                                 </div>
                             )}
                         </div>
@@ -415,26 +417,28 @@ export default function LessonPlayer() {
                             <form onSubmit={handleSubmitAssignment} className="space-y-6">
                                 {submissionType === 'text' ? (
                                     <textarea
-                                        value={submissionText}
+                                        value={submissionText || (activeAssignment.submissionType === 'text' ? activeAssignment.submissionContent : '')}
                                         onChange={(e) => setSubmissionText(e.target.value)}
                                         placeholder="Type your project content or paste links here..."
-                                        className="w-full min-h-[250px] p-6 rounded-[2rem] border border-gray-200 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none font-medium"
+                                        className="w-full min-h-[250px] p-6 rounded-[2rem] border border-gray-200 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none font-medium disabled:bg-gray-50 disabled:cursor-not-allowed"
                                         required
+                                        disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
                                     />
                                 ) : (
                                     <div className="relative group">
                                         <input
                                             type="file"
                                             onChange={(e) => setSubmissionFile(e.target.files[0])}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            className={`absolute inset-0 w-full h-full opacity-0 z-10 ${activeAssignment.status && activeAssignment.status !== 'draft' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.mp4,.mkv"
+                                            disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
                                         />
                                         <div className="border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center group-hover:border-primary/50 transition-colors bg-gray-50/50">
                                             <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
                                                 <Plus className="w-8 h-8" />
                                             </div>
                                             <p className="text-gray-900 font-bold mb-1">
-                                                {submissionFile ? submissionFile.name : 'Click to upload your project file'}
+                                                {submissionFile ? submissionFile.name : (activeAssignment.submissionType === 'file' ? activeAssignment.submissionContent : 'Click to upload your project file')}
                                             </p>
                                             <p className="text-gray-400 text-sm font-medium">Max size: 125MB. Supports PDF, DOC, Video, Images.</p>
                                         </div>
@@ -456,54 +460,72 @@ export default function LessonPlayer() {
                                     </div>
                                 )}
 
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        setSubmittingAssignment(true);
-                                        const formData = new FormData();
-                                        formData.append('submissionType', submissionType);
-                                        formData.append('isFinal', 'false');
-                                        if (submissionType === 'text') formData.append('submissionContent', submissionText);
-                                        else if (submissionFile) {
-                                            formData.append('file', submissionFile);
-                                            formData.append('submissionContent', submissionFile.name);
-                                        }
-                                        try {
-                                            await api.post(`/assignments/${activeAssignment.id}/submit`, formData, {
-                                                headers: { 'Content-Type': 'multipart/form-data' }
-                                            });
-                                            showFeedback("Draft Saved", "Draft saved successfully!", "success");
-                                            const updated = await fetchAssignments(courseId);
-                                            setAssignments(updated || []);
-                                        } catch (err) {
-                                            showFeedback("Error", err.response?.data?.message || "Failed to save draft", "error");
-                                        } finally {
-                                            setSubmittingAssignment(false);
-                                        }
-                                    }}
-                                    disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft')}
-                                    className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50"
-                                >
-                                    Save Draft
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (activeAssignment.dueDate && new Date() > new Date(activeAssignment.dueDate)) {
-                                            showFeedback("Deadline Passed", "Cannot submit final work: The submission window has closed.", "warning");
-                                            return;
-                                        }
-                                        setShowConfirmModal(true);
-                                    }}
-                                    disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft') || (submissionType === 'text' ? !submissionText : !submissionFile)}
-                                    className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
-                                >
-                                    {submittingAssignment ? 'Uploading...' : 'Submit Final Work'}
-                                </button>
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            setSubmittingAssignment(true);
+                                            const formData = new FormData();
+                                            formData.append('submissionType', submissionType);
+                                            formData.append('isFinal', 'false');
+                                            if (submissionType === 'text') formData.append('submissionContent', submissionText);
+                                            else if (submissionFile) {
+                                                formData.append('file', submissionFile);
+                                                formData.append('submissionContent', submissionFile.name);
+                                            }
+                                            try {
+                                                await api.post(`/assignments/${activeAssignment.id}/submit`, formData, {
+                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                });
+                                                showFeedback("Draft Saved", "Draft saved successfully!", "success");
+                                                const updated = await fetchAssignments(courseId);
+                                                setAssignments(updated || []);
+                                            } catch (err) {
+                                                showFeedback("Error", err.response?.data?.message || "Failed to save draft", "error");
+                                            } finally {
+                                                setSubmittingAssignment(false);
+                                            }
+                                        }}
+                                        disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft')}
+                                        className="flex-1 py-4 px-3 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Save Draft
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (activeAssignment.dueDate && new Date() > new Date(activeAssignment.dueDate)) {
+                                                showFeedback("Deadline Passed", "Cannot submit final work: The submission window has closed.", "warning");
+                                                return;
+                                            }
+                                            setShowConfirmModal(true);
+                                        }}
+                                        disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft') || (submissionType === 'text' ? !submissionText : !submissionFile)}
+                                        className="flex-1 py-4 px-3 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
+                                    >
+                                        {submittingAssignment ? 'Uploading...' : 'Submit Final Work'}
+                                    </button>
+                                </div>
+                                {activeAssignment.status && activeAssignment.status !== 'draft' ? (
+                                    <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Teacher's Assessment</h4>
+                                            {activeAssignment.score !== null && (
+                                                <span className="text-xl font-black text-primary">{activeAssignment.score}/{activeAssignment.maxScore}</span>
+                                            )}
+                                        </div>
+                                        {activeAssignment.feedback ? (
+                                            <p className="text-sm font-medium text-slate-600 leading-relaxed italic">"{activeAssignment.feedback}"</p>
+                                        ) : (
+                                            <p className="text-sm font-bold text-slate-400">Your project is currently under review by the instructor.</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="mt-6 text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
+                                        Note: Resubmission is not allowed after final submission.
+                                    </p>
+                                )}
                             </form>
-                            <p className="mt-6 text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
-                                Note: Resubmission is not allowed after final submission.
-                            </p>
                         </div>
                     </div>
 
@@ -560,7 +582,7 @@ export default function LessonPlayer() {
                                                 setSubmittingAssignment(false);
                                             }
                                         }}
-                                        className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+                                        className="flex-1 py-4 px-3  text-black  rounded-2xl font-black text-xs uppercase tracking-widest  hover:bg-gray-200 transition-all"
                                     >
                                         Yes, Submit
                                     </button>
@@ -621,7 +643,7 @@ export default function LessonPlayer() {
                                 <video
                                     key={fullContentUrl}
                                     controls
-                                    onPlay={() => setCanComplete(true)}
+                                    onEnded={() => setCanComplete(true)}
                                     className="w-full h-full object-contain bg-black max-h-[600px]"
                                 >
                                     <source src={fullContentUrl} />
@@ -702,7 +724,7 @@ export default function LessonPlayer() {
                             {completing
                                 ? 'Completing...'
                                 : !canComplete
-                                    ? activeLesson.type === 'video'
+                                    ? (activeLesson.type === 'video' || activeLesson.resources?.some(r => r.type === 'video'))
                                         ? 'Watch video to complete'
                                         : `Complete in ${formatTime(timeLeft)}`
                                     : 'Mark as Complete'}

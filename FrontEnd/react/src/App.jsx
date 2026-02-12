@@ -30,6 +30,7 @@ import LessonPlayer from "./pages/dashboard/LessonPlayer";
 import { AuthProvider } from "./context/AuthContext";
 import { StudentProvider } from "./context/StudentContext";
 import { ParentProvider } from "./context/ParentContext";
+import ChatWidget from "./components/ChatWidget";
 
 import './index.css'
 
@@ -81,7 +82,6 @@ function App() {
 
             <Route path="portfolio" element={<StudentPortfolio />} />
             <Route path="projects" element={<StudentProjects />} />
-            <Route path="ai-tutor" element={<StudentAITutor />} />
           </Route>
 
           <Route path="/dashboard/parent" element={
@@ -96,6 +96,7 @@ function App() {
           </Route>
 
         </Routes>
+        <ChatWidget />
       </BrowserRouter>
     </AuthProvider>
   );

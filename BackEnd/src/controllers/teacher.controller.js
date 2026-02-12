@@ -81,9 +81,9 @@ const getDashboard = async (req, res) => {
         const activeAssignments = assignmentsResult[0].count;
 
         res.json({
-            assignedCourses: assignedCourses[0].count,
-            totalStudents: totalStudents[0].count,
-            activeAssignments,
+            assignedCourses: Number(assignedCourses[0].count),
+            totalStudents: Number(totalStudents[0].count),
+            activeAssignments: Number(activeAssignments),
             averageCompletion
         });
     } catch (error) {
@@ -213,6 +213,8 @@ const getStudentCourseDetail = async (req, res) => {
         const { studentId, courseId } = req.params;
         const { userId: teacherId } = req.user;
 
+        console.log(`[DEBUG] Fetching detail for studentId: ${studentId}, courseId: ${courseId}, teacherId: ${teacherId}`);
+
         // Verify this teacher is actually teaching this course
         const [teachingCheck] = await pool.execute(
             'SELECT id FROM teachercourse WHERE teacherId = ? AND courseId = ?',
@@ -220,6 +222,7 @@ const getStudentCourseDetail = async (req, res) => {
         );
 
         if (teachingCheck.length === 0) {
+            console.log(`[DEBUG] Teacher ${teacherId} not authorized for course ${courseId}`);
             return res.status(403).json({ message: 'Unauthorized. You do not teach this course.' });
         }
 
@@ -236,18 +239,19 @@ const getStudentCourseDetail = async (req, res) => {
         `, [studentId, courseId]);
 
         if (studentInfo.length === 0) {
+            console.log(`[DEBUG] Enrollment not found for studentId: ${studentId}, courseId: ${courseId}`);
             return res.status(404).json({ message: 'Student enrollment not found' });
         }
 
         // Get project submissions for this student and course
         const [submissions] = await pool.execute(`
             SELECT 
-                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.feedback, sub.submittedAt,
+                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
                 a.title as assignmentTitle, a.description as assignmentDescription
             FROM assignmentsubmission sub
             JOIN assignment a ON sub.assignmentId = a.id
             JOIN student s ON sub.studentId = s.id
-            AND s.userId = ? AND a.courseId = ? AND sub.status != 'draft'
+            WHERE s.userId = ? AND a.courseId = ? AND sub.status != 'draft'
             ORDER BY sub.submittedAt DESC
         `, [studentId, courseId]);
 
@@ -263,7 +267,7 @@ const getStudentCourseDetail = async (req, res) => {
             JOIN quizattempt qa ON lq.id = qa.quizId
             JOIN student s ON qa.studentId = s.id
             WHERE s.userId = ? AND l.courseId = ?
-            GROUP BY l.id
+            GROUP BY l.id, l.title
         `, [studentId, courseId]);
 
         res.json({
@@ -271,13 +275,18 @@ const getStudentCourseDetail = async (req, res) => {
             submissions,
             quizzes: quizResults.map(q => ({
                 lessonTitle: q.lessonTitle,
-                score: Math.round((q.correctAnswers / q.totalQuestions) * 100),
+                score: Number(q.totalQuestions) > 0 ? Math.round((Number(q.correctAnswers) / Number(q.totalQuestions)) * 100) : 0,
                 date: q.attemptedAt
             }))
         });
     } catch (error) {
         console.error('Get Student Course Detail Error:', error);
-        res.status(500).json({ message: 'Failed to fetch student details', error: error.message });
+        // Include more details in the response for debugging if possible
+        res.status(500).json({
+            message: 'Failed to fetch student details',
+            error: error.message,
+            stack: error.stack
+        });
     }
 };
 
@@ -287,7 +296,7 @@ const getAllSubmissions = async (req, res) => {
 
         const [submissions] = await pool.execute(`
             SELECT 
-                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.feedback, sub.submittedAt,
+                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
                 a.title as assignmentTitle,
                 c.name as courseName,
                 u.fullName as studentName,

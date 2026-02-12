@@ -19,7 +19,7 @@ export default function ParentDashboard() {
         { label: "Children", value: dashboardData?.linkedStudents || "0", icon: Users, color: "text-[#00B4D8]", bg: "bg-blue-50" },
         { label: "Course Enrollments", value: dashboardData?.totalCourseEnrollments || "0", icon: BookOpen, color: "text-green-500", bg: "bg-green-50" },
         { label: "Lessons Completed", value: dashboardData?.totalLessonsCompleted || "0", icon: Trophy, color: "text-[#FDB813]", bg: "bg-yellow-50" },
-        { label: "Avg Quiz Score", value: dashboardData?.averageQuizScore ? `${dashboardData.averageQuizScore}%` : "N/A", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-50" },
+        { label: "Avg Quiz Score", value: (dashboardData?.averageQuizScore !== undefined && dashboardData?.averageQuizScore !== null) ? `${dashboardData.averageQuizScore}%` : "0%", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-50" },
     ];
 
     return (

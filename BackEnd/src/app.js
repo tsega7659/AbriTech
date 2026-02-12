@@ -28,6 +28,7 @@ app.use('/api/courses', require('./routes/course.routes'));
 app.use('/api/blogs', require('./routes/blog.routes'));
 app.use('/api/lessons', require('./routes/lesson.routes'));
 app.use('/api/assignments', require('./routes/assignment.routes'));
+app.use('/api/chat', require('./routes/chat.routes'));
 
 // Global Error Handler (Must be after all routes)
 const errorMiddleware = require('./middleware/error.middleware');

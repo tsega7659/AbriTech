@@ -76,7 +76,6 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/parents', icon: Users, label: 'Parents' },
         { to: '/admin/users/register', icon: UserPlus, label: 'Register User' },
         { to: '/admin/projects', icon: CheckSquare, label: 'Projects' },
-        { to: '/admin/ai-insights', icon: Sparkles, label: 'AI Insights' },
         { to: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 
