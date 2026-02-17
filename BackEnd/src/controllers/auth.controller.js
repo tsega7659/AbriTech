@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { generateReferralCode, generateUsername, generateSecurePassword } = require('../utils/codeGenerator');
 const { sendEmail } = require('../utils/emailUtils');
-const { teacherWelcomeEmail, credentialsUpdatedEmail } = require('../utils/emailTemplates');
+const { teacherWelcomeEmail, credentialsUpdatedEmail, forgotPasswordEmail } = require('../utils/emailTemplates');
 require('dotenv').config();
 
 const SALT_ROUNDS = 10;
@@ -601,6 +601,142 @@ const logout = async (req, res) => {
   res.json({ message: 'Logout successful' });
 };
 
+const forgotPassword = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if user exists
+    const [users] = await conn.execute('SELECT id, fullName FROM user WHERE email = ?', [email]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found with this email' });
+    }
+
+    const user = users[0];
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+
+    // Update user with OTP and expiry
+    await conn.execute(
+      'UPDATE user SET resetPasswordOtp = ?, resetPasswordExpires = ? WHERE id = ?',
+      [otp, expiresAt, user.id]
+    );
+
+    // Send email
+    const emailContent = forgotPasswordEmail(user.fullName, otp);
+    try {
+      await sendEmail(email, emailContent.subject, emailContent.text, emailContent.html);
+      res.json({ message: 'OTP sent to your email' });
+    } catch (mailErr) {
+      console.error('Email sending failed:', mailErr);
+      res.status(500).json({ message: 'Failed to send email' });
+    }
+
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  } finally {
+    conn.release();
+  }
+};
+
+const verifyOtp = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const [users] = await conn.execute(
+      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = users[0];
+
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    if (new Date() > new Date(user.resetPasswordExpires)) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    res.json({ message: 'OTP verified successfully' });
+
+  } catch (error) {
+    console.error('Verify OTP Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  } finally {
+    conn.release();
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate password complexity
+    if (newPassword.length < 8 || !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long and contain both letters and numbers' });
+    }
+
+    const [users] = await conn.execute(
+      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Re-verify OTP to ensure security
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    if (new Date() > new Date(user.resetPasswordExpires)) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Update password and clear OTP
+    await conn.execute(
+      'UPDATE user SET passwordHash = ?, resetPasswordOtp = NULL, resetPasswordExpires = NULL WHERE id = ?',
+      [passwordHash, user.id]
+    );
+
+    res.json({ message: 'Password reset successfully' });
+
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  } finally {
+    conn.release();
+  }
+};
+
 module.exports = {
   login,
   registerStudent,
@@ -608,5 +744,8 @@ module.exports = {
   registerAdmin,
   registerTeacher,
   updateCredentials,
-  logout
+  logout,
+  forgotPassword,
+  verifyOtp,
+  resetPassword
 };

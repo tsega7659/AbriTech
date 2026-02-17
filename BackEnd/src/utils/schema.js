@@ -27,6 +27,8 @@ const schema = [
       { name: 'address', type: 'TEXT' },
       { name: 'roleId', type: 'INT NOT NULL' },
       { name: 'firstLogin', type: 'TINYINT(1) DEFAULT 1' },
+      { name: 'resetPasswordOtp', type: 'VARCHAR(10)' },
+      { name: 'resetPasswordExpires', type: 'DATETIME' },
       { name: 'createdAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
     ],
     foreignKeys: [
@@ -44,6 +46,8 @@ const schema = [
       address TEXT,
       roleId INT NOT NULL,
       firstLogin TINYINT(1) DEFAULT 1,
+      resetPasswordOtp VARCHAR(10),
+      resetPasswordExpires DATETIME,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (roleId) REFERENCES role(id) ON DELETE CASCADE
     )`

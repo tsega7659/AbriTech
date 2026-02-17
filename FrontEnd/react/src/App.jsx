@@ -12,6 +12,8 @@ import GetStarted from "./pages/auth/GetStarted";
 import RegisterStudent from "./pages/auth/RegisterStudent";
 import RegisterParent from "./pages/auth/RegisterParent";
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import StudentCourses from "./pages/dashboard/StudentCourses";
@@ -66,6 +68,8 @@ function App() {
             <Route path="register/student" element={<RegisterStudent />} />
             <Route path="register/parent" element={<RegisterParent />} />
             <Route path="login" element={<Login />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
 
           {/* Dashboard Routes */}
