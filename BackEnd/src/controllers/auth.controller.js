@@ -29,13 +29,17 @@ const login = async (req, res) => {
     return res.status(400).json({ message: 'Username/Email and password are required' });
   }
 
+  const identifier = usernameOrEmail.trim().toLowerCase();
+
   try {
+    console.log('[Login] Attempting login for:', identifier);
     const [users] = await pool.execute(
-      'SELECT u.*, r.name as roleName FROM user u JOIN role r ON u.roleId = r.id WHERE u.username = ? OR u.email = ?',
-      [usernameOrEmail, usernameOrEmail]
+      'SELECT u.*, r.name as roleName FROM user u JOIN role r ON u.roleId = r.id WHERE LOWER(u.username) = ? OR LOWER(u.email) = ?',
+      [identifier, identifier]
     );
 
     if (users.length === 0) {
+      console.warn('[Login] User not found:', identifier);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -43,8 +47,11 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
 
     if (!isMatch) {
+      console.warn('[Login] Password mismatch for:', identifier);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    console.log('[Login] Success for:', identifier, 'Role:', user.roleName);
 
     const token = jwt.sign(
       { userId: user.id, role: user.roleName, username: user.username },
@@ -610,9 +617,12 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'Email is required' });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Check if user exists
-    const [users] = await conn.execute('SELECT id, fullName FROM user WHERE email = ?', [email]);
+    const [users] = await conn.execute('SELECT id, fullName FROM user WHERE LOWER(email) = ?', [normalizedEmail]);
     if (users.length === 0) {
+      console.warn('[ForgotPassword] User not found:', normalizedEmail);
       return res.status(404).json({ message: 'User not found with this email' });
     }
 
@@ -693,14 +703,16 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Validate password complexity
     if (newPassword.length < 8 || !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))) {
       return res.status(400).json({ message: 'Password must be at least 8 characters long and contain both letters and numbers' });
     }
 
     const [users] = await conn.execute(
-      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE email = ?',
-      [email]
+      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE LOWER(email) = ?',
+      [normalizedEmail]
     );
 
     if (users.length === 0) {

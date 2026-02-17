@@ -25,7 +25,13 @@ export default function Login() {
         setIsLoading(true);
         setError("");
 
-        const result = await login(formData);
+        // Trim inputs
+        const normalizedData = {
+            usernameOrEmail: formData.usernameOrEmail.trim(),
+            password: formData.password
+        };
+
+        const result = await login(normalizedData);
 
         setIsLoading(false);
         if (result.success) {

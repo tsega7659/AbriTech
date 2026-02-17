@@ -32,12 +32,19 @@ export default function ResetPassword() {
         setIsLoading(true);
         setError("");
 
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedOtp = otp.trim();
+
         try {
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const response = await fetch(`${API_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp, newPassword: password }),
+                body: JSON.stringify({
+                    email: normalizedEmail,
+                    otp: normalizedOtp,
+                    newPassword: password
+                }),
             });
 
             const data = await response.json();
