@@ -9,7 +9,8 @@ import {
     Users2,
     MoreHorizontal,
     ArrowRight,
-    User
+    User,
+    Loader2
 } from 'lucide-react';
 import {
     BarChart,
@@ -42,26 +43,39 @@ const AdminDashboard = () => {
         loading
     } = useAdmin();
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     const miniStats = [
         { label: 'Total Students', value: students.length.toString(), icon: GraduationCap, bg: 'bg-blue-50', color: 'text-blue-500' },
         { label: 'Instructors', value: teachers.length.toString(), icon: Users, bg: 'bg-green-50', color: 'text-green-500' },
         { label: 'Courses', value: courses.length.toString(), icon: BookOpen, bg: 'bg-amber-50', color: 'text-amber-500' },
-        { label: 'Pending Reviews', value: adminDashboardStats?.pendingReviews || '1', icon: Clock, bg: 'bg-purple-50', color: 'text-purple-500' },
+        { label: 'Pending Reviews', value: adminDashboardStats?.pendingReviews?.toString() || '0', icon: Clock, bg: 'bg-purple-50', color: 'text-purple-500' },
     ];
 
     const analyticalStats = [
         {
             label: 'Total Enrollments',
-            value: adminDashboardStats?.totalEnrollments || '6',
-            change: adminDashboardStats?.enrollmentChange || '+12% this month',
-            trend: 'up',
+            value: adminDashboardStats?.totalEnrollments?.toString() || '0',
+            change: adminDashboardStats?.enrollmentChange || '+0% this month',
+            trend: adminDashboardStats?.enrollmentChange?.includes('+') ? 'up' : 'down',
             icon: TrendingUp,
             iconColor: 'text-green-500'
         },
         {
             label: 'Courses Completed',
-            value: adminDashboardStats?.coursesCompleted || '4',
-            change: adminDashboardStats?.completionRate || '67% completion rate',
+            value: (adminDashboardStats?.totalEnrollments && adminDashboardStats?.completionRate)
+                ? Math.round((parseInt(adminDashboardStats.completionRate) / 100) * adminDashboardStats.totalEnrollments).toString()
+                : '0',
+            change: adminDashboardStats?.completionRate || '0% completion rate',
             icon: CheckCircle2,
             iconColor: 'text-blue-500',
             badge: 'bg-blue-50 text-blue-600'
@@ -76,22 +90,17 @@ const AdminDashboard = () => {
         },
     ];
 
-    const topCoursesData = adminDashboardStats?.topCourses || [
-        { name: 'Introduction to Python...', value: 2 },
-        { name: 'Robotics Fundamental...', value: 1 },
-        { name: 'AI and Machine Learn...', value: 1 },
-        { name: 'Digital Creativity w...', value: 1 },
-        { name: 'Mobile App Developme...', value: 1 },
-    ];
+    const topCoursesData = adminDashboardStats?.topCourses || [];
 
-    const categoryData = adminDashboardStats?.categoryStats || [
-        { name: 'Coding', value: 50, color: '#3b82f6' },
-        { name: 'STEM', value: 0, color: '#ef4444' },
-        { name: 'Digital Creativity', value: 17, color: '#a855f7' },
-        { name: 'University Prep', value: 0, color: '#f43f5e' },
-        { name: 'AI & ML', value: 17, color: '#f59e0b' },
-        { name: 'Robotics', value: 17, color: '#10b981' },
-    ];
+    const categoryData = adminDashboardStats?.categoryStats || [];
+
+    if (loading.dashboard && !adminDashboardStats) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto">
@@ -188,37 +197,52 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <div className="h-[300px] flex items-center justify-center relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={categoryData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={70}
-                                    outerRadius={100}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {categoryData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-2xl font-bold text-slate-800">Coding</span>
-                            <span className="text-sm font-bold text-slate-400">50%</span>
-                        </div>
-                        {/* Legend placeholder */}
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden xl:block space-y-2">
-                            {categoryData.filter(d => d.value > 0).map((d, i) => (
-                                <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                                    {d.name} {d.value}%
+                        {categoryData.length === 0 ? (
+                            <div className="text-slate-400 text-sm">No course categories yet</div>
+                        ) : (
+                            <>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={categoryData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={70}
+                                            outerRadius={100}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {categoryData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            formatter={(value) => [`${value} Courses`, 'Enrollments']}
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-xl font-bold text-slate-800">
+                                        {courses.length}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Courses</span>
                                 </div>
-                            ))}
-                        </div>
+                                {/* Legend */}
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden xl:block space-y-2 max-h-full overflow-y-auto px-2">
+                                    {categoryData.filter(d => d.value > 0).map((d, i) => {
+                                        const percentage = Math.round((d.value / courses.length) * 100);
+                                        return (
+                                            <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-500 whitespace-nowrap">
+                                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                                                <span className="truncate max-w-[100px]">{d.name}</span>
+                                                <span className="text-slate-400 ml-auto">{percentage}%</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -236,23 +260,25 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <div className="space-y-6">
-                        {[
-                            { user: 'Sara Haile', action: 'lesson_started in AI and Machine Learning Basics', time: 'Dec 4, 06:10 PM', profile: 'S' },
-                            { user: 'Sara Haile', action: 'Logged in', time: 'Dec 4, 06:00 PM', profile: 'S' },
-                            { user: 'Abebe Kebede', action: 'Completed lesson in Robotics Fundamentals', time: 'Dec 3, 05:45 PM', profile: 'A' },
-                        ].map((activity, i) => (
-                            <div key={i} className="flex gap-4">
-                                <div className="w-10 h-10 bg-slate-100 rounded-full flex-shrink-0 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
-                                    <img src={`https://ui-avatars.com/api/?name=${activity.user}&background=random`} alt="" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-700">
-                                        {activity.user} <span className="font-medium text-slate-500">{activity.action}</span>
-                                    </p>
-                                    <p className="text-[11px] font-bold text-slate-400 mt-0.5">{activity.time}</p>
-                                </div>
+                        {(!adminDashboardStats?.recentActivity || adminDashboardStats.recentActivity.length === 0) ? (
+                            <div className="text-center py-8 text-slate-400">
+                                <p className="text-sm">No recent activity found</p>
                             </div>
-                        ))}
+                        ) : (
+                            adminDashboardStats.recentActivity.map((activity, i) => (
+                                <div key={i} className="flex gap-4">
+                                    <div className="w-10 h-10 bg-slate-100 rounded-full flex-shrink-0 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
+                                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activity.user)}&background=random`} alt="" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-700">
+                                            {activity.user} <span className="font-medium text-slate-500">{activity.action}</span>
+                                        </p>
+                                        <p className="text-[11px] font-bold text-slate-400 mt-0.5">{formatDate(activity.time)}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                         <button className="w-full py-3 mt-4 text-sm font-bold text-primary hover:bg-primary/5 rounded-xl transition-all flex items-center justify-center gap-2">
                             View all activities <ArrowRight className="w-4 h-4" />
                         </button>
@@ -266,27 +292,29 @@ const AdminDashboard = () => {
                         <p className="text-sm text-slate-400 mb-8">Completion rates and progress overview</p>
                     </div>
                     <div className="space-y-8">
-                        {[
-                            { title: 'Introduction to Python Prog...', enr: 2, comp: 0, rate: 0 },
-                            { title: 'Robotics Fundamentals', enr: 1, comp: 1, rate: 100 },
-                        ].map((course, i) => (
-                            <div key={i} className="space-y-3">
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <h4 className="font-bold text-slate-700">{course.title}</h4>
-                                        <p className="text-[11px] font-bold text-slate-400 mt-0.5">{course.enr} enrolled • {course.comp} completed</p>
-                                    </div>
-                                    <span className="text-sm font-black text-slate-800">{course.rate}% completion</span>
-                                </div>
-                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={cn("h-full transition-all duration-500", course.rate > 0 ? "bg-primary" : "bg-slate-300")}
-                                        style={{ width: `${course.rate || 52}%` }}
-                                    />
-                                </div>
-                                {course.rate === 0 && <p className="text-[10px] font-bold text-slate-400 text-right">50% avg</p>}
+                        {(!adminDashboardStats?.coursePerformance || adminDashboardStats.coursePerformance.length === 0) ? (
+                            <div className="text-center py-8 text-slate-400">
+                                <p className="text-sm">No course performance data available</p>
                             </div>
-                        ))}
+                        ) : (
+                            adminDashboardStats.coursePerformance.map((course, i) => (
+                                <div key={i} className="space-y-3">
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <h4 className="font-bold text-slate-700 truncate max-w-[200px]">{course.title}</h4>
+                                            <p className="text-[11px] font-bold text-slate-400 mt-0.5">{course.enr} enrolled • {course.comp} completed</p>
+                                        </div>
+                                        <span className="text-sm font-black text-slate-800">{course.rate}% completion</span>
+                                    </div>
+                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={cn("h-full transition-all duration-500", parseFloat(course.rate) > 0 ? "bg-primary" : "bg-slate-300")}
+                                            style={{ width: `${course.rate}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

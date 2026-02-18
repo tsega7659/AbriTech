@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, Loader2, KeyRound, AlertCircle, CheckCircle } from "lucide-react";
+import api from "../../lib/api";
 
 export default function ResetPassword() {
     const [otp, setOtp] = useState("");
@@ -36,30 +37,18 @@ export default function ResetPassword() {
         const normalizedOtp = otp.trim();
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: normalizedEmail,
-                    otp: normalizedOtp,
-                    newPassword: password
-                }),
+            await api.post('/auth/reset-password', {
+                email: normalizedEmail,
+                otp: normalizedOtp,
+                newPassword: password
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to reset password');
-            }
 
             setSuccess(true);
             setTimeout(() => {
                 navigate('/auth/login');
             }, 3000);
-
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to reset password');
         } finally {
             setIsLoading(false);
         }

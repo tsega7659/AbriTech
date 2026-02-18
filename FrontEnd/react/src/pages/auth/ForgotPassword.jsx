@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
+import api from "../../lib/api";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -17,26 +18,14 @@ export default function ForgotPassword() {
         const normalizedEmail = email.trim().toLowerCase();
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${API_URL}/auth/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to send OTP');
-            }
+            await api.post('/auth/forgot-password', { email: normalizedEmail });
 
             setSuccess(true);
             setTimeout(() => {
-                navigate('/auth/reset-password', { state: { email } });
+                navigate('/auth/reset-password', { state: { email: normalizedEmail } });
             }, 2000);
-
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to send OTP');
         } finally {
             setIsLoading(false);
         }

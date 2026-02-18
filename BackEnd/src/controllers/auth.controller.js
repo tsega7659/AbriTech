@@ -731,13 +731,16 @@ const resetPassword = async (req, res) => {
     }
 
     // Hash new password
+    console.log('[ResetPassword] Hashing new password for:', normalizedEmail);
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    console.log('[ResetPassword] New hash generated, length:', passwordHash.length);
 
     // Update password and clear OTP
-    await conn.execute(
+    const [result] = await conn.execute(
       'UPDATE user SET passwordHash = ?, resetPasswordOtp = NULL, resetPasswordExpires = NULL WHERE id = ?',
       [passwordHash, user.id]
     );
+    console.log('[ResetPassword] Update result - affectedRows:', result.affectedRows);
 
     res.json({ message: 'Password reset successfully' });
 
