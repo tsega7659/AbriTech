@@ -102,8 +102,8 @@ export default function Courses() {
 
                     {/* Search and Filters */}
                     <div className="mt-12 max-w-5xl mx-auto space-y-6">
-                        <div className="bg-white p-2 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col md:flex-row gap-2">
-                            <div className="relative flex-1">
+                        <div className="bg-white p-2 rounded-3xl shadow-xl shadow-gray-200/50  border border-[#00B4D8] flex flex-col md:flex-row gap-2">
+                            <div className="relative flex-1 ">
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
@@ -123,8 +123,8 @@ export default function Courses() {
                                     className={cn(
                                         "px-4 py-2 rounded-xl text-sm font-bold border transition-all flex items-center gap-2",
                                         selectedCategory === cat.name
-                                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-300"
+                                            ? "bg-primary text-gray-800 border-primary shadow-lg shadow-primary/20"
+                                            : "bg-white text-gray-500 border-gray-100  hover:border-gray-300"
                                     )}
                                 >
                                     <cat.icon className="w-4 h-4" />

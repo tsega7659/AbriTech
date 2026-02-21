@@ -278,7 +278,7 @@ export default function LessonPlayer() {
                         <button
                             onClick={handleSubmitQuiz}
                             disabled={submitQuizMutation.isPending || Object.keys(quizAnswers).length < activeLesson.quiz.length}
-                            className="px-12 py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
+                            className="px-12 py-4 bg-primary text-gray-800 rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
                         >
                             {submitQuizMutation.isPending ? 'Checking answers...' : 'Submit Quiz'}
                             <HelpCircle className="w-5 h-5" />
