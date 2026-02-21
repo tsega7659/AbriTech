@@ -1,32 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { TrendingUp, Award, FileText, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
-import api from "../../lib/api";
 import Loading from "../../components/Loading";
+import { useGrades } from "../../hooks/useStudentQueries";
 
 export default function Grades() {
-    const [courseGrades, setCourseGrades] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { data: courseGrades = [], isLoading: loading, error } = useGrades();
     const [expandedCourses, setExpandedCourses] = useState({});
 
     useEffect(() => {
-        const fetchGrades = async () => {
-            try {
-                const response = await api.get("/students/grades");
-                setCourseGrades(response.data);
-                // Expand the first course by default
-                if (response.data.length > 0) {
-                    setExpandedCourses({ [response.data[0].courseName]: true });
-                }
-            } catch (err) {
-                console.error("Failed to fetch grades", err);
-                setError("Failed to load your grades. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchGrades();
-    }, []);
+        // Expand the first course by default when data arrives
+        if (courseGrades.length > 0 && Object.keys(expandedCourses).length === 0) {
+            setExpandedCourses({ [courseGrades[0].courseName]: true });
+        }
+    }, [courseGrades]);
 
     const toggleExpand = (courseName) => {
         setExpandedCourses(prev => ({
@@ -41,7 +27,7 @@ export default function Grades() {
         <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-rose-100 shadow-sm text-center">
             <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
             <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
-            <p className="text-gray-500">{error}</p>
+            <p className="text-gray-500">{error.response?.data?.message || error.message || "Failed to load grades"}</p>
         </div>
     );
 

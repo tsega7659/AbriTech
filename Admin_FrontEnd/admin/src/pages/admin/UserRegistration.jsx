@@ -19,18 +19,22 @@ import {
     Layers,
     Copy
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
+import {
+    useRegisterStudent,
+    useRegisterTeacher,
+    useRegisterAdmin,
+    useRegisterParent,
+    useAdminCourses
+} from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const UserRegistration = () => {
-    const {
-        registerStudent,
-        registerTeacher,
-        registerAdmin,
-        registerParent,
-        courses
-    } = useAdmin();
+    const registerStudentMutation = useRegisterStudent();
+    const registerTeacherMutation = useRegisterTeacher();
+    const registerAdminMutation = useRegisterAdmin();
+    const registerParentMutation = useRegisterParent();
+    const { data: courses = [] } = useAdminCourses();
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -77,21 +81,19 @@ const UserRegistration = () => {
         setIsSubmitting(true);
         setSuccessData(null);
 
-        let result;
-        if (formData.role === 'student') {
-            result = await registerStudent(formData);
-        } else if (formData.role === 'teacher') {
-            result = await registerTeacher(formData);
-        } else if (formData.role === 'admin') {
-            result = await registerAdmin(formData);
-        } else if (formData.role === 'parent') {
-            result = await registerParent(formData);
-        }
+        try {
+            let data;
+            if (formData.role === 'student') {
+                data = await registerStudentMutation.mutateAsync(formData);
+            } else if (formData.role === 'teacher') {
+                data = await registerTeacherMutation.mutateAsync(formData);
+            } else if (formData.role === 'admin') {
+                data = await registerAdminMutation.mutateAsync(formData);
+            } else if (formData.role === 'parent') {
+                data = await registerParentMutation.mutateAsync(formData);
+            }
 
-        setIsSubmitting(false);
-        if (result.success) {
-            setSuccessData(result.data);
-            // Don't reset everything immediately if we need to show credentials
+            setSuccessData(data);
             if (formData.role !== 'teacher') {
                 setFormData({
                     ...formData,
@@ -106,8 +108,10 @@ const UserRegistration = () => {
                     courseIds: []
                 });
             }
-        } else {
-            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
+        } catch (error) {
+            showFeedback("Registration Failed", error.response?.data?.message || 'Registration failed', "error");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { X, Calendar, FileText, Send, CheckCircle2 } from 'lucide-react';
-import { useInstructor } from '../../context/InstructorContext';
+import { useAddProject } from '../../hooks/useInstructorQueries';
 import Loading from '../Loading';
 
 const AddProjectModal = ({ isOpen, onClose, courseId }) => {
-    const { addCourseProject, refreshInstructorData } = useInstructor();
+    const addProjectMutation = useAddProject();
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [formData, setFormData] = useState({
@@ -20,18 +20,21 @@ const AddProjectModal = ({ isOpen, onClose, courseId }) => {
         e.preventDefault();
         setSubmitting(true);
 
-        const success = await addCourseProject(courseId, formData);
-
-        if (success) {
-            setSuccess(true);
-            setTimeout(() => {
-                onClose();
-                refreshInstructorData();
-            }, 2000);
-        } else {
-            setSubmitting(false);
-            alert("Failed to add project. Please try again.");
-        }
+        addProjectMutation.mutate({
+            courseId,
+            ...formData
+        }, {
+            onSuccess: () => {
+                setSuccess(true);
+                setTimeout(() => {
+                    onClose();
+                }, 2000);
+            },
+            onError: (error) => {
+                setSubmitting(false);
+                alert(error.response?.data?.message || "Failed to add project. Please try again.");
+            }
+        });
     };
 
     if (success) {

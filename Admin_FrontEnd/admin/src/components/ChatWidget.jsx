@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, Minimize2, Maximize2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { API_BASE_URL } from '../config/apiConfig';
+import { chatService } from '../services/chatService';
 
 export default function ChatWidget({ userRole = 'admin' }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -45,36 +45,14 @@ export default function ChatWidget({ userRole = 'admin' }) {
         setIsLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
             const historyForBackend = newHistory.slice(0, -1)
-                .filter((_, index) => index !== 0) // Remove the initial greeting
+                .filter((_, index) => index !== 0)
                 .map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.parts[0].text }]
                 }));
 
-            const response = await fetch(`${API_BASE_URL}/chat`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    message: userMessage,
-                    history: historyForBackend
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get response');
-            }
-
-            const data = await response.json();
+            const data = await chatService.sendMessage(userMessage, historyForBackend);
 
             setChatHistory(prev => [
                 ...prev,

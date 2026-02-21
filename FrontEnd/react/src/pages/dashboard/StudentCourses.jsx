@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Search, Filter, BookOpen, Clock, MoreVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useStudent } from "../../context/StudentContext";
+import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 
 export default function StudentCourses() {
-    const { enrolledCourses: courses, loading } = useStudent();
+    const { data: courses = [], isLoading: loading } = useEnrolledCourses();
     const [searchTerm, setSearchTerm] = useState("");
 
 

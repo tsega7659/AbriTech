@@ -1,39 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import { Calendar, User, ArrowLeft, Tag, ExternalLink, Video, Link as LinkCircle } from "lucide-react";
-import { useState, useEffect } from "react";
 import Loading from "../components/Loading";
+import { useBlogDetail } from "../hooks/useBlogQueries";
+import apiClient from "../lib/apiClient";
 
-const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000/api'
-    : 'https://abritech.onrender.com/api';
+const API_BASE_URL = apiClient.defaults.baseURL.replace('/api', '');
 
 export default function BlogDetail() {
     const { id } = useParams();
-    const [post, setPost] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const fetchBlog = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/blogs/${id}`);
-                if (!response.ok) {
-                    throw new Error('Blog not found');
-                }
-                const data = await response.json();
-                setPost(data);
-            } catch (err) {
-                console.error("Failed to fetch blog:", err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (id) {
-            fetchBlog();
-        }
-    }, [id]);
+    const { data: post, isLoading: loading, error } = useBlogDetail(id);
 
     if (loading) {
         return (
@@ -100,7 +75,7 @@ export default function BlogDetail() {
                 <div className="rounded-3xl overflow-hidden shadow-2xl mb-12 bg-gray-100">
                     {post.coverImage ? (
                         <img
-                            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL.replace('/api', '')}${post.coverImage}`}
+                            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage}`}
                             alt={post.title}
                             className="w-full h-auto object-cover max-h-[500px]"
                         />
@@ -126,7 +101,7 @@ export default function BlogDetail() {
                                                 <div className="my-8 rounded-3xl overflow-hidden shadow-lg border border-gray-100 bg-gray-50">
                                                     {section.mediaType === 'image' && section.mediaUrl && (
                                                         <img
-                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL.replace('/api', '')}${section.mediaUrl}`}
+                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL}${section.mediaUrl}`}
                                                             alt={section.subtitle}
                                                             className="w-full h-auto object-cover max-h-[600px]"
                                                         />
@@ -135,7 +110,7 @@ export default function BlogDetail() {
                                                         <video
                                                             controls
                                                             className="w-full aspect-video bg-black"
-                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL.replace('/api', '')}${section.mediaUrl}`}
+                                                            src={section.mediaUrl.startsWith('http') ? section.mediaUrl : `${API_BASE_URL}${section.mediaUrl}`}
                                                         ></video>
                                                     )}
                                                     {section.mediaType === 'link' && section.mediaUrl && (

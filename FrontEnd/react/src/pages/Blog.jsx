@@ -1,34 +1,13 @@
 import { Calendar, User, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import Loading from "../components/Loading";
+import { useBlogs } from "../hooks/useBlogQueries";
+import apiClient from "../lib/apiClient";
 
-const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000/api'
-    : 'https://abritech.onrender.com/api';
+const API_BASE_URL = apiClient.defaults.baseURL.replace('/api', '');
 
 export default function Blog() {
-    const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchBlogs = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/blogs`);
-                const data = await response.json();
-                if (response.ok) {
-                    setBlogs(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch blogs:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBlogs();
-    }, []);
-
+    const { data: blogs = [], isLoading: loading } = useBlogs();
 
     return (
         <div className="bg-white min-h-screen pb-20 relative overflow-hidden">
@@ -61,7 +40,7 @@ export default function Blog() {
                                 <div className="h-64 overflow-hidden relative bg-gray-200">
                                     {post.coverImage ? (
                                         <img
-                                            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL.replace('/api', '')}${post.coverImage}`}
+                                            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage}`}
                                             alt={post.title}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                         />
@@ -113,4 +92,3 @@ export default function Blog() {
         </div>
     );
 }
-

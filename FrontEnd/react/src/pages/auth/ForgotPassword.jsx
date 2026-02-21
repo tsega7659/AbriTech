@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
-import api from "../../lib/api";
+import apiClient from "../../lib/apiClient";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -18,7 +18,7 @@ export default function ForgotPassword() {
         const normalizedEmail = email.trim().toLowerCase();
 
         try {
-            await api.post('/auth/forgot-password', { email: normalizedEmail });
+            await apiClient.post('/auth/forgot-password', { email: normalizedEmail });
 
             setSuccess(true);
             setTimeout(() => {

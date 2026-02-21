@@ -17,16 +17,27 @@ import {
     Copy,
     Check
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
+import {
+    useTeachers,
+    useAdminCourses,
+    useRegisterTeacher,
+    useDeleteTeacher
+} from '../../hooks/useAdminQueries';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
 
 
 const InstructorManagement = () => {
-    const { teachers, courses, registerTeacher, deleteTeacher, loading } = useAdmin();
+    const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
+    const { data: courses = [] } = useAdminCourses();
+    const registerTeacherMutation = useRegisterTeacher();
+    const deleteTeacherMutation = useDeleteTeacher();
+
+    const loading = teachersLoading;
     const [isRegistering, setIsRegistering] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const [registrationResult, setRegistrationResult] = useState(null);
     const [newInstructor, setNewInstructor] = useState({
         fullName: '',
@@ -56,13 +67,14 @@ const InstructorManagement = () => {
         if (!teacherToDelete) return;
 
         setIsDeleting(true);
-        const result = await deleteTeacher(teacherToDelete.userId || teacherToDelete.id);
-        setIsDeleting(false);
-        setIsDeleteModalOpen(false);
-        setTeacherToDelete(null);
-
-        if (!result.success) {
-            showFeedback("Operation Failed", result.message || "Failed to delete instructor", "error");
+        try {
+            await deleteTeacherMutation.mutateAsync(teacherToDelete.userId || teacherToDelete.id);
+            setIsDeleteModalOpen(false);
+            setTeacherToDelete(null);
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete instructor", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -70,9 +82,10 @@ const InstructorManagement = () => {
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        const result = await registerTeacher(newInstructor);
-        if (result.success) {
-            setRegistrationResult(result.data);
+        setSubmitting(true);
+        try {
+            const data = await registerTeacherMutation.mutateAsync(newInstructor);
+            setRegistrationResult(data);
             setIsRegistering(false);
             setNewInstructor({
                 fullName: '',
@@ -83,8 +96,10 @@ const InstructorManagement = () => {
                 specialization: '',
                 courseIds: []
             });
-        } else {
-            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
+        } catch (error) {
+            showFeedback("Registration Failed", error.response?.data?.message || 'Registration failed', "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -276,9 +291,16 @@ const InstructorManagement = () => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 w-full sm:w-auto"
+                                disabled={submitting}
+                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Complete Registration
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" /> Registering...
+                                    </>
+                                ) : (
+                                    'Complete Registration'
+                                )}
                             </button>
                         </div>
                     </form>
@@ -300,7 +322,7 @@ const InstructorManagement = () => {
             </div>
 
             {/* Instructors List */}
-            {loading.teachers ? (
+            {teachersLoading ? (
                 <Loading fullScreen={false} message="Loading instructors..." />
             ) : filteredTeachers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../lib/api';
+import apiClient from '../lib/apiClient';
 
 const AuthContext = createContext();
 
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         try {
-            const response = await api.post('/auth/login', credentials);
+            const response = await apiClient.post('/auth/login', credentials);
             const { token: newToken, user: userData } = response.data;
 
             setToken(newToken);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (type, data) => {
         try {
             const endpoint = type === 'student' ? '/auth/register/student' : '/auth/register/parent';
-            const response = await api.post(endpoint, data);
+            const response = await apiClient.post(endpoint, data);
 
             return { success: true, data: response.data };
         } catch (error) {
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
     const linkStudent = async (referralCode) => {
         try {
-            const response = await api.post('/parents/link-student', { referralCode });
+            const response = await apiClient.post('/parents/link-student', { referralCode });
             return { success: true, message: response.data.message };
         } catch (error) {
             const message = error.response?.data?.message || 'Failed to link student. Please check the code.';

@@ -3,12 +3,15 @@ import { useAuth } from "../../context/AuthContext";
 import LinkStudentForm from "../../components/LinkStudentForm";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { useParent } from "../../context/ParentContext";
+import { useParentDashboardStats, useLinkedStudents } from "../../hooks/useParentQueries";
 import Loading from "../../components/Loading";
 
 export default function ParentDashboard() {
     const { user } = useAuth();
-    const { linkedStudents, dashboardStats: dashboardData, loading } = useParent();
+    const { data: dashboardData, isLoading: statsLoading } = useParentDashboardStats();
+    const { data: linkedStudents = [], isLoading: studentsLoading } = useLinkedStudents();
+
+    const loading = statsLoading || studentsLoading;
 
 
     if (loading) {

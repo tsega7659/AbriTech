@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdminBlogs, useCreateBlog, useUpdateBlog, useDeleteBlog } from '../../hooks/useAdminQueries';
 import {
     XCircle, Image as ImageIcon, Loader2, Calendar, User,
     Trash2, Video, Link, Paperclip, ChevronDown, Plus, FileText
@@ -10,7 +10,10 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const BlogManagement = () => {
-    const { blogs, createBlog, updateBlog, deleteBlog, loading } = useAdmin();
+    const { data: blogs = [], isLoading: loading } = useAdminBlogs();
+    const createBlogMutation = useCreateBlog();
+    const updateBlogMutation = useUpdateBlog();
+    const deleteBlogMutation = useDeleteBlog();
     const [isAdding, setIsAdding] = useState(false);
     const [isEditing, setIsEditing] = useState(null); // Stores the blog ID being edited
     const [searchTerm, setSearchTerm] = useState('');
@@ -42,13 +45,14 @@ const BlogManagement = () => {
         if (!blogToDelete) return;
 
         setIsDeleting(true);
-        const result = await deleteBlog(blogToDelete.id);
-        setIsDeleting(false);
-        setIsDeleteModalOpen(false);
-        setBlogToDelete(null);
-
-        if (!result.success) {
-            showFeedback("Operation Failed", result.message || "Failed to delete article", "error");
+        try {
+            await deleteBlogMutation.mutateAsync(blogToDelete.id);
+            setIsDeleteModalOpen(false);
+            setBlogToDelete(null);
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete article", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -85,6 +89,7 @@ const BlogManagement = () => {
     const handleCreateOrUpdateBlog = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        setUploadProgress(0);
 
         const formData = new FormData();
         formData.append('title', newBlog.title);
@@ -92,42 +97,42 @@ const BlogManagement = () => {
             formData.append('image', newBlog.coverImage);
         }
 
-        // Append section media files
         sections.forEach((section) => {
             if (section.file) {
                 formData.append('sectionMedia', section.file);
             }
         });
 
-        // Prepare sections for JSON (remove file objects and reset mediaUrl if new file)
         const sectionsData = sections.map(s => ({
             subtitle: s.subtitle,
             body: s.body,
             mediaType: s.mediaType,
-            mediaUrl: s.file ? '' : s.mediaUrl // Empty means new upload from sectionMedia array to backend
+            mediaUrl: s.file ? '' : s.mediaUrl
         }));
         formData.append('content', JSON.stringify(sectionsData));
 
-        let result;
-        setUploadProgress(0);
-        if (isEditing) {
-            result = await updateBlog(isEditing, formData, (p) => setUploadProgress(p));
-        } else {
-            result = await createBlog(formData, (p) => setUploadProgress(p));
-        }
+        const mutationToUse = isEditing ? updateBlogMutation : createBlogMutation;
+        const mutationParams = isEditing
+            ? { id: isEditing, formData, onProgress: (p) => setUploadProgress(p) }
+            : { formData, onProgress: (p) => setUploadProgress(p) };
 
-        setSubmitting(false);
-        setUploadProgress(0);
-        if (result.success) {
-            setIsAdding(false);
-            setIsEditing(null);
-            setNewBlog({ title: '', content: '', coverImage: null });
-            setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]); // Reset sections
-            setPreviewUrl(null);
-            showFeedback("Success", `Article ${isEditing ? 'updated' : 'published'} successfully!`, "success");
-        } else {
-            showFeedback("Operation Failed", result.message || "Failed to save article", "error");
-        }
+        mutationToUse.mutate(mutationParams, {
+            onSuccess: () => {
+                setIsAdding(false);
+                setIsEditing(null);
+                setNewBlog({ title: '', content: '', coverImage: null });
+                setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
+                setPreviewUrl(null);
+                showFeedback("Success", `Article ${isEditing ? 'updated' : 'published'} successfully!`, "success");
+                setSubmitting(false);
+                setUploadProgress(0);
+            },
+            onError: (error) => {
+                showFeedback("Operation Failed", error.response?.data?.message || "Failed to save article", "error");
+                setSubmitting(false);
+                setUploadProgress(0);
+            }
+        });
     };
 
     const handleEditClick = (blog) => {

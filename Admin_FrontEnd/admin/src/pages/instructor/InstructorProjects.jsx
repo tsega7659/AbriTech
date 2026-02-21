@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle2, XCircle, Search, ExternalLink, MessageCircle, FileText } from 'lucide-react';
-import api from '../../lib/api.js';
+import { useInstructorSubmissions, useAssessSubmission } from '../../hooks/useInstructorQueries';
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const InstructorProjects = () => {
-    const [submissions, setSubmissions] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: submissions = [], isLoading: loading } = useInstructorSubmissions();
+    const assessMutation = useAssessSubmission();
     const [activeTab, setActiveTab] = useState('pending');
     const [searchTerm, setSearchTerm] = useState("");
     const [assessing, setAssessing] = useState(null); // ID of submission being assessed
@@ -17,40 +17,29 @@ const InstructorProjects = () => {
         setFeedbackModal({ isOpen: true, title, message, type });
     };
 
-    const fetchSubmissions = async () => {
-        try {
-            const response = await api.get('/teachers/submissions');
-            setSubmissions(response.data);
-        } catch (error) {
-            console.error('Failed to fetch submissions', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchSubmissions();
-    }, []);
-
     const handleAssess = async (e) => {
         e.preventDefault();
         if (!assessing) return;
 
-        try {
-            await api.post(`/assignments/submissions/${assessing}/assess`, {
+        assessMutation.mutate({
+            id: assessing,
+            assessmentData: {
                 status: assessmentData.status,
                 result: assessmentData.score >= (assessmentData.maxScore / 2) ? 'pass' : 'fail',
                 score: assessmentData.score,
                 maxScore: assessmentData.maxScore,
                 feedback: assessmentData.feedback
-            });
-            setAssessing(null);
-            showFeedback("Success", "Assessment saved successfully!", "success");
-            fetchSubmissions();
-        } catch (error) {
-            console.error('Assessment failed', error);
-            showFeedback("Error", "Failed to save assessment", "error");
-        }
+            }
+        }, {
+            onSuccess: () => {
+                setAssessing(null);
+                showFeedback("Success", "Assessment saved successfully!", "success");
+            },
+            onError: (error) => {
+                console.error('Assessment failed', error);
+                showFeedback("Error", error.response?.data?.message || "Failed to save assessment", "error");
+            }
+        });
     };
 
     const stats = [

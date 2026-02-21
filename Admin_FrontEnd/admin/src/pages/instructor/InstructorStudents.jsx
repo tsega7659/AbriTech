@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Search, Users } from 'lucide-react';
 import Loading from '../../components/Loading';
-import { useInstructor } from '../../context/InstructorContext';
+import { useInstructorStudents } from '../../hooks/useInstructorQueries';
 
 const InstructorStudents = () => {
-    const { students, loading } = useInstructor();
+    const { data: students = [], isLoading: loading } = useInstructorStudents();
     const [searchTerm, setSearchTerm] = useState("");
 
     const filteredStudents = students.filter(student =>

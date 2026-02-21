@@ -11,12 +11,13 @@ import {
     FileText,
     Download
 } from 'lucide-react';
-import { useStudent } from "../../context/StudentContext";
+import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
+import apiClient from "../../lib/apiClient";
 
 export default function CourseDetail() {
     const { courseId } = useParams();
-    const { enrolledCourses, loading: contextLoading } = useStudent();
+    const { data: enrolledCourses = [], isLoading: contextLoading } = useEnrolledCourses();
     const [activeTab, setActiveTab] = useState("curriculum");
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export default function CourseDetail() {
             }
 
             try {
-                const response = await api.get(`/courses`);
+                const response = await apiClient.get(`/courses`);
                 const foundCourse = response.data.find(c => c.id === parseInt(courseId));
                 setCourse(foundCourse);
             } catch (error) {
@@ -53,9 +54,7 @@ export default function CourseDetail() {
         </div>
     );
 
-    const API_BASE_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : 'https://abritech.onrender.com';
+    const API_BASE_URL = api.defaults.baseURL.replace('/api', '');
 
 
     return (

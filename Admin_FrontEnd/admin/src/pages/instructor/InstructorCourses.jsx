@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, TrendingUp, Eye } from 'lucide-react';
-import { useInstructor } from '../../context/InstructorContext';
+import { useInstructorCourses } from '../../hooks/useInstructorQueries';
 import Loading from '../../components/Loading';
 
 const InstructorCourses = () => {
-    const { assignedCourses: courses, loading } = useInstructor();
+    const { data: courses = [], isLoading: loading } = useInstructorCourses();
     const navigate = useNavigate();
 
 

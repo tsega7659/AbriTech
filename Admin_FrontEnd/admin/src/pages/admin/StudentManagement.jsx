@@ -20,16 +20,20 @@ import {
     School,
     Layers,
     UserCheck,
-    ArrowRight
+    ArrowRight,
+    Loader2
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
+import { useStudentsList, useRegisterStudent, useDeleteStudent } from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const StudentManagement = () => {
-    const { students, registerStudent, deleteStudent, loading } = useAdmin();
+    const { data: students = [], isLoading: studentsLoading } = useStudentsList();
+    const registerStudentMutation = useRegisterStudent();
+    const deleteStudentMutation = useDeleteStudent();
     const [searchTerm, setSearchTerm] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [newStudent, setNewStudent] = useState({
         fullName: '',
@@ -67,20 +71,22 @@ const StudentManagement = () => {
         if (!studentToDelete) return;
 
         setIsDeleting(true);
-        const result = await deleteStudent(studentToDelete.id);
-        setIsDeleting(false);
-        setIsDeleteModalOpen(false);
-        setStudentToDelete(null);
-
-        if (!result.success) {
-            showFeedback("Operation Failed", result.message || "Failed to delete student", "error");
+        try {
+            await deleteStudentMutation.mutateAsync(studentToDelete.id);
+            setIsDeleteModalOpen(false);
+            setStudentToDelete(null);
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete student", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        const result = await registerStudent(newStudent);
-        if (result.success) {
+        setSubmitting(true);
+        try {
+            await registerStudentMutation.mutateAsync(newStudent);
             showFeedback("Success", "Student registered successfully!", "success");
             setIsRegistering(false);
             setNewStudent({
@@ -99,8 +105,10 @@ const StudentManagement = () => {
                 parentPhone: '',
                 courseLevel: 'beginner'
             });
-        } else {
-            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
+        } catch (error) {
+            showFeedback("Registration Failed", error.response?.data?.message || 'Registration failed', "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -304,10 +312,19 @@ const StudentManagement = () => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 w-full sm:w-auto"
+                                disabled={submitting}
+                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Register Student
-                                <ArrowRight className="w-5 h-5" />
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" /> Registering...
+                                    </>
+                                ) : (
+                                    <>
+                                        Register Student
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -352,7 +369,7 @@ const StudentManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {loading.students ? (
+                            {studentsLoading ? (
                                 <tr>
                                     <td colSpan="5">
                                         <Loading fullScreen={false} message="Loading students..." />

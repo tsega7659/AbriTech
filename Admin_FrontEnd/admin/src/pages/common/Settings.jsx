@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Settings as SettingsIcon,
     Shield,
     User,
-    Bell,
     Lock,
     ChevronRight,
-    Mail,
-    Phone,
-    MapPin
+    Mail
 } from 'lucide-react';
+import Loading from '../../components/Loading';
+import { useProfile } from '../../hooks/useAdminQueries';
 
 const Settings = () => {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const { data: user, isLoading } = useProfile();
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+    if (isLoading) return <Loading fullScreen={false} message="Loading profile..." />;
 
     const settingsSections = [
         {

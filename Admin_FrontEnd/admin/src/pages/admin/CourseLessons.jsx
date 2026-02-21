@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Plus, Video, Image as ImageIcon, FileText, Link as LinkIcon,
     MoreHorizontal, Trash2, Edit, CheckCircle2, GripVertical, File
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
-import { lessonService } from '../../services/lessonService';
+import {
+    useAdminCourses,
+    useLessons,
+    useCreateLesson,
+    useUpdateLesson,
+    useDeleteLesson
+} from '../../hooks/useAdminQueries';
 import AddLessonModal from '../../components/AddLessonModal';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
@@ -14,10 +19,14 @@ import FeedbackModal from '../../components/FeedbackModal';
 const CourseLessons = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
-    const { courses } = useAdmin();
 
-    const [lessons, setLessons] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // Hooks
+    const { data: courses = [] } = useAdminCourses();
+    const { data: lessons = [], isLoading: lessonsLoading } = useLessons(courseId);
+    const createLessonMutation = useCreateLesson();
+    const updateLessonMutation = useUpdateLesson();
+    const deleteLessonMutation = useDeleteLesson();
+
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingLesson, setEditingLesson] = useState(null);
 
@@ -28,27 +37,11 @@ const CourseLessons = () => {
     // Delete State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [lessonToDelete, setLessonToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
 
     const showFeedback = (title, message, type = 'success') => {
         setFeedbackModal({ isOpen: true, title, message, type });
-    };
-
-    useEffect(() => {
-        fetchLessons();
-    }, [courseId]);
-
-    const fetchLessons = async () => {
-        setLoading(true);
-        const result = await lessonService.getLessons(courseId);
-        if (result.success) {
-            // Backend returns ordered, but ensure sorting by orderNumber
-            const sorted = result.data.sort((a, b) => a.orderNumber - b.orderNumber);
-            setLessons(sorted);
-        } else {
-            showFeedback("Load Error", "Failed to load lessons for this course.", "error");
-        }
-        setLoading(false);
     };
 
     const handleAddClick = () => {
@@ -67,16 +60,18 @@ const CourseLessons = () => {
     };
 
     const confirmDelete = async () => {
-        if (lessonToDelete) {
-            const result = await lessonService.deleteLesson(lessonToDelete.id);
-            if (result.success) {
-                setLessons(lessons.filter(l => l.id !== lessonToDelete.id));
-                setIsDeleteModalOpen(false);
-                setLessonToDelete(null);
-                showFeedback("Success", "Lesson deleted successfully!", "success");
-            } else {
-                showFeedback("Operation Failed", result.message || "Failed to delete lesson", "error");
-            }
+        if (!lessonToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await deleteLessonMutation.mutateAsync({ id: lessonToDelete.id, courseId });
+            setIsDeleteModalOpen(false);
+            setLessonToDelete(null);
+            showFeedback("Success", "Lesson deleted successfully!", "success");
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete lesson", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -85,21 +80,21 @@ const CourseLessons = () => {
             formData.append('courseId', courseId);
         }
 
-        let result;
-        if (editingLesson) {
-            result = await lessonService.updateLesson(editingLesson.id, formData, onProgress);
-        } else {
-            result = await lessonService.createLesson(formData, onProgress);
-        }
+        const mutationToUse = editingLesson ? updateLessonMutation : createLessonMutation;
+        const mutationParams = editingLesson
+            ? { id: editingLesson.id, formData, onProgress }
+            : { formData, onProgress };
 
-        if (result.success) {
-            fetchLessons(); // Refresh list to get updated order and data
-            setIsAddModalOpen(false);
-            setEditingLesson(null);
-            showFeedback("Success", `Lesson ${editingLesson ? 'updated' : 'created'} successfully!`, "success");
-        } else {
-            showFeedback("Operation Failed", result.message || "Failed to save lesson", "error");
-        }
+        mutationToUse.mutate(mutationParams, {
+            onSuccess: () => {
+                setIsAddModalOpen(false);
+                setEditingLesson(null);
+                showFeedback("Success", `Lesson ${editingLesson ? 'updated' : 'created'} successfully!`, "success");
+            },
+            onError: (error) => {
+                showFeedback("Operation Failed", error.response?.data?.message || "Failed to save lesson", "error");
+            }
+        });
     };
 
     const getTypeIcon = (type, size = "w-5 h-5") => {
@@ -134,7 +129,7 @@ const CourseLessons = () => {
                 </button>
             </div>
 
-            {loading ? (
+            {lessonsLoading ? (
                 <div className="flex justify-center py-20">
                     <Loading fullScreen={false} message="Loading Lessons..." />
                 </div>
@@ -222,6 +217,7 @@ const CourseLessons = () => {
                 title="Delete Lesson"
                 message="Are you sure you want to delete this lesson? This action cannot be undone."
                 itemName={lessonToDelete?.title}
+                loading={isDeleting}
             />
             <FeedbackModal
                 isOpen={feedbackModal.isOpen}

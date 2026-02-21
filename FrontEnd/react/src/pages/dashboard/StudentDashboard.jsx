@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { useStudent } from "../../context/StudentContext";
+import { useStudentDashboard, useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 
 export default function StudentDashboard() {
     const { user } = useAuth();
-    const { enrolledCourses: courses, dashboardStats: dashboardData, loading, error } = useStudent();
+    const { data: dashboardData, isLoading: statsLoading } = useStudentDashboard();
+    const { data: courses = [], isLoading: coursesLoading } = useEnrolledCourses();
+
+    const loading = statsLoading || coursesLoading;
 
 
     if (loading) {

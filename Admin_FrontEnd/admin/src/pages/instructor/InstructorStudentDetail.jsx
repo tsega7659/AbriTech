@@ -13,18 +13,16 @@ import {
     School,
     Award
 } from 'lucide-react';
-import { useInstructor } from '../../context/InstructorContext';
+import { useStudentCourseDetail, useAssessSubmission } from '../../hooks/useInstructorQueries';
 import Loading from '../../components/Loading';
-import api from '../../lib/api.js';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const InstructorStudentDetail = () => {
     const { courseId, studentId } = useParams();
     const navigate = useNavigate();
-    const { fetchStudentCourseDetail } = useInstructor();
+    const { data, isLoading: loading } = useStudentCourseDetail(studentId, courseId);
+    const assessMutation = useAssessSubmission(studentId, courseId);
 
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [assessing, setAssessing] = useState(null);
     const [assessmentData, setAssessmentData] = useState({ status: 'approved', result: 'pass', feedback: '' });
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
@@ -33,36 +31,29 @@ const InstructorStudentDetail = () => {
         setFeedbackModal({ isOpen: true, title, message, type });
     };
 
-    const loadData = async () => {
-        setLoading(true);
-        const detail = await fetchStudentCourseDetail(studentId, courseId);
-        setData(detail);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        loadData();
-    }, [courseId, studentId, fetchStudentCourseDetail]);
-
     const handleAssess = async (e) => {
         e.preventDefault();
         if (!assessing) return;
 
-        try {
-            await api.post(`/assignments/submissions/${assessing}/assess`, {
+        assessMutation.mutate({
+            id: assessing,
+            assessmentData: {
                 status: assessmentData.status,
                 result: assessmentData.score >= (assessmentData.maxScore / 2) ? 'pass' : 'fail',
                 score: assessmentData.score,
                 maxScore: assessmentData.maxScore,
                 feedback: assessmentData.feedback
-            });
-            showFeedback("Success", "Assessment saved successfully!", "success");
-            setAssessing(null);
-            loadData();
-        } catch (error) {
-            console.error('Assessment failed', error);
-            showFeedback("Error", "Failed to save assessment", "error");
-        }
+            }
+        }, {
+            onSuccess: () => {
+                showFeedback("Success", "Assessment saved successfully!", "success");
+                setAssessing(null);
+            },
+            onError: (error) => {
+                console.error('Assessment failed', error);
+                showFeedback("Error", error.response?.data?.message || "Failed to save assessment", "error");
+            }
+        });
     };
 
     if (loading) return <Loading fullScreen={false} message="Loading student details..." />;

@@ -12,16 +12,20 @@ import {
     Lock,
     ArrowRight,
     UserCheck,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
+import { useParents, useRegisterParent, useDeleteParent } from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const ParentManagement = () => {
-    const { parents, registerParent, deleteParent, loading } = useAdmin();
+    const { data: parents = [], isLoading: parentsLoading } = useParents();
+    const registerParentMutation = useRegisterParent();
+    const deleteParentMutation = useDeleteParent();
     const [searchTerm, setSearchTerm] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [newParent, setNewParent] = useState({
         fullName: '',
@@ -45,8 +49,9 @@ const ParentManagement = () => {
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        const result = await registerParent(newParent);
-        if (result.success) {
+        setSubmitting(true);
+        try {
+            await registerParentMutation.mutateAsync(newParent);
             showFeedback("Success", "Parent registered successfully!", "success");
             setIsRegistering(false);
             setNewParent({
@@ -58,8 +63,10 @@ const ParentManagement = () => {
                 phoneNumber: '',
                 address: ''
             });
-        } else {
-            showFeedback("Registration Failed", result.message || 'Registration failed', "error");
+        } catch (error) {
+            showFeedback("Registration Failed", error.response?.data?.message || 'Registration failed', "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -72,13 +79,14 @@ const ParentManagement = () => {
         if (!parentToDelete) return;
 
         setIsDeleting(true);
-        const result = await deleteParent(parentToDelete.id);
-        setIsDeleting(false);
-        setIsDeleteModalOpen(false);
-        setParentToDelete(null);
-
-        if (!result.success) {
-            showFeedback("Operation Failed", result.message || "Failed to delete parent", "error");
+        try {
+            await deleteParentMutation.mutateAsync(parentToDelete.id);
+            setIsDeleteModalOpen(false);
+            setParentToDelete(null);
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete parent", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -216,10 +224,19 @@ const ParentManagement = () => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 w-full sm:w-auto"
+                                disabled={submitting}
+                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Register Parent
-                                <ArrowRight className="w-5 h-5" />
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" /> Registering...
+                                    </>
+                                ) : (
+                                    <>
+                                        Register Parent
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -252,7 +269,7 @@ const ParentManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {loading.parents ? (
+                            {parentsLoading ? (
                                 <tr>
                                     <td colSpan="3">
                                         <Loading fullScreen={false} message="Loading parents..." />

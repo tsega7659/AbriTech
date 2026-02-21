@@ -1,12 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, Minimize2, Maximize2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-// Markdown renderer for AI responses
 import ReactMarkdown from 'react-markdown';
-
-// API Base URL - adjust based on your environment or props
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { chatService } from '../services/chatService';
 
 export default function ChatWidget({ userRole = 'student' }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +25,6 @@ export default function ChatWidget({ userRole = 'student' }) {
     useEffect(() => {
         if (isOpen) {
             scrollToBottom();
-            // Focus input when opened
             setTimeout(() => inputRef.current?.focus(), 300);
         }
     }, [isOpen, chatHistory]);
@@ -40,9 +35,8 @@ export default function ChatWidget({ userRole = 'student' }) {
         if (!message.trim() || isLoading) return;
 
         const userMessage = message.trim();
-        setMessage(''); // Clear input immediately
+        setMessage('');
 
-        // Optimistically update UI
         const newHistory = [
             ...chatHistory,
             { role: 'user', parts: [{ text: userMessage }] }
@@ -51,36 +45,14 @@ export default function ChatWidget({ userRole = 'student' }) {
         setIsLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            // Allow public chat if no token, or add auth if backend requires it
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
             const historyForBackend = newHistory.slice(0, -1)
-                .filter((_, index) => index !== 0) // Remove the initial greeting
+                .filter((_, index) => index !== 0)
                 .map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.parts[0].text }]
                 }));
 
-            const response = await fetch(`${API_BASE_URL}/chat`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    message: userMessage,
-                    history: historyForBackend
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get response');
-            }
-
-            const data = await response.json();
+            const data = await chatService.sendMessage(userMessage, historyForBackend);
 
             setChatHistory(prev => [
                 ...prev,

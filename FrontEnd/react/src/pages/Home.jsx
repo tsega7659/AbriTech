@@ -9,9 +9,10 @@ import whyabri from "../assets/whyabri.jpg"
 import { useState, useEffect } from "react";
 import Loading from "../components/Loading";
 
-const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000/api'
-    : 'https://abritech.onrender.com/api';
+import { useAllCourses } from "../hooks/useStudentQueries";
+import apiClient from "../lib/apiClient";
+
+const API_BASE_URL = apiClient.defaults.baseURL.replace('/api', '');
 
 const features = [
     {
@@ -39,26 +40,8 @@ const features = [
 // Removed static popularCourses
 
 export default function Home() {
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchCourses = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/courses`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCourses(data.slice(0, 3)); // Display top 3 as popular
-                }
-            } catch (error) {
-                console.error("Failed to fetch courses:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCourses();
-    }, []);
+    const { data: allCourses = [], isLoading: loading } = useAllCourses();
+    const courses = allCourses.slice(0, 3);
 
     return (
         <div className="flex flex-col gap-20 pb-20">

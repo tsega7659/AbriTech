@@ -15,23 +15,30 @@ import {
     ChevronDown,
     ChevronUp
 } from "lucide-react";
-import { useStudent } from "../../context/StudentContext";
-import { lessonService } from "../../lib/lessonService";
-import api from "../../lib/api";
+import { useStudentDashboard } from "../../hooks/useStudentQueries";
+import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmitAssignment } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import FeedbackModal from "../../components/FeedbackModal";
 
 export default function LessonPlayer() {
     const { courseId } = useParams();
     const navigate = useNavigate();
-    const { refreshDashboardData, fetchAssignments } = useStudent();
-    const [lessons, setLessons] = useState([]);
-    const [assignments, setAssignments] = useState([]);
+
+    // TanStack Queries
+    const { data: lessons = [], isLoading: lessonsLoading } = useLessons(courseId);
+    const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments(courseId);
+    const { data: dashboardData } = useStudentDashboard();
+
+    // Mutations
+    const completeLessonMutation = useCompleteLesson();
+    const submitQuizMutation = useSubmitQuiz();
+    const submitAssignmentMutation = useSubmitAssignment();
+
     const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'assignments'
     const [activeLesson, setActiveLesson] = useState(null);
     const [activeAssignment, setActiveAssignment] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [completing, setCompleting] = useState(false);
+    const loading = lessonsLoading || assignmentsLoading;
+    const completing = completeLessonMutation.isPending;
 
     // Quiz states
     const [quizAnswers, setQuizAnswers] = useState({});
@@ -63,36 +70,20 @@ export default function LessonPlayer() {
         setFeedbackModal({ isOpen: true, title, message, type });
     };
 
+    // Set initial active lesson when lessons are loaded
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [lessonResponse, assignmentData] = await Promise.all([
-                    lessonService.getLessons(courseId),
-                    fetchAssignments(courseId)
-                ]);
+        if (lessons.length > 0 && !activeLesson && !activeAssignment) {
+            const firstActive = lessons.find(l => !l.isLocked && !l.isCompleted)
+                || lessons.find(l => !l.isLocked)
+                || lessons[0];
 
-                const lessonList = lessonResponse.lessons || [];
-                setLessons(lessonList);
-                setAssignments(assignmentData || []);
-
-                // Set initial active lesson
-                const firstActive = lessonList.find(l => !l.isLocked && !l.isCompleted)
-                    || lessonList.find(l => !l.isLocked)
-                    || lessonList[0];
-
-                if (firstActive) {
-                    setActiveLesson(firstActive);
-                    setQuizResult(firstActive.quizResult || null);
-                    if (firstActive.isCompleted) setCanComplete(true);
-                }
-            } catch (error) {
-                console.error("Failed to load course data", error);
-            } finally {
-                setLoading(false);
+            if (firstActive) {
+                setActiveLesson(firstActive);
+                setQuizResult(firstActive.quizResult || null);
+                if (firstActive.isCompleted) setCanComplete(true);
             }
-        };
-        fetchData();
-    }, [courseId, fetchAssignments]);
+        }
+    }, [lessons, activeLesson, activeAssignment]);
 
     // Timer logic for lesson completion
     useEffect(() => {
@@ -165,27 +156,29 @@ export default function LessonPlayer() {
         }
     };
 
+    // Sync active assignment when data loads
+    useEffect(() => {
+        if (activeAssignment && assignments.length > 0) {
+            const refreshed = assignments.find(a => a.id === activeAssignment.id);
+            if (refreshed) setActiveAssignment(refreshed);
+        }
+    }, [assignments]);
+
     const handleMarkComplete = async () => {
         if (!activeLesson || !canComplete) return;
-        setCompleting(true);
-        try {
-            await lessonService.markComplete(activeLesson.id);
 
-            // Refresh global student data to sync levels/progress/stats
-            refreshDashboardData();
-
-            const response = await lessonService.getLessons(courseId);
-            setLessons(response.lessons || []);
-
-            const nextLesson = response.lessons.find(l => l.orderNumber > activeLesson.orderNumber);
-            if (nextLesson && !nextLesson.isLocked) {
-                setActiveLesson(nextLesson);
+        completeLessonMutation.mutate(activeLesson.id, {
+            onSuccess: (data) => {
+                const nextLesson = lessons.find(l => l.orderNumber > activeLesson.orderNumber);
+                if (nextLesson && !nextLesson.isLocked) {
+                    setActiveLesson(nextLesson);
+                }
+            },
+            onError: (error) => {
+                console.error("Failed to complete lesson", error);
+                showFeedback("Error", "Failed to mark lesson as complete.", "error");
             }
-        } catch (error) {
-            console.error("Failed to complete lesson", error);
-        } finally {
-            setCompleting(false);
-        }
+        });
     };
 
     const handleSubmitQuiz = async () => {
@@ -193,24 +186,22 @@ export default function LessonPlayer() {
             showFeedback("Incomplete Quiz", "Please answer all questions before submitting.", "warning");
             return;
         }
-        setSubmittingQuiz(true);
-        try {
-            const result = await lessonService.submitQuiz(activeLesson.id, quizAnswers);
-            setQuizResult(result);
-            setCanComplete(true);
 
-            // Update the lesson in our list with the result to prevent retake during same session
-            setLessons(prev => prev.map(l => l.id === activeLesson.id ? { ...l, quizResult: result, isCompleted: true } : l));
-        } catch (error) {
-            console.error("Quiz submission failed", error);
-            if (error.response?.status === 403) {
-                showFeedback("Access Denied", error.response.data.message, "error");
-            } else {
-                showFeedback("Submission Error", "Failed to submit quiz. Please try again.", "error");
+        submitQuizMutation.mutate({ lessonId: activeLesson.id, answers: quizAnswers }, {
+            onSuccess: (result) => {
+                setQuizResult(result);
+                setCanComplete(true);
+                // The lesson list will update automatically via invalidation
+            },
+            onError: (error) => {
+                console.error("Quiz submission failed", error);
+                if (error.response?.status === 403) {
+                    showFeedback("Access Denied", error.response.data.message, "error");
+                } else {
+                    showFeedback("Submission Error", "Failed to submit quiz. Please try again.", "error");
+                }
             }
-        } finally {
-            setSubmittingQuiz(false);
-        }
+        });
     };
 
     const API_BASE_URL = window.location.hostname === 'localhost'
@@ -286,10 +277,10 @@ export default function LessonPlayer() {
                     {!quizResult && (
                         <button
                             onClick={handleSubmitQuiz}
-                            disabled={submittingQuiz || Object.keys(quizAnswers).length < activeLesson.quiz.length}
+                            disabled={submitQuizMutation.isPending || Object.keys(quizAnswers).length < activeLesson.quiz.length}
                             className="px-12 py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
                         >
-                            {submittingQuiz ? 'Checking answers...' : 'Submit Quiz'}
+                            {submitQuizMutation.isPending ? 'Checking answers...' : 'Submit Quiz'}
                             <HelpCircle className="w-5 h-5" />
                         </button>
                     )}
@@ -298,65 +289,53 @@ export default function LessonPlayer() {
         );
     };
 
-    const handleSubmitAssignment = async (e) => {
-        e.preventDefault();
-        setSubmittingAssignment(true);
-        setUploadProgress(0);
+    const handleSubmitAssignment = async (e, isFinal = true) => {
+        e?.preventDefault();
 
-        try {
-            const formData = new FormData();
-            formData.append('submissionType', submissionType);
+        const formData = new FormData();
+        formData.append('submissionType', submissionType);
+        formData.append('isFinal', isFinal.toString());
 
-            if (submissionType === 'text') {
-                formData.append('submissionContent', submissionText);
-            } else if (submissionFile) {
-                formData.append('file', submissionFile);
-                formData.append('submissionContent', submissionFile.name);
-            } else {
-                showFeedback("Missing Content", "Please provide content or select a file.", "warning");
-                setSubmittingAssignment(false);
+        if (submissionType === 'text') {
+            if (!submissionText && isFinal) {
+                showFeedback("Missing Content", "Please provide content.", "warning");
                 return;
             }
-
-            // Using axios (via api.js) for upload progress if possible, 
-            // but api.js uses standard axios. I'll use a standard post for now.
-            // For file progress, I could use XHR, but let's stick to axios/api.
-
-            const isFinalSubmit = formData.get('isFinal') === 'true';
-            const response = await api.post(`/assignments/${activeAssignment.id}/submit`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    setUploadProgress(progress);
-                }
-            });
-
-            showFeedback(
-                isFinalSubmit ? "Work Submitted" : "Draft Saved",
-                isFinalSubmit ? "Assignment submitted successfully!" : "Draft saved successfully!",
-                "success"
-            );
-            if (isFinalSubmit) {
-                setSubmissionText('');
-                setSubmissionFile(null);
-            }
-            setUploadProgress(0);
-            setShowConfirmModal(false);
-
-            // Refresh assignments list to show updated status
-            const updatedAssignments = await fetchAssignments(courseId);
-            setAssignments(updatedAssignments || []);
-
-            // Optionally set active assignment again to refresh its data
-            const refreshed = (updatedAssignments || []).find(a => a.id === activeAssignment.id);
-            if (refreshed) setActiveAssignment(refreshed);
-
-        } catch (error) {
-            console.error("Submission failed", error);
-            showFeedback("Submission Failed", error.response?.data?.message || "Failed to submit assignment", "error");
-        } finally {
-            setSubmittingAssignment(false);
+            formData.append('submissionContent', submissionText);
+        } else if (submissionFile) {
+            formData.append('file', submissionFile);
+            formData.append('submissionContent', submissionFile.name);
+        } else if (isFinal) {
+            showFeedback("Missing Content", "Please select a file.", "warning");
+            return;
         }
+
+        submitAssignmentMutation.mutate({
+            assignmentId: activeAssignment.id,
+            formData,
+            onProgress: (progress) => setUploadProgress(progress)
+        }, {
+            onSuccess: () => {
+                showFeedback(
+                    isFinal ? "Work Submitted" : "Draft Saved",
+                    isFinal ? "Assignment submitted successfully!" : "Draft saved successfully!",
+                    "success"
+                );
+                if (isFinal) {
+                    setSubmissionText('');
+                    setSubmissionFile(null);
+                    setShowConfirmModal(false);
+                }
+                setUploadProgress(0);
+
+                // Active assignment will refresh via invalidation
+            },
+            onError: (error) => {
+                console.error("Submission failed", error);
+                showFeedback("Submission Failed", error.response?.data?.message || "Failed to submit assignment", "error");
+                setUploadProgress(0);
+            }
+        });
     };
 
     const renderContent = () => {
@@ -445,7 +424,7 @@ export default function LessonPlayer() {
                                     </div>
                                 )}
 
-                                {submittingAssignment && uploadProgress > 0 && uploadProgress < 100 && (
+                                {submitAssignmentMutation.isPending && uploadProgress > 0 && uploadProgress < 100 && (
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-bold text-primary uppercase tracking-widest">
                                             <span>Uploading...</span>
@@ -463,30 +442,8 @@ export default function LessonPlayer() {
                                 <div className="flex flex-col sm:flex-row gap-4">
                                     <button
                                         type="button"
-                                        onClick={async () => {
-                                            setSubmittingAssignment(true);
-                                            const formData = new FormData();
-                                            formData.append('submissionType', submissionType);
-                                            formData.append('isFinal', 'false');
-                                            if (submissionType === 'text') formData.append('submissionContent', submissionText);
-                                            else if (submissionFile) {
-                                                formData.append('file', submissionFile);
-                                                formData.append('submissionContent', submissionFile.name);
-                                            }
-                                            try {
-                                                await api.post(`/assignments/${activeAssignment.id}/submit`, formData, {
-                                                    headers: { 'Content-Type': 'multipart/form-data' }
-                                                });
-                                                showFeedback("Draft Saved", "Draft saved successfully!", "success");
-                                                const updated = await fetchAssignments(courseId);
-                                                setAssignments(updated || []);
-                                            } catch (err) {
-                                                showFeedback("Error", err.response?.data?.message || "Failed to save draft", "error");
-                                            } finally {
-                                                setSubmittingAssignment(false);
-                                            }
-                                        }}
-                                        disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft')}
+                                        onClick={(e) => handleSubmitAssignment(e, false)}
+                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft')}
                                         className="flex-1 py-4 px-3 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Save Draft
@@ -500,10 +457,10 @@ export default function LessonPlayer() {
                                             }
                                             setShowConfirmModal(true);
                                         }}
-                                        disabled={submittingAssignment || (activeAssignment.status && activeAssignment.status !== 'draft') || (submissionType === 'text' ? !submissionText : !submissionFile)}
+                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft') || (submissionType === 'text' ? !submissionText : !submissionFile)}
                                         className="flex-1 py-4 px-3 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
                                     >
-                                        {submittingAssignment ? 'Uploading...' : 'Submit Final Work'}
+                                        {submitAssignmentMutation.isPending ? 'Uploading...' : 'Submit Final Work'}
                                     </button>
                                 </div>
                                 {activeAssignment.status && activeAssignment.status !== 'draft' ? (
@@ -550,38 +507,7 @@ export default function LessonPlayer() {
                                         Wait, Let me check
                                     </button>
                                     <button
-                                        onClick={async () => {
-                                            setSubmittingAssignment(true);
-                                            const formData = new FormData();
-                                            formData.append('submissionType', submissionType);
-                                            formData.append('isFinal', 'true');
-                                            if (submissionType === 'text') formData.append('submissionContent', submissionText);
-                                            else if (submissionFile) {
-                                                formData.append('file', submissionFile);
-                                                formData.append('submissionContent', submissionFile.name);
-                                            }
-                                            try {
-                                                await api.post(`/assignments/${activeAssignment.id}/submit`, formData, {
-                                                    headers: { 'Content-Type': 'multipart/form-data' },
-                                                    onUploadProgress: (progressEvent) => {
-                                                        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                                                        setUploadProgress(progress);
-                                                    }
-                                                });
-                                                showFeedback("Work Submitted", "Assignment submitted for review successfully!", "success");
-                                                setSubmissionText('');
-                                                setSubmissionFile(null);
-                                                setShowConfirmModal(false);
-                                                const updated = await fetchAssignments(courseId);
-                                                setAssignments(updated || []);
-                                                const refreshed = (updated || []).find(a => a.id === activeAssignment.id);
-                                                if (refreshed) setActiveAssignment(refreshed);
-                                            } catch (err) {
-                                                showFeedback("Submission Error", err.response?.data?.message || "Failed to submit assignment", "error");
-                                            } finally {
-                                                setSubmittingAssignment(false);
-                                            }
-                                        }}
+                                        onClick={(e) => handleSubmitAssignment(e, true)}
                                         className="flex-1 py-4 px-3  text-black  rounded-2xl font-black text-xs uppercase tracking-widest  hover:bg-gray-200 transition-all"
                                     >
                                         Yes, Submit

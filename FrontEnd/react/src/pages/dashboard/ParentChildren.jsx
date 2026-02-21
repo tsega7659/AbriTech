@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, BookOpen, ChevronRight, ArrowLeft, Trophy, Calendar } from 'lucide-react';
 import Loading from '../../components/Loading';
-import { useParent } from '../../context/ParentContext';
+import { useLinkedStudents } from '../../hooks/useParentQueries';
 
 export default function ParentChildren() {
-    const { linkedStudents: students, loading } = useParent();
+    const { data: students = [], isLoading: loading } = useLinkedStudents();
     const [selectedStudent, setSelectedStudent] = useState(null);
 
     if (loading) return <Loading />;

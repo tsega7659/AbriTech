@@ -31,17 +31,24 @@ function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-import { useAdmin } from '../../context/AdminContext';
+import {
+    useAdminDashboardStats,
+    useTeachers,
+    useStudentsList,
+    useAdminCourses,
+    useAdminBlogs,
+    useParents
+} from '../../hooks/useAdminQueries';
 
 const AdminDashboard = () => {
-    const {
-        students,
-        teachers,
-        courses,
-        parents,
-        adminDashboardStats,
-        loading
-    } = useAdmin();
+    const { data: adminDashboardStats, isLoading: statsLoading } = useAdminDashboardStats();
+    const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
+    const { data: students = [], isLoading: studentsLoading } = useStudentsList();
+    const { data: courses = [], isLoading: coursesLoading } = useAdminCourses();
+    const { data: blogs = [], isLoading: blogsLoading } = useAdminBlogs();
+    const { data: parents = [], isLoading: parentsLoading } = useParents();
+
+    const loading = statsLoading || teachersLoading || studentsLoading || coursesLoading || blogsLoading || parentsLoading;
 
     const formatDate = (dateString) => {
         if (!dateString) return '';
@@ -94,7 +101,7 @@ const AdminDashboard = () => {
 
     const categoryData = adminDashboardStats?.categoryStats || [];
 
-    if (loading.dashboard && !adminDashboardStats) {
+    if (loading && !adminDashboardStats) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />

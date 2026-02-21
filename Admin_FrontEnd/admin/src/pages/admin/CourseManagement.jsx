@@ -19,14 +19,26 @@ import {
     CheckCircle2,
     Loader2
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
+import {
+    useAdminCourses,
+    useTeachers,
+    useCreateCourse,
+    useUpdateCourse,
+    useDeleteCourse
+} from '../../hooks/useAdminQueries';
 import { API_BASE_URL } from '../../config/apiConfig';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const CourseManagement = () => {
-    const { courses, registerCourse, updateCourse, deleteCourse, loading } = useAdmin();
+    const { data: courses = [], isLoading: coursesLoading } = useAdminCourses();
+    const { data: teachers = [] } = useTeachers();
+
+    // Mutations
+    const createCourseMutation = useCreateCourse();
+    const updateCourseMutation = useUpdateCourse();
+    const deleteCourseMutation = useDeleteCourse();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [isEditing, setIsEditing] = useState(null);
@@ -61,13 +73,14 @@ const CourseManagement = () => {
         if (!courseToDelete) return;
 
         setIsDeleting(true);
-        const result = await deleteCourse(courseToDelete.id);
-        setIsDeleting(false);
-        setIsDeleteModalOpen(false);
-        setCourseToDelete(null);
-
-        if (!result.success) {
-            showFeedback("Operation Failed", result.message || "Failed to delete course", "error");
+        try {
+            await deleteCourseMutation.mutateAsync(courseToDelete.id);
+            setIsDeleteModalOpen(false);
+            setCourseToDelete(null);
+        } catch (error) {
+            showFeedback("Operation Failed", error.response?.data?.message || "Failed to delete course", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -88,10 +101,10 @@ const CourseManagement = () => {
     const handleAddOrUpdateCourse = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        setUploadProgress(0);
 
         const levelToSend = newCourse.level === 'all levels' ? 'advanced' : newCourse.level;
 
-        // Prepare FormData
         const formData = new FormData();
         formData.append('name', newCourse.name);
         formData.append('category', newCourse.category);
@@ -102,32 +115,34 @@ const CourseManagement = () => {
             formData.append('image', newCourse.image);
         }
 
-        let result;
-        setUploadProgress(0);
-        if (isEditing) {
-            result = await updateCourse(isEditing, formData, (p) => setUploadProgress(p));
-        } else {
-            result = await registerCourse(formData, (p) => setUploadProgress(p));
-        }
+        const mutationToUse = isEditing ? updateCourseMutation : createCourseMutation;
+        const mutationParams = isEditing
+            ? { id: isEditing, formData, onProgress: (p) => setUploadProgress(p) }
+            : { formData, onProgress: (p) => setUploadProgress(p) };
 
-        if (result.success) {
-            setIsAdding(false);
-            setIsEditing(null);
-            setNewCourse({
-                name: '',
-                description: '',
-                level: 'beginner',
-                category: 'STEM',
-                duration: '',
-                image: '',
-                youtubeLink: ''
-            });
-            showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
-        } else {
-            showFeedback("Operation Failed", result.message || (isEditing ? 'Course update failed' : 'Course creation failed'), "error");
-        }
-        setSubmitting(false);
-        setUploadProgress(0);
+        mutationToUse.mutate(mutationParams, {
+            onSuccess: () => {
+                setIsAdding(false);
+                setIsEditing(null);
+                setNewCourse({
+                    name: '',
+                    description: '',
+                    level: 'beginner',
+                    category: 'STEM',
+                    duration: '',
+                    image: '',
+                    youtubeLink: ''
+                });
+                showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
+                setSubmitting(false);
+                setUploadProgress(0);
+            },
+            onError: (error) => {
+                showFeedback("Operation Failed", error.response?.data?.message || (isEditing ? 'Course update failed' : 'Course creation failed'), "error");
+                setSubmitting(false);
+                setUploadProgress(0);
+            }
+        });
     };
 
     const handleEditClick = (course) => {
@@ -368,7 +383,7 @@ const CourseManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {loading.courses ? (
+                            {coursesLoading ? (
                                 <tr>
                                     <td colSpan="4">
                                         <Loading fullScreen={false} message="Fetching Courses..." />

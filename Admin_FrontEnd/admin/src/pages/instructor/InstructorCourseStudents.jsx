@@ -11,31 +11,22 @@ import {
     TrendingUp,
     ChevronRight
 } from 'lucide-react';
-import { useInstructor } from '../../context/InstructorContext';
+import { useCourseStudents, useInstructorCourses } from '../../hooks/useInstructorQueries';
 import AddProjectModal from '../../components/modals/AddProjectModal';
 import Loading from '../../components/Loading';
 
 const InstructorCourseStudents = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
-    const { fetchCourseStudents, assignedCourses } = useInstructor();
+    const { data: students = [], isLoading: studentsLoading } = useCourseStudents(courseId);
+    const { data: assignedCourses = [] } = useInstructorCourses();
 
-    const [students, setStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const course = assignedCourses.find(c => c.id === parseInt(courseId));
 
-    useEffect(() => {
-        const loadStudents = async () => {
-            setLoading(true);
-            const data = await fetchCourseStudents(courseId);
-            setStudents(data);
-            setLoading(false);
-        };
-        loadStudents();
-    }, [courseId, fetchCourseStudents]);
+    const loading = studentsLoading;
 
     const filteredStudents = students.filter(student =>
         student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||

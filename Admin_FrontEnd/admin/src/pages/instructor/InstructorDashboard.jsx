@@ -4,11 +4,13 @@ import Loading from '../../components/Loading';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/apiConfig';
 
-import { useInstructor } from '../../context/InstructorContext';
+import { useInstructorDashboardStats, useInstructorCourses } from '../../hooks/useInstructorQueries';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
-    const { assignedCourses: courses, dashboardStats: statsData, loading } = useInstructor();
+    const { data: statsData, isLoading: statsLoading } = useInstructorDashboardStats();
+    const { data: courses = [], isLoading: coursesLoading } = useInstructorCourses();
+    const loading = statsLoading || coursesLoading;
     const [showBanner, setShowBanner] = useState(false);
     const [user, setUser] = useState(null);
 
@@ -17,10 +19,9 @@ const InstructorDashboard = () => {
         if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
-            // Show banner only if firstLogin is true (1)
             setShowBanner(!!parsedUser.firstLogin);
         }
-    }, [loading]);
+    }, []);
 
     if (loading) {
         return <Loading fullScreen={false} message="Loading dashboard data..." />;

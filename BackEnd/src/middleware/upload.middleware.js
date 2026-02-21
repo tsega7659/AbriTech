@@ -23,7 +23,7 @@ const upload = (folderName) => {
 
     return multer({
         storage: storage,
-        limits: { fileSize: 125 * 1024 * 1024 }, // Increased to 125MB for videos
+        limits: { fileSize: 200 * 1024 * 1024 }, // Increased to 200MB for videos
         fileFilter: (req, file, cb) => {
             const allowedTypes = /jpeg|jpg|png|webp|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|video/;
             const isSupported = allowedTypes.test(file.mimetype) ||
