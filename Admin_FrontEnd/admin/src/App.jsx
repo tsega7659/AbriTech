@@ -12,6 +12,7 @@ import ParentManagement from './pages/admin/ParentManagement';
 import UserRegistration from './pages/admin/UserRegistration';
 import ProjectReview from './pages/admin/ProjectReview';
 import BlogManagement from './pages/admin/BlogManagement';
+import MessageManagement from './pages/admin/MessageManagement';
 import Settings from './pages/common/Settings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
@@ -42,6 +43,7 @@ function App() {
           <Route path="users/register" element={<UserRegistration />} />
           <Route path="projects" element={<ProjectReview />} />
           <Route path="blogs" element={<BlogManagement />} />
+          <Route path="messages" element={<MessageManagement />} />
           <Route path="analytics" element={<div>Analytics (Refinement Pending)</div>} />
           <Route path="settings" element={<Settings />} />
         </Route>

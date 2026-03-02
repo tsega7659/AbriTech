@@ -119,30 +119,32 @@ const CourseManagement = () => {
         const mutationParams = isEditing
             ? { id: isEditing, formData, onProgress: (p) => setUploadProgress(p) }
             : { formData, onProgress: (p) => setUploadProgress(p) };
-
-        mutationToUse.mutate(mutationParams, {
-            onSuccess: () => {
-                setIsAdding(false);
-                setIsEditing(null);
-                setNewCourse({
-                    name: '',
-                    description: '',
-                    level: 'beginner',
-                    category: 'STEM',
-                    duration: '',
-                    image: '',
-                    youtubeLink: ''
-                });
-                showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
-                setSubmitting(false);
-                setUploadProgress(0);
-            },
-            onError: (error) => {
-                showFeedback("Operation Failed", error.response?.data?.message || (isEditing ? 'Course update failed' : 'Course creation failed'), "error");
-                setSubmitting(false);
-                setUploadProgress(0);
-            }
-        });
+        try {
+            await mutationToUse.mutateAsync(mutationParams, {
+                onSuccess: () => {
+                    setIsAdding(false);
+                    setIsEditing(null);
+                    setNewCourse({
+                        name: '',
+                        description: '',
+                        level: 'beginner',
+                        category: 'STEM',
+                        duration: '',
+                        image: '',
+                        youtubeLink: ''
+                    });
+                    showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
+                },
+                onError: (error) => {
+                    showFeedback("Operation Failed", error.response?.data?.message || (isEditing ? 'Course update failed' : 'Course creation failed'), "error");
+                }
+            });
+        } catch (error) {
+            console.error('Mutation error:', error);
+        } finally {
+            setSubmitting(false);
+            setUploadProgress(0);
+        }
     };
 
     const handleEditClick = (course) => {

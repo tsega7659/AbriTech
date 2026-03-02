@@ -136,23 +136,25 @@ const InstructorProjects = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4">
-                                        {sub.submissionType === 'file' ? (
-                                            <a
-                                                href={sub.submissionContent}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest transition-colors"
-                                            >
-                                                View File <ExternalLink className="w-4 h-4" />
-                                            </a>
-                                        ) : (
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        {(sub.textContent || (sub.submissionType === 'text' && sub.submissionContent)) && (
                                             <button
-                                                onClick={() => showFeedback("Project Content", sub.submissionContent, "info")}
-                                                className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest transition-colors"
+                                                onClick={() => showFeedback("Project Text", sub.textContent || sub.submissionContent, "info")}
+                                                className="flex items-center gap-2 px-6 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl font-black text-xs uppercase tracking-widest transition-colors border border-blue-100"
                                             >
                                                 Read Text <MessageCircle className="w-4 h-4" />
                                             </button>
+                                        )}
+
+                                        {(sub.fileUrl || (sub.submissionType === 'file' && sub.submissionContent)) && (
+                                            <a
+                                                href={sub.fileUrl || sub.submissionContent}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl font-black text-xs uppercase tracking-widest transition-colors border border-amber-100"
+                                            >
+                                                View Attachment <ExternalLink className="w-4 h-4" />
+                                            </a>
                                         )}
 
                                         {sub.status === 'pending' && (

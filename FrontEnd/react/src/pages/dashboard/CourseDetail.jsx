@@ -6,14 +6,18 @@ import {
     Trophy,
     ChevronRight,
     Play,
+    PlayCircle,
     Lock,
     CheckCircle,
     FileText,
-    Download
+    Download,
+    Share2,
+    PlayCircle as PlayIcon
 } from 'lucide-react';
 import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import apiClient from "../../lib/apiClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CourseDetail() {
     const { courseId } = useParams();
@@ -54,7 +58,9 @@ export default function CourseDetail() {
         </div>
     );
 
-    const API_BASE_URL = api.defaults.baseURL.replace('/api', '');
+    const API_BASE_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://abritech.onrender.com';
 
 
     return (
@@ -99,7 +105,7 @@ export default function CourseDetail() {
 
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
                             <Link
-                                to={`/dashboard/student/courses/${courseId}/learn/1`}
+                                to={`/dashboard/student/courses/${courseId}/learn`}
                                 className="flex-1 bg-[#00B4D8] text-white font-black py-4 rounded-2xl hover:bg-[#0096B4] transition-all shadow-xl shadow-blue-500/20 text-center flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:-translate-y-0.5"
                             >
                                 <PlayCircle className="h-5 w-5" /> Continue Learning
@@ -160,7 +166,7 @@ export default function CourseDetail() {
                             <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Curriculum Under Review</h3>
                             <p className="text-gray-500 max-w-sm mx-auto">We're currently finalizing the lesson sequence to provide the best learning experience.</p>
                             <Link
-                                to={`/dashboard/student/courses/${courseId}/learn/1`}
+                                to={`/dashboard/student/courses/${courseId}/learn`}
                                 className="mt-8 inline-block bg-gray-900 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#00B4D8] transition-all"
                             >
                                 Preview Lessons

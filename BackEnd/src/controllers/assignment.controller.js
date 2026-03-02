@@ -7,11 +7,28 @@ const getAssignments = async (req, res) => {
       return res.status(400).json({ message: 'Course ID is required' });
     }
 
-    const [assignments] = await pool.execute(
-      'SELECT * FROM assignment WHERE courseId = ? ORDER BY createdAt DESC',
-      [courseId]
-    );
+    const { userId, role } = req.user;
 
+    let query = 'SELECT * FROM assignment WHERE courseId = ? ORDER BY createdAt DESC';
+    let params = [courseId];
+
+    // If student, join with their submissions
+    if (role === 'student') {
+      const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+      if (students.length > 0) {
+        const studentId = students[0].id;
+        query = `
+          SELECT a.*, s.status, s.submissionType, s.submissionContent, s.fileUrl, s.textContent, s.score, s.feedback, s.result, s.submittedAt 
+          FROM assignment a
+          LEFT JOIN assignmentsubmission s ON a.id = s.assignmentId AND s.studentId = ?
+          WHERE a.courseId = ? 
+          ORDER BY a.id ASC
+        `;
+        params = [studentId, courseId];
+      }
+    }
+
+    const [assignments] = await pool.execute(query, params);
     res.json(assignments);
   } catch (error) {
     console.error('Get Assignments Error:', error);
@@ -22,10 +39,26 @@ const getAssignments = async (req, res) => {
 const getAssignmentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [assignment] = await pool.execute(
-      'SELECT * FROM assignment WHERE id = ?',
-      [id]
-    );
+    const { userId, role } = req.user;
+
+    let query = 'SELECT * FROM assignment WHERE id = ?';
+    let params = [id];
+
+    if (role === 'student') {
+      const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+      if (students.length > 0) {
+        const studentId = students[0].id;
+        query = `
+          SELECT a.*, s.status, s.submissionType, s.submissionContent, s.fileUrl, s.textContent, s.score, s.feedback, s.result, s.submittedAt 
+          FROM assignment a
+          LEFT JOIN assignmentsubmission s ON a.id = s.assignmentId AND s.studentId = ?
+          WHERE a.id = ?
+        `;
+        params = [studentId, id];
+      }
+    }
+
+    const [assignment] = await pool.execute(query, params);
 
     if (assignment.length === 0) {
       return res.status(404).json({ message: 'Assignment not found' });
@@ -74,17 +107,15 @@ const submitAssignment = async (req, res) => {
     }
     const studentId = students[0].id;
 
-    let content = submissionContent;
-    let type = submissionType;
+    const textContent = submissionContent || '';
+    let fileUrl = null;
 
-    // If file is uploaded, override content and type
     if (req.file) {
-      content = req.file.path; // Cloudinary URL
-      type = 'file';
+      fileUrl = req.file.path;
     }
 
-    if (!content) {
-      return res.status(400).json({ message: 'Submission content or file is required' });
+    if (!textContent && !fileUrl) {
+      return res.status(400).json({ message: 'At least one form of submission (text or file) is required' });
     }
 
     // Check assignment deadline if submitting final
@@ -105,15 +136,19 @@ const submitAssignment = async (req, res) => {
 
     const newStatus = isFinal === 'true' ? 'pending' : 'draft';
 
+    // For backward compatibility, we'll still populate submissionType and submissionContent
+    // Legacy mapping: if file exists, type is 'file', otherwise 'text'
+    const legacyType = fileUrl ? 'file' : 'text';
+    const legacyContent = fileUrl || textContent;
+
     if (existing.length > 0) {
-      // If already submitted for review (pending/approved/rejected), don't allow re-submit or draft update
       if (existing[0].status !== 'draft') {
         return res.status(400).json({ message: 'Assignment already submitted for review and cannot be modified' });
       }
 
       await pool.execute(
-        'UPDATE assignmentsubmission SET submissionType = ?, submissionContent = ?, status = ?, submittedAt = NOW() WHERE id = ?',
-        [type, content, newStatus, existing[0].id]
+        'UPDATE assignmentsubmission SET submissionType = ?, submissionContent = ?, fileUrl = ?, textContent = ?, status = ?, submittedAt = NOW() WHERE id = ?',
+        [legacyType, legacyContent, fileUrl, textContent, newStatus, existing[0].id]
       );
 
       const [updated] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [existing[0].id]);
@@ -123,8 +158,8 @@ const submitAssignment = async (req, res) => {
       });
     } else {
       const [result] = await pool.execute(
-        'INSERT INTO assignmentsubmission (assignmentId, studentId, submissionType, submissionContent, status) VALUES (?, ?, ?, ?, ?)',
-        [assignmentId, studentId, type, content, newStatus]
+        'INSERT INTO assignmentsubmission (assignmentId, studentId, submissionType, submissionContent, fileUrl, textContent, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [assignmentId, studentId, legacyType, legacyContent, fileUrl, textContent, newStatus]
       );
 
       const [newSub] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [result.insertId]);

@@ -16,13 +16,23 @@ import {
     ChevronUp
 } from "lucide-react";
 import { useStudentDashboard } from "../../hooks/useStudentQueries";
-import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmitAssignment } from "../../hooks/useStudentQueries";
+import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmitAssignment, useUpdateTimeSpent } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import FeedbackModal from "../../components/FeedbackModal";
 
 export default function LessonPlayer() {
-    const { courseId } = useParams();
+    const { courseId, lessonId: urlLessonId } = useParams();
     const navigate = useNavigate();
+
+    // Ref to track if user manually clicked "Back to Playlist" on mobile
+    const manualDismissRef = React.useRef(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // TanStack Queries
     const { data: lessons = [], isLoading: lessonsLoading } = useLessons(courseId);
@@ -33,6 +43,7 @@ export default function LessonPlayer() {
     const completeLessonMutation = useCompleteLesson();
     const submitQuizMutation = useSubmitQuiz();
     const submitAssignmentMutation = useSubmitAssignment();
+    const updateTimeSpentMutation = useUpdateTimeSpent();
 
     const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'assignments'
     const [activeLesson, setActiveLesson] = useState(null);
@@ -66,24 +77,101 @@ export default function LessonPlayer() {
         message: ''
     });
 
+    // Time tracking for course
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const lastSyncRef = React.useRef(0);
+
     const showFeedback = (title, message, type = 'success') => {
         setFeedbackModal({ isOpen: true, title, message, type });
     };
 
-    // Set initial active lesson when lessons are loaded
+    // --- Course Time Tracking Logic ---
     useEffect(() => {
-        if (lessons.length > 0 && !activeLesson && !activeAssignment) {
-            const firstActive = lessons.find(l => !l.isLocked && !l.isCompleted)
-                || lessons.find(l => !l.isLocked)
-                || lessons[0];
+        if (!courseId) return;
 
-            if (firstActive) {
-                setActiveLesson(firstActive);
-                setQuizResult(firstActive.quizResult || null);
-                if (firstActive.isCompleted) setCanComplete(true);
+        const syncInterval = 60; // Sync every 60 seconds
+        let timer;
+
+        const syncTime = (secondsToSync) => {
+            if (secondsToSync <= 0) return;
+            updateTimeSpentMutation.mutate({ courseId, seconds: secondsToSync });
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // Backgrounded: sync current batch and pause timer
+                const diff = elapsedSeconds - lastSyncRef.current;
+                if (diff > 0) {
+                    syncTime(diff);
+                    lastSyncRef.current = elapsedSeconds;
+                }
+                clearInterval(timer);
+            } else {
+                // Foregrounded: resume timer
+                startTimer();
+            }
+        };
+
+        const startTimer = () => {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                setElapsedSeconds(prev => {
+                    const next = prev + 1;
+                    // Periodically sync
+                    if (next - lastSyncRef.current >= syncInterval) {
+                        syncTime(next - lastSyncRef.current);
+                        lastSyncRef.current = next;
+                    }
+                    return next;
+                });
+            }, 1000);
+        };
+
+        startTimer();
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            // Final sync on unmount
+            const finalDiff = elapsedSeconds - lastSyncRef.current;
+            if (finalDiff > 0) {
+                syncTime(finalDiff);
+            }
+        };
+    }, [courseId, elapsedSeconds]);
+
+    useEffect(() => {
+        if (lessons.length > 0) {
+            // Priority 1: Lesson from URL ID
+            if (urlLessonId && (!activeLesson || activeLesson.id !== parseInt(urlLessonId))) {
+                const target = lessons.find(l => l.id === parseInt(urlLessonId));
+                if (target && !target.isLocked) {
+                    setActiveLesson(target);
+                    setQuizResult(target.quizResult || null);
+                    if (target.isCompleted) setCanComplete(true);
+                    manualDismissRef.current = false;
+                    return;
+                }
+            }
+
+            // Priority 2: Auto-select first available if no active lesson and NOT manually dismissed
+            if (!activeLesson && !activeAssignment && !manualDismissRef.current) {
+                // On mobile, don't auto-select if no specific lesson ID in URL to allow seeing playlist first
+                if (isMobile && !urlLessonId) return;
+
+                const firstActive = lessons.find(l => !l.isLocked && !l.isCompleted)
+                    || lessons.find(l => !l.isLocked)
+                    || lessons[0];
+
+                if (firstActive) {
+                    setActiveLesson(firstActive);
+                    setQuizResult(firstActive.quizResult || null);
+                    if (firstActive.isCompleted) setCanComplete(true);
+                }
             }
         }
-    }, [lessons, activeLesson, activeAssignment]);
+    }, [lessons, urlLessonId]);
 
     // Timer logic for lesson completion
     useEffect(() => {
@@ -296,18 +384,17 @@ export default function LessonPlayer() {
         formData.append('submissionType', submissionType);
         formData.append('isFinal', isFinal.toString());
 
-        if (submissionType === 'text') {
-            if (!submissionText && isFinal) {
-                showFeedback("Missing Content", "Please provide content.", "warning");
-                return;
-            }
-            formData.append('submissionContent', submissionText);
-        } else if (submissionFile) {
-            formData.append('file', submissionFile);
-            formData.append('submissionContent', submissionFile.name);
-        } else if (isFinal) {
-            showFeedback("Missing Content", "Please select a file.", "warning");
+        if (!submissionText && !submissionFile && isFinal) {
+            showFeedback("Missing Content", "Please provide text content or attach a file.", "warning");
             return;
+        }
+
+        if (submissionText) {
+            formData.append('submissionContent', submissionText);
+        }
+
+        if (submissionFile) {
+            formData.append('file', submissionFile);
         }
 
         submitAssignmentMutation.mutate({
@@ -378,32 +465,20 @@ export default function LessonPlayer() {
                         <div className="pt-8 border-t border-gray-50">
                             <h3 className="text-2xl font-black text-gray-900 mb-6">Your Submission</h3>
 
-                            <div className="flex bg-gray-50 p-1 rounded-2xl mb-6 max-w-sm">
-                                <button
-                                    onClick={() => setSubmissionType('text')}
-                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${submissionType === 'text' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    Write Text
-                                </button>
-                                <button
-                                    onClick={() => setSubmissionType('file')}
-                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${submissionType === 'file' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    Upload File
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSubmitAssignment} className="space-y-6">
-                                {submissionType === 'text' ? (
+                            <form onSubmit={handleSubmitAssignment} className="space-y-10">
+                                <div className="space-y-4">
+                                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest ml-1">Project Description / Notes</label>
                                     <textarea
-                                        value={submissionText || (activeAssignment.submissionType === 'text' ? activeAssignment.submissionContent : '')}
+                                        value={submissionText || activeAssignment.textContent || ''}
                                         onChange={(e) => setSubmissionText(e.target.value)}
-                                        placeholder="Type your project content or paste links here..."
-                                        className="w-full min-h-[250px] p-6 rounded-[2rem] border border-gray-200 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none font-medium disabled:bg-gray-50 disabled:cursor-not-allowed"
-                                        required
+                                        placeholder="Type your project content, paste links, or add notes about your submission here..."
+                                        className="w-full min-h-[200px] p-6 rounded-[2rem] border border-gray-200 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none font-medium disabled:bg-gray-50 disabled:cursor-not-allowed"
                                         disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
                                     />
-                                ) : (
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest ml-1">Attachment (Optional if text is provided)</label>
                                     <div className="relative group">
                                         <input
                                             type="file"
@@ -412,17 +487,20 @@ export default function LessonPlayer() {
                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.mp4,.mkv"
                                             disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
                                         />
-                                        <div className="border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center group-hover:border-primary/50 transition-colors bg-gray-50/50">
-                                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                                <Plus className="w-8 h-8" />
+                                        <div className="border-2 border-dashed border-gray-200 rounded-[2rem] p-10 text-center group-hover:border-primary/50 transition-colors bg-gray-50/50">
+                                            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                                <Plus className="w-7 h-7" />
                                             </div>
-                                            <p className="text-gray-900 font-bold mb-1">
-                                                {submissionFile ? submissionFile.name : (activeAssignment.submissionType === 'file' ? activeAssignment.submissionContent : 'Click to upload your project file')}
+                                            <p className="text-gray-900 font-bold mb-1 italic">
+                                                {submissionFile ? submissionFile.name : (activeAssignment.fileUrl ? "File already attached" : "Click to upload your project file")}
                                             </p>
-                                            <p className="text-gray-400 text-sm font-medium">Max size: 125MB. Supports PDF, DOC, Video, Images.</p>
+                                            {activeAssignment.fileUrl && !submissionFile && (
+                                                <p className="text-primary text-[10px] font-black uppercase mt-1">Has existing file</p>
+                                            )}
+                                            <p className="text-gray-400 text-xs font-medium mt-2">Max size: 200MB. Supports PDF, DOC, Video, Images.</p>
                                         </div>
                                     </div>
-                                )}
+                                </div>
 
                                 {submitAssignmentMutation.isPending && uploadProgress > 0 && uploadProgress < 100 && (
                                     <div className="space-y-2">
@@ -457,7 +535,7 @@ export default function LessonPlayer() {
                                             }
                                             setShowConfirmModal(true);
                                         }}
-                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft') || (submissionType === 'text' ? !submissionText : !submissionFile)}
+                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft') || (!submissionText && !submissionFile && !activeAssignment.fileUrl && !activeAssignment.textContent)}
                                         className="flex-1 py-4 px-3 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
                                     >
                                         {submitAssignmentMutation.isPending ? 'Uploading...' : 'Submit Final Work'}
@@ -548,7 +626,12 @@ export default function LessonPlayer() {
             <div className="space-y-6 animate-in fade-in duration-500 pb-20">
                 {/* Mobile Back Button */}
                 <button
-                    onClick={() => { setActiveLesson(null); setActiveAssignment(null); }}
+                    onClick={() => {
+                        manualDismissRef.current = true;
+                        setActiveLesson(null);
+                        setActiveAssignment(null);
+                        navigate(`/dashboard/student/courses/${courseId}/learn`);
+                    }}
                     className="lg:hidden flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-4 bg-primary/5 px-4 py-2 rounded-xl"
                 >
                     <ChevronLeft className="w-4 h-4" /> Back to Playlist
@@ -713,8 +796,10 @@ export default function LessonPlayer() {
                                     <button
                                         key={lesson.id}
                                         onClick={() => {
+                                            manualDismissRef.current = false;
                                             setActiveLesson(lesson);
                                             setActiveAssignment(null);
+                                            navigate(`/dashboard/student/courses/${courseId}/learn/${lesson.id}`);
                                         }}
                                         disabled={lesson.isLocked}
                                         className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-4 group ${activeLesson?.id === lesson.id
@@ -755,6 +840,7 @@ export default function LessonPlayer() {
                                     <button
                                         key={assignment.id}
                                         onClick={() => {
+                                            manualDismissRef.current = false;
                                             setActiveAssignment(assignment);
                                             setActiveLesson(null);
                                         }}

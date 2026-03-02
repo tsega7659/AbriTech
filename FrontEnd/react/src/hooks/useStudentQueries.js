@@ -96,3 +96,10 @@ export const useSubmitAssignment = () => {
         }
     });
 };
+
+export const useUpdateTimeSpent = () => {
+    return useMutation({
+        mutationFn: ({ courseId, seconds }) =>
+            apiClient.patch(`/students/courses/${courseId}/time`, { seconds })
+    });
+};

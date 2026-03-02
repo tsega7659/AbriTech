@@ -58,8 +58,17 @@ const getDashboard = async (req, res) => {
     );
     const averageScore = quizResult[0].average !== null ? Math.round(quizResult[0].average) : 0;
 
-    // Placeholder for learning time (can be estimated later)
-    const learningTime = 'Est. 2h';
+    // Get total learning time
+    const [timeResult] = await pool.execute(
+      'SELECT SUM(timeSpentSeconds) as totalTime FROM enrollment WHERE studentId = ?',
+      [studentId]
+    );
+    const totalSeconds = timeResult[0].totalTime || 0;
+
+    // Format learning time (e.g., "2h 15m")
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const learningTime = `${hours}h ${minutes}m`;
 
     res.json({
       enrolledCourses: enrolledCourses[0].count,
@@ -91,6 +100,7 @@ const getEnrolledCourses = async (req, res) => {
         c.image,
         c.level,
         e.progressPercentage as progress,
+        e.timeSpentSeconds,
         e.enrolledAt
       FROM course c
       JOIN enrollment e ON c.id = e.courseId
@@ -148,6 +158,8 @@ const getStudentGrades = async (req, res) => {
       SELECT 
         c.id as courseId,
         a.title as assignmentTitle,
+        asub.fileUrl,
+        asub.textContent,
         asub.status,
         asub.result,
         asub.score,
@@ -227,10 +239,39 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+const updateCourseTimeSpent = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { courseId } = req.params;
+    const { seconds } = req.body; // Incremental seconds to add
+
+    if (!seconds || isNaN(seconds)) {
+      return res.status(400).json({ message: 'Valid seconds count is required' });
+    }
+
+    // Get student ID
+    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
+    const studentId = students[0].id;
+
+    // Update time spent
+    await pool.execute(
+      'UPDATE enrollment SET timeSpentSeconds = timeSpentSeconds + ? WHERE studentId = ? AND courseId = ?',
+      [seconds, studentId, courseId]
+    );
+
+    res.json({ message: 'Time spent updated successfully' });
+  } catch (error) {
+    console.error('Update Time Spent Error:', error);
+    res.status(500).json({ message: 'Failed to update time spent', error: error.message });
+  }
+};
+
 module.exports = {
   getAllStudents,
   getDashboard,
   getEnrolledCourses,
   getStudentGrades,
-  deleteStudent
+  deleteStudent,
+  updateCourseTimeSpent
 };

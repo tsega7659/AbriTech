@@ -14,7 +14,8 @@ import {
     Sparkles,
     UserCheck,
     UserPlus,
-    FileText
+    FileText,
+    MessageSquare
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -76,6 +77,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/parents', icon: Users, label: 'Parents' },
         { to: '/admin/users/register', icon: UserPlus, label: 'Register User' },
         { to: '/admin/projects', icon: CheckSquare, label: 'Projects' },
+        { to: '/admin/messages', icon: MessageSquare, label: 'User Messages' },
         { to: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 

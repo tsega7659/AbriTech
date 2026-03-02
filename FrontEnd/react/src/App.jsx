@@ -75,6 +75,7 @@ function App() {
             <Route index element={<StudentDashboard />} />
             <Route path="courses" element={<StudentCourses />} />
             <Route path="courses/:courseId" element={<CourseDetail />} />
+            <Route path="courses/:courseId/learn" element={<LessonPlayer />} />
             <Route path="courses/:courseId/learn/:lessonId" element={<LessonPlayer />} />
             <Route path="grades" element={<Grades />} />
 

@@ -1,8 +1,67 @@
-import { Phone, Mail, MapPin, Clock, MessageSquare, Users, Building2, HelpCircle } from "lucide-react";
+import { useState } from "react";
+import { Phone, Mail, MapPin, Clock, MessageSquare, Users, Building2, HelpCircle, Loader2 } from "lucide-react";
+import apiClient from "../lib/apiClient";
+import FeedbackModal from "../components/FeedbackModal";
 
 export default function Contact() {
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        message: ""
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState({ show: false, title: "", message: "", type: "success" });
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+            setFeedback({
+                show: true,
+                title: "Incomplete Form",
+                message: "Please fill in all fields before submitting.",
+                type: "error"
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await apiClient.post("/contact", formData);
+            setFeedback({
+                show: true,
+                title: "Message Sent!",
+                message: "Thank you for contacting us. We'll get back to you as soon as possible.",
+                type: "success"
+            });
+            setFormData({ firstName: "", lastName: "", email: "", message: "" });
+        } catch (error) {
+            setFeedback({
+                show: true,
+                title: "Submission Failed",
+                message: error.response?.data?.message || "Something went wrong. Please try again later.",
+                type: "error"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="bg-white min-h-screen pb-20 relative overflow-hidden">
+            <FeedbackModal
+                isOpen={feedback.show}
+                onClose={() => setFeedback(prev => ({ ...prev, show: false }))}
+                title={feedback.title}
+                message={feedback.message}
+                type={feedback.type}
+            />
             {/* Background Decorations */}
             <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/4">
                 <div className="w-[800px] h-[800px] bg-[#00B4D8] rounded-full opacity-5 blur-3xl"></div>
@@ -69,30 +128,68 @@ export default function Contact() {
                     {/* Contact Form */}
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-8">Send Us a Message</h2>
-                        <form className="space-y-4">
+                        <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-700">First Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter first name" />
+                                    <input
+                                        type="text"
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all"
+                                        placeholder="Enter first name"
+                                        required
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-700">Last Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter last name" />
+                                    <input
+                                        type="text"
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all"
+                                        placeholder="Enter last name"
+                                        required
+                                    />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Email Address</label>
-                                <input type="email" className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Enter your email" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all"
+                                    placeholder="Enter your email"
+                                    required
+                                />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Message</label>
-                                <textarea rows={4} className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all" placeholder="Type your message..."></textarea>
+                                <textarea
+                                    rows={4}
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 rounded-lg border border-[#00B4D8] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-text-[#00B4D8] transition-all"
+                                    placeholder="Type your message..."
+                                    required
+                                ></textarea>
                             </div>
 
-                            <button type="button" className="w-full bg-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-[#00B4D8]/90 transition-all  hover:-translate-y-1">
-                                Send Message
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full bg-[#00B4D8] text-white font-bold py-4 rounded-xl hover:bg-[#00B4D8]/90 transition-all  hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>Processing... <Loader2 className="w-5 h-5 animate-spin" /></>
+                                ) : "Send Message"}
                             </button>
                         </form>
                     </div>

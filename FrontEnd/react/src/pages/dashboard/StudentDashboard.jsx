@@ -101,7 +101,7 @@ export default function StudentDashboard() {
                                 key={course.id}
                                 className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl transition-all group lg:hover:-translate-y-1"
                             >
-                                <Link to={`/dashboard/student/courses/${course.id}/learn/1`}>
+                                <Link to={`/dashboard/student/courses/${course.id}/learn`}>
                                     <div className="h-48 relative overflow-hidden">
                                         <img
                                             src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600'}

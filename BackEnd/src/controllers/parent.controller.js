@@ -144,6 +144,7 @@ const getLinkedStudents = async (req, res) => {
               'id', c.id,
               'name', c.name,
               'progress', e.progressPercentage,
+              'timeSpentSeconds', e.timeSpentSeconds,
               'thumbnail', c.image
             )
           )

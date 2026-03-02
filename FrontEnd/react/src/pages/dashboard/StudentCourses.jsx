@@ -61,7 +61,7 @@ export default function StudentCourses() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCourses.map((course) => (
-                        <Link to={`/dashboard/student/courses/${course.id}/learn/1`} key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all group flex flex-col">
+                        <Link to={`/dashboard/student/courses/${course.id}/learn`} key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all group flex flex-col">
                             <div className="h-48 relative overflow-hidden">
                                 <img
                                     src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : "https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600"}
@@ -80,8 +80,9 @@ export default function StudentCourses() {
                                     </button>
                                 </div>
 
-                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                                    <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" /> Progress: {course.progress || 0}%</span>
+                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-6 font-medium">
+                                    <span className="flex items-center gap-1"><BookOpen className="h-4 w-4 text-[#00B4D8]" /> {course.progress || 0}%</span>
+                                    <span className="flex items-center gap-1"><Clock className="h-4 w-4 text-purple-500" /> {Math.floor((course.timeSpentSeconds || 0) / 3600)}h {Math.floor(((course.timeSpentSeconds || 0) % 3600) / 60)}m</span>
                                 </div>
 
                                 <div className="mt-auto">

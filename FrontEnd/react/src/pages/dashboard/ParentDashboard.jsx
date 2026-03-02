@@ -113,8 +113,11 @@ export default function ParentDashboard() {
                                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Enrolled Courses</p>
                                         <div className="flex flex-wrap gap-1.5">
                                             {student.enrolledCourses.map((course, idx) => (
-                                                <span key={idx} className="px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-md text-[10px] font-bold text-gray-600">
+                                                <span key={idx} className="px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-md text-[10px] font-bold text-gray-600 flex items-center gap-1">
                                                     {course.name}
+                                                    <span className="text-purple-500 font-black">
+                                                        ({Math.floor((course.timeSpentSeconds || 0) / 3600)}h {Math.floor(((course.timeSpentSeconds || 0) % 3600) / 60)}m)
+                                                    </span>
                                                 </span>
                                             ))}
                                         </div>

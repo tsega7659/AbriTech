@@ -116,23 +116,26 @@ const BlogManagement = () => {
             ? { id: isEditing, formData, onProgress: (p) => setUploadProgress(p) }
             : { formData, onProgress: (p) => setUploadProgress(p) };
 
-        mutationToUse.mutate(mutationParams, {
-            onSuccess: () => {
-                setIsAdding(false);
-                setIsEditing(null);
-                setNewBlog({ title: '', content: '', coverImage: null });
-                setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
-                setPreviewUrl(null);
-                showFeedback("Success", `Article ${isEditing ? 'updated' : 'published'} successfully!`, "success");
-                setSubmitting(false);
-                setUploadProgress(0);
-            },
-            onError: (error) => {
-                showFeedback("Operation Failed", error.response?.data?.message || "Failed to save article", "error");
-                setSubmitting(false);
-                setUploadProgress(0);
-            }
-        });
+        try {
+            await mutationToUse.mutateAsync(mutationParams, {
+                onSuccess: () => {
+                    setIsAdding(false);
+                    setIsEditing(null);
+                    setNewBlog({ title: '', content: '', coverImage: null });
+                    setSections([{ subtitle: '', body: '', mediaType: 'none', mediaUrl: '', file: null }]);
+                    setPreviewUrl(null);
+                    showFeedback("Success", `Article ${isEditing ? 'updated' : 'published'} successfully!`, "success");
+                },
+                onError: (error) => {
+                    showFeedback("Operation Failed", error.response?.data?.message || "Failed to save article", "error");
+                }
+            });
+        } catch (error) {
+            console.error('Mutation error:', error);
+        } finally {
+            setSubmitting(false);
+            setUploadProgress(0);
+        }
     };
 
     const handleEditClick = (blog) => {
@@ -175,7 +178,7 @@ const BlogManagement = () => {
     return (
         <div className="space-y-8">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 md:px-0">
                 <div>
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight">Blog Management</h1>
                     <p className="text-slate-500 font-medium mt-1">Create and manage news and articles</p>
@@ -408,7 +411,7 @@ const BlogManagement = () => {
             {loading.blogs ? (
                 <Loading fullScreen={false} message="Loading articles..." />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredBlogs.map(blog => (
                         <div key={blog.id} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
                             <div className="relative h-48 overflow-hidden bg-slate-100">

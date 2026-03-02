@@ -85,16 +85,20 @@ const CourseLessons = () => {
             ? { id: editingLesson.id, formData, onProgress }
             : { formData, onProgress };
 
-        mutationToUse.mutate(mutationParams, {
-            onSuccess: () => {
-                setIsAddModalOpen(false);
-                setEditingLesson(null);
-                showFeedback("Success", `Lesson ${editingLesson ? 'updated' : 'created'} successfully!`, "success");
-            },
-            onError: (error) => {
-                showFeedback("Operation Failed", error.response?.data?.message || "Failed to save lesson", "error");
-            }
-        });
+        try {
+            await mutationToUse.mutateAsync(mutationParams, {
+                onSuccess: () => {
+                    setIsAddModalOpen(false);
+                    setEditingLesson(null);
+                    showFeedback("Success", `Lesson ${editingLesson ? 'updated' : 'created'} successfully!`, "success");
+                },
+                onError: (error) => {
+                    showFeedback("Operation Failed", error.response?.data?.message || "Failed to save lesson", "error");
+                }
+            });
+        } catch (error) {
+            console.error('Mutation error:', error);
+        }
     };
 
     const getTypeIcon = (type, size = "w-5 h-5") => {

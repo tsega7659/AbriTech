@@ -141,7 +141,7 @@ export default function Navbar() {
                                 <>
                                     <Link
                                         to={getDashboardPath()}
-                                        className="flex items-center justify-center gap-2 w-full text-center text-gray-700 font-bold py-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all"
+                                        className="flex items-center justify-center gap-2 w-full text-center text-gray-700 font-bold py-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-[#00B4D8] transition-all text-lg"
                                         onClick={() => setIsOpen(false)}
                                     >
                                         <User className="h-5 w-5" />

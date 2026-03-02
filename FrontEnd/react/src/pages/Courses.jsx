@@ -87,7 +87,7 @@ export default function Courses() {
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight"
+                        className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight px-2"
                     >
                         Explore Our <span className="text-primary">STEM Universe</span>
                     </motion.h1>
@@ -95,7 +95,7 @@ export default function Courses() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-lg text-gray-500 max-w-2xl mx-auto font-medium"
+                        className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto font-medium px-4"
                     >
                         Comprehensive curriculum covering robotics, mechatronics, programming, and the Internet of Things suitable for all ages.
                     </motion.p>
@@ -162,7 +162,7 @@ export default function Courses() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10"
                         >
                             {filteredCourses.map((course) => (
                                 <motion.div
@@ -206,12 +206,12 @@ export default function Courses() {
                                                 <button
                                                     onClick={() => handleEnroll(course.id)}
                                                     disabled={enrolling === course.id}
-                                                    className="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                                                    className="w-full bg-[#00B4D8] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
                                                 >
                                                     {enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
                                                 </button>
                                             ) : (
-                                                <Link to="/auth/get-started" className="block w-full text-center bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                                                <Link to="/auth/get-started" className="block w-full text-center bg-[#00B4D8] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
                                                     Enroll Now
                                                 </Link>
                                             )}

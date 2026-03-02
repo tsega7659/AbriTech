@@ -246,7 +246,7 @@ const getStudentCourseDetail = async (req, res) => {
         // Get project submissions for this student and course
         const [submissions] = await pool.execute(`
             SELECT 
-                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
+                sub.id, sub.submissionType, sub.submissionContent, sub.fileUrl, sub.textContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
                 a.title as assignmentTitle, a.description as assignmentDescription
             FROM assignmentsubmission sub
             JOIN assignment a ON sub.assignmentId = a.id
@@ -296,7 +296,7 @@ const getAllSubmissions = async (req, res) => {
 
         const [submissions] = await pool.execute(`
             SELECT 
-                sub.id, sub.submissionType, sub.submissionContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
+                sub.id, sub.submissionType, sub.submissionContent, sub.fileUrl, sub.textContent, sub.status, sub.result, sub.score, sub.maxScore, sub.feedback, sub.submittedAt,
                 a.title as assignmentTitle,
                 c.name as courseName,
                 u.fullName as studentName,
