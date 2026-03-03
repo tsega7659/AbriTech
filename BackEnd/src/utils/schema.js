@@ -181,6 +181,7 @@ const schema = [
       { name: 'studentId', type: 'BIGINT NOT NULL' },
       { name: 'courseId', type: 'BIGINT NOT NULL' },
       { name: 'progressPercentage', type: 'FLOAT DEFAULT 0' },
+      { name: 'timeSpentSeconds', type: 'INT DEFAULT 0' },
       { name: 'status', type: "ENUM('active', 'completed') DEFAULT 'active'" },
       { name: 'enrolledAt', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
     ],
@@ -193,6 +194,7 @@ const schema = [
       studentId BIGINT NOT NULL,
       courseId BIGINT NOT NULL,
       progressPercentage FLOAT DEFAULT 0,
+      timeSpentSeconds INT DEFAULT 0,
       status ENUM('active', 'completed') DEFAULT 'active',
       enrolledAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
