@@ -4,6 +4,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import LoginPage from './pages/auth/LoginPage';
 import ChangeCredentials from './pages/auth/ChangeCredentials';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import Analytics from './pages/admin/Analytics';
 import StudentManagement from './pages/admin/StudentManagement';
 import CourseManagement from './pages/admin/CourseManagement';
 import CourseLessons from './pages/admin/CourseLessons';
@@ -13,6 +14,7 @@ import UserRegistration from './pages/admin/UserRegistration';
 import ProjectReview from './pages/admin/ProjectReview';
 import BlogManagement from './pages/admin/BlogManagement';
 import MessageManagement from './pages/admin/MessageManagement';
+import Payments from './pages/admin/Payments';
 import Settings from './pages/common/Settings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
@@ -44,7 +46,8 @@ function App() {
           <Route path="projects" element={<ProjectReview />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="messages" element={<MessageManagement />} />
-          <Route path="analytics" element={<div>Analytics (Refinement Pending)</div>} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

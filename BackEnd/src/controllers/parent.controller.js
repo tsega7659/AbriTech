@@ -19,7 +19,7 @@ const linkStudent = async (req, res) => {
     await conn.beginTransaction();
 
     // 1. Get Parent ID
-    const [parents] = await conn.execute('SELECT id FROM parent WHERE userId = ?', [currentUserId]);
+    const [parents] = await conn.execute('SELECT id FROM parent WHERE "userId" = ?', [currentUserId]);
     if (parents.length === 0) {
       await conn.rollback();
       return res.status(403).json({ message: "Access denied. Not a parent account." });
@@ -27,7 +27,7 @@ const linkStudent = async (req, res) => {
     const parentId = parents[0].id;
 
     // 2. Find Student by Referral Code
-    const [students] = await conn.execute('SELECT id, isCurrentStudent FROM student WHERE referralCode = ?', [referralCode]);
+    const [students] = await conn.execute('SELECT id, "isCurrentStudent" FROM student WHERE "referralCode" = ?', [referralCode]);
     if (students.length === 0) {
       await conn.rollback();
       return res.status(404).json({ message: "Invalid referral code" });
@@ -36,7 +36,7 @@ const linkStudent = async (req, res) => {
 
     // 3. Check if already linked
     const [existingLink] = await conn.execute(
-      'SELECT id FROM parentstudent WHERE parentId = ? AND studentId = ?',
+      'SELECT id FROM parentstudent WHERE "parentId" = ? AND "studentId" = ?',
       [parentId, studentId]
     );
     if (existingLink.length > 0) {
@@ -46,7 +46,7 @@ const linkStudent = async (req, res) => {
 
     // 4. Create Link
     await conn.execute(
-      'INSERT INTO parentstudent (parentId, studentId) VALUES (?, ?)',
+      'INSERT INTO parentstudent ("parentId", "studentId") VALUES (?, ?)',
       [parentId, studentId]
     );
 
@@ -67,7 +67,7 @@ const getDashboard = async (req, res) => {
     const { userId } = req.user; // From auth middleware
 
     // Get parent ID
-    const [parents] = await pool.execute('SELECT id FROM parent WHERE userId = ?', [userId]);
+    const [parents] = await pool.execute('SELECT id FROM parent WHERE "userId" = ?', [userId]);
     if (parents.length === 0) {
       return res.status(403).json({ message: "Access denied. Not a parent account." });
     }
@@ -75,7 +75,7 @@ const getDashboard = async (req, res) => {
 
     // Get linked students count
     const [linkedStudents] = await pool.execute(
-      'SELECT COUNT(*) as count FROM parentstudent WHERE parentId = ?',
+      'SELECT COUNT(*) as count FROM parentstudent WHERE "parentId" = ?',
       [parentId]
     );
 
@@ -83,25 +83,25 @@ const getDashboard = async (req, res) => {
     const [courseEnrollments] = await pool.execute(`
       SELECT COUNT(*) as count 
       FROM enrollment e
-      JOIN parentstudent ps ON e.studentId = ps.studentId
-      WHERE ps.parentId = ?
+      JOIN parentstudent ps ON e."studentId" = ps."studentId"
+      WHERE ps."parentId" = ?
     `, [parentId]);
 
     // Get total lessons completed by all linked students
     const [lessonsResult] = await pool.execute(`
       SELECT COUNT(*) as count 
       FROM lessonprogress lp
-      JOIN parentstudent ps ON lp.studentId = ps.studentId
-      WHERE ps.parentId = ? AND lp.completed = 1
+      JOIN parentstudent ps ON lp."studentId" = ps."studentId"
+      WHERE ps."parentId" = ? AND lp.completed = true
     `, [parentId]);
     const totalLessonsCompleted = lessonsResult[0].count;
 
     // Get average quiz score for all linked students
     const [quizResult] = await pool.execute(`
-      SELECT AVG(qa.isCorrect * 100) as average
+      SELECT AVG(CASE WHEN qa."isCorrect" THEN 100 ELSE 0 END) as average
       FROM quizattempt qa
-      JOIN parentstudent ps ON qa.studentId = ps.studentId
-      WHERE ps.parentId = ?
+      JOIN parentstudent ps ON qa."studentId" = ps."studentId"
+      WHERE ps."parentId" = ?
     `, [parentId]);
     const averageQuizScore = Math.round(quizResult[0].average || 0);
 
@@ -132,30 +132,30 @@ const getLinkedStudents = async (req, res) => {
     const [students] = await pool.execute(`
       SELECT 
         u.id,
-        u.fullName,
+        u."fullName",
         u.email,
-        s.classLevel,
-        s.schoolName,
-        (SELECT COUNT(*) FROM enrollment WHERE studentId = s.id) as enrolledCount,
-        (SELECT AVG(progressPercentage) FROM enrollment WHERE studentId = s.id) as averageProgress,
+        s."classLevel",
+        s."schoolName",
+        (SELECT COUNT(*) FROM enrollment WHERE "studentId" = s.id) as "enrolledCount",
+        (SELECT AVG("progressPercentage") FROM enrollment WHERE "studentId" = s.id) as "averageProgress",
         (
-          SELECT JSON_ARRAYAGG(
-            JSON_OBJECT(
+          SELECT json_agg(
+            json_build_object(
               'id', c.id,
               'name', c.name,
-              'progress', e.progressPercentage,
-              'timeSpentSeconds', e.timeSpentSeconds,
+              'progress', e."progressPercentage",
+              'timeSpentSeconds', e."timeSpentSeconds",
               'thumbnail', c.image
             )
           )
           FROM enrollment e
-          JOIN course c ON e.courseId = c.id
-          WHERE e.studentId = s.id
-        ) as enrolledCourses
-      FROM user u
-      JOIN student s ON u.id = s.userId
-      JOIN parentstudent ps ON s.id = ps.studentId
-      WHERE ps.parentId = ?
+          JOIN course c ON e."courseId" = c.id
+          WHERE e."studentId" = s.id
+        ) as "enrolledCourses"
+      FROM "user" u
+      JOIN student s ON u.id = s."userId"
+      JOIN parentstudent ps ON s.id = ps."studentId"
+      WHERE ps."parentId" = ?
     `, [parentId]);
 
     // Robust JSON parsing for aggregated student data
@@ -186,14 +186,14 @@ const getAllParents = async (req, res) => {
     const [parents] = await pool.execute(`
       SELECT 
         u.id, 
-        u.fullName, 
+        u."fullName", 
         u.email, 
         u.username, 
-        u.phoneNumber, 
+        u."phoneNumber", 
         u.gender, 
         u.address
-      FROM user u
-      JOIN parent p ON u.id = p.userId
+      FROM "user" u
+      JOIN parent p ON u.id = p."userId"
     `);
     res.json(parents);
   } catch (error) {
@@ -210,7 +210,7 @@ const deleteParent = async (req, res) => {
     await conn.beginTransaction();
 
     // Check if parent exists
-    const [parent] = await conn.execute('SELECT id FROM parent WHERE userId = ?', [id]);
+    const [parent] = await conn.execute('SELECT id FROM parent WHERE "userId" = ?', [id]);
     if (parent.length === 0) {
       await conn.rollback();
       return res.status(404).json({ message: 'Parent not found' });
@@ -219,13 +219,13 @@ const deleteParent = async (req, res) => {
     const parentId = parent[0].id;
 
     // 1. Delete parent-student links
-    await conn.execute('DELETE FROM parentstudent WHERE parentId = ?', [parentId]);
+    await conn.execute('DELETE FROM parentstudent WHERE "parentId" = ?', [parentId]);
 
     // 2. Delete parent record
-    await conn.execute('DELETE FROM parent WHERE userId = ?', [id]);
+    await conn.execute('DELETE FROM parent WHERE "userId" = ?', [id]);
 
     // 3. Delete user record
-    await conn.execute('DELETE FROM user WHERE id = ?', [id]);
+    await conn.execute('DELETE FROM "user" WHERE id = ?', [id]);
 
     await conn.commit();
     res.json({ message: 'Parent and associated records deleted successfully' });

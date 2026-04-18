@@ -19,6 +19,7 @@ import { useStudentDashboard } from "../../hooks/useStudentQueries";
 import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmitAssignment, useUpdateTimeSpent } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import FeedbackModal from "../../components/FeedbackModal";
+import TelebirrPaymentModal from "../../components/TelebirrPaymentModal";
 
 export default function LessonPlayer() {
     const { courseId, lessonId: urlLessonId } = useParams();
@@ -27,6 +28,9 @@ export default function LessonPlayer() {
     // Ref to track if user manually clicked "Back to Playlist" on mobile
     const manualDismissRef = React.useRef(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentCourseId, setPaymentCourseId] = useState(null);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -257,9 +261,21 @@ export default function LessonPlayer() {
 
         completeLessonMutation.mutate(activeLesson.id, {
             onSuccess: (data) => {
-                const nextLesson = lessons.find(l => l.orderNumber > activeLesson.orderNumber);
-                if (nextLesson && !nextLesson.isLocked) {
+                // Find next lesson to potentially auto-advance
+                const currentOrder = activeLesson.orderNumber;
+                const nextLesson = lessons.find(l => l.orderNumber > currentOrder);
+                
+                // Only auto-advance if the next lesson is NOT locked after the completion
+                // Note: The 'lessons' array here is stale (from before refetch), 
+                // but since payment locks are static and progression locks are strict,
+                // this check is safe. If it's payment locked, isLocked will be true here.
+                if (nextLesson && !nextLesson.isLocked && !nextLesson.requiresPayment) {
                     setActiveLesson(nextLesson);
+                    navigate(`/dashboard/student/courses/${courseId}/learn/${nextLesson.id}`);
+                } else if (nextLesson && nextLesson.requiresPayment) {
+                    // If next lesson requires payment, stay here or show a friendly message
+                    // We don't auto-select the locked one to avoid showing the payment modal unexpectedly
+                    console.log("Next lesson requires payment, stopping auto-advance.");
                 }
             },
             onError: (error) => {
@@ -313,7 +329,7 @@ export default function LessonPlayer() {
                             </div>
                         </div>
                         {quizResult?.passed && (
-                            <div className="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                            <div className="bg-[#FDB813]/10 text-[#FDB813] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">
                                 <Check className="w-4 h-4" /> Passed
                             </div>
                         )}
@@ -336,7 +352,7 @@ export default function LessonPlayer() {
                                         className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnswers[q.id] === opt
                                             ? 'bg-primary/5 border-primary text-primary shadow-sm'
                                             : 'bg-white border-gray-100 text-gray-600 hover:border-primary/30 hover:bg-slate-50'
-                                            } ${quizResult && q.correctOption === opt ? 'bg-green-50 border-green-500 text-green-700' : ''}
+                                            } ${quizResult && q.correctOption === opt ? 'bg-[#FDB813]/10 border-[#FDB813] text-[#FDB813]' : ''}
                                                ${quizResult && quizAnswers[q.id] === opt && q.correctOption !== opt ? 'bg-rose-50 border-rose-500 text-rose-700' : ''}
                                             `}
                                     >
@@ -436,7 +452,7 @@ export default function LessonPlayer() {
                                 <span className="text-[10px] font-black uppercase tracking-widest">Project Assignment</span>
                             </div>
                             {activeAssignment.status && (
-                                <div className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${activeAssignment.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100 shadow-green-100/50' :
+                                <div className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${activeAssignment.status === 'approved' ? 'bg-[#FDB813]/10 text-[#FDB813] border-[#FDB813]/20 shadow-yellow-100/50' :
                                     activeAssignment.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100/50' :
                                         activeAssignment.status === 'pending' ? 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50' :
                                             'bg-yellow-50 text-yellow-600 border-yellow-100 shadow-yellow-100/50'
@@ -451,7 +467,7 @@ export default function LessonPlayer() {
                                 <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> Due: {new Date(activeAssignment.dueDate).toLocaleDateString()}</span>
                             )}
                             {activeAssignment.submittedAt && (
-                                <span className="flex items-center gap-1.5 text-green-600"><CheckCircle className="w-4 h-4" /> Submitted: {new Date(activeAssignment.submittedAt).toLocaleDateString()}</span>
+                                <span className="flex items-center gap-1.5 text-[#FDB813]"><CheckCircle className="w-4 h-4" /> Submitted: {new Date(activeAssignment.submittedAt).toLocaleDateString()}</span>
                             )}
                         </div>
                     </div>
@@ -741,7 +757,7 @@ export default function LessonPlayer() {
                         </button>
                     )}
                     {activeLesson.isCompleted && (
-                        <div className="px-8 py-4 bg-green-50 text-green-600 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                        <div className="px-8 py-4 bg-[#FDB813]/10 text-[#FDB813] rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2">
                             <CheckCircle className="w-5 h-5" /> Completed
                         </div>
                     )}
@@ -796,20 +812,28 @@ export default function LessonPlayer() {
                                     <button
                                         key={lesson.id}
                                         onClick={() => {
+                                            if (lesson.isLocked) {
+                                                if (lesson.requiresPayment) {
+                                                    setPaymentCourseId(courseId);
+                                                    setShowPaymentModal(true);
+                                                } else {
+                                                    showFeedback("Locked", "Please complete previous lessons first.", "warning");
+                                                }
+                                                return;
+                                            }
                                             manualDismissRef.current = false;
                                             setActiveLesson(lesson);
                                             setActiveAssignment(null);
                                             navigate(`/dashboard/student/courses/${courseId}/learn/${lesson.id}`);
                                         }}
-                                        disabled={lesson.isLocked}
                                         className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-4 group ${activeLesson?.id === lesson.id
                                             ? 'bg-white border-[#00B4D8] shadow-lg shadow-blue-500/5 ring-1 ring-[#00B4D8]/20'
                                             : lesson.isLocked
-                                                ? 'bg-gray-100/50 border-transparent opacity-60 cursor-not-allowed'
+                                                ? 'bg-gray-100/50 border-transparent opacity-60 hover:opacity-100 disabled:cursor-not-allowed'
                                                 : 'bg-white border-transparent hover:border-gray-200 hover:shadow-sm'
                                             }`}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${lesson.isCompleted ? 'bg-green-100 text-green-600' :
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${lesson.isCompleted ? 'bg-[#FDB813]/20 text-[#FDB813]' :
                                             lesson.isLocked ? 'bg-gray-200 text-gray-400' :
                                                 activeLesson?.id === lesson.id ? 'bg-[#00B4D8] text-white' : 'bg-gray-100 text-gray-400'
                                             }`}>
@@ -875,6 +899,14 @@ export default function LessonPlayer() {
                     </div>
                 </div>
             </div>
+            {/* Telebirr Payment Modal */}
+            <TelebirrPaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                courseId={paymentCourseId}
+                onSuccess={() => window.location.reload()}
+            />
+
             {/* Feedback Modal */}
             <FeedbackModal
                 isOpen={feedbackModal.isOpen}

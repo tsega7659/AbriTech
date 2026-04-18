@@ -49,7 +49,12 @@ const CourseManagement = () => {
         category: 'Web Development',
         duration: '',
         image: '',
-        youtubeLink: ''
+        youtubeLink: '',
+        price: '',
+        isFree: true,
+        hasDiscount: false,
+        discountPrice: '',
+        hasScholarship: false
     });
     const [submitting, setSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -110,6 +115,12 @@ const CourseManagement = () => {
         formData.append('category', newCourse.category);
         formData.append('level', levelToSend);
         formData.append('description', newCourse.description);
+        formData.append('duration', newCourse.duration);
+        formData.append('price', newCourse.price || 0);
+        formData.append('isFree', newCourse.isFree);
+        formData.append('hasDiscount', newCourse.hasDiscount);
+        formData.append('discountPrice', newCourse.discountPrice || 0);
+        formData.append('hasScholarship', newCourse.hasScholarship);
 
         if (newCourse.image) {
             formData.append('image', newCourse.image);
@@ -131,7 +142,12 @@ const CourseManagement = () => {
                         category: 'STEM',
                         duration: '',
                         image: '',
-                        youtubeLink: ''
+                        youtubeLink: '',
+                        price: '',
+                        isFree: true,
+                        hasDiscount: false,
+                        discountPrice: '',
+                        hasScholarship: false
                     });
                     showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
                 },
@@ -155,9 +171,14 @@ const CourseManagement = () => {
             description: course.description,
             level: course.level === 'advanced' ? 'all levels' : course.level,
             category: course.category || 'STEM',
-            duration: '', // Duration is merged in description in the database currently
+            duration: course.duration || '',
             image: '', // Don't pre-fill the file input
-            youtubeLink: course.youtubeLink || ''
+            youtubeLink: course.youtubeLink || '',
+            price: course.price || '',
+            isFree: course.isFree !== undefined ? course.isFree : true,
+            hasDiscount: course.hasDiscount || false,
+            discountPrice: course.discountPrice || '',
+            hasScholarship: course.hasScholarship || false
         });
     };
 
@@ -171,7 +192,12 @@ const CourseManagement = () => {
             category: 'STEM',
             duration: '',
             image: '',
-            youtubeLink: ''
+            youtubeLink: '',
+            price: '',
+            isFree: true,
+            hasDiscount: false,
+            discountPrice: '',
+            hasScholarship: false
         });
     }
 
@@ -299,6 +325,95 @@ const CourseManagement = () => {
                                     value={newCourse.duration}
                                     onChange={(e) => setNewCourse({ ...newCourse, duration: e.target.value })}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Pricing Section */}
+                        <div className="space-y-4 lg:col-span-3 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 mt-4">
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                <DollarSign className="w-4 h-4 text-primary" /> Pricing & Access Control
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pricing Type</label>
+                                    <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-slate-100 w-fit">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCourse({ ...newCourse, isFree: true, price: '' })}
+                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.isFree ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            Free
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCourse({ ...newCourse, isFree: false })}
+                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!newCourse.isFree ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            Paid
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {!newCourse.isFree && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Base Price (ETB)</label>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">ETB</div>
+                                            <input
+                                                type="number"
+                                                required={!newCourse.isFree}
+                                                placeholder="1499"
+                                                className="w-full pl-14 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:border-primary focus:outline-none transition-all font-black text-slate-700"
+                                                value={newCourse.price}
+                                                onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!newCourse.isFree && (
+                                    <div className="flex flex-col justify-end space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <label className="flex items-center gap-3 cursor-pointer group w-fit">
+                                            <div 
+                                                onClick={() => setNewCourse({ ...newCourse, hasDiscount: !newCourse.hasDiscount })}
+                                                className={`w-10 h-6 rounded-full transition-all relative ${newCourse.hasDiscount ? 'bg-green-500' : 'bg-slate-200'}`}
+                                            >
+                                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newCourse.hasDiscount ? 'left-5' : 'left-1'}`} />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">Apply Discount</span>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {newCourse.hasDiscount && !newCourse.isFree && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Discount Price (ETB)</label>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">ETB</div>
+                                            <input
+                                                type="number"
+                                                required={newCourse.hasDiscount}
+                                                placeholder="999"
+                                                className="w-full pl-14 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:border-primary focus:outline-none transition-all font-black text-slate-700"
+                                                value={newCourse.discountPrice}
+                                                onChange={(e) => setNewCourse({ ...newCourse, discountPrice: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div className="flex flex-col justify-end space-y-2 lg:col-start-1">
+                                    <label className="flex items-center gap-3 cursor-pointer group w-fit">
+                                        <div 
+                                            onClick={() => setNewCourse({ ...newCourse, hasScholarship: !newCourse.hasScholarship })}
+                                            className={`w-10 h-6 rounded-full transition-all relative ${newCourse.hasScholarship ? 'bg-blue-500' : 'bg-slate-200'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newCourse.hasScholarship ? 'left-5' : 'left-1'}`} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">Scholarship Option</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -442,11 +557,31 @@ const CourseManagement = () => {
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col gap-2">
                                                 <div className="text-sm font-black text-slate-800">
-                                                    {course.price ? `$${course.price}` : 'Free'}
+                                                    {course.isFree ? (
+                                                        <span className="text-green-600">Free</span>
+                                                    ) : (
+                                                        <div className="flex flex-col">
+                                                            {course.hasDiscount ? (
+                                                                <>
+                                                                    <span className="text-slate-400 line-through text-[10px]">{course.price} ETB</span>
+                                                                    <span className="text-primary">{course.discountPrice} ETB</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{course.price} ETB</span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-green-600/10">
-                                                    <CheckCircle2 className="w-3 h-3" /> Live
-                                                </span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-green-600/10">
+                                                        <CheckCircle2 className="w-3 h-3" /> Live
+                                                    </span>
+                                                    {course.hasScholarship && (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-blue-600/10">
+                                                            Scholarship
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">

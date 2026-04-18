@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import apiClient from '../../lib/apiClient';
 import FeedbackModal from '../../components/FeedbackModal';
+import Loading from '../../components/Loading';
 
 const MessageManagement = () => {
     const [messages, setMessages] = useState([]);
@@ -169,11 +170,11 @@ const MessageManagement = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan="5" className="px-8 py-6 opacity-20"><div className="h-4 bg-slate-200 rounded w-full"></div></td>
-                                    </tr>
-                                ))
+                                <tr>
+                                    <td colSpan="5">
+                                        <Loading fullScreen={false} message="Fetching messages..." />
+                                    </td>
+                                </tr>
                             ) : filteredMessages.length > 0 ? (
                                 filteredMessages.map((msg) => (
                                     <tr

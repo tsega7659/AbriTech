@@ -8,18 +8,10 @@ import {
     MoreVertical,
     Trash2,
     Edit2,
-    ShieldAlert,
     CheckCircle2,
     XCircle,
-    User,
-    Mail,
-    Lock,
-    Phone,
-    MapPin,
-    GraduationCap,
     School,
-    Layers,
-    UserCheck,
+    GraduationCap,
     ArrowRight,
     Loader2
 } from 'lucide-react';
@@ -35,31 +27,83 @@ const StudentManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
-    const [newStudent, setNewStudent] = useState({
-        fullName: '',
-        username: '',
-        email: '',
-        password: '',
-        gender: 'Male',
-        phoneNumber: '',
-        address: '',
-        schoolName: '',
-        educationLevel: 'Primary',
-        classLevel: '',
+
+    // Multi-step form state
+    const [regStep, setRegStep] = useState(1);
+    const [studentType, setStudentType] = useState(null); // 'enrolled' or 'finished'
+    const [formErrors, setFormErrors] = useState({});
+    const [formData, setFormData] = useState({
+        fullName: '', username: '', email: '', password: '',
+        gender: '', phoneNumber: '', address: '',
+        schoolName: '', educationLevel: '', classLevel: '',
         isCurrentStudent: false,
-        parentEmail: '',
-        parentPhone: '',
+        parentEmail: '', parentPhone: '',
         courseLevel: 'beginner'
     });
+
+    const resetForm = () => {
+        setRegStep(1);
+        setStudentType(null);
+        setFormErrors({});
+        setFormData({
+            fullName: '', username: '', email: '', password: '',
+            gender: '', phoneNumber: '', address: '',
+            schoolName: '', educationLevel: '', classLevel: '',
+            isCurrentStudent: false,
+            parentEmail: '', parentPhone: '',
+            courseLevel: 'beginner'
+        });
+    };
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (formErrors[name]) setFormErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+    };
+
+    const validateStep = (s) => {
+        const errs = {};
+        if (s === 2) {
+            if (!formData.fullName.trim()) errs.fullName = 'Full Name is required';
+            else if (!/^[a-zA-Z\s\/]+$/.test(formData.fullName)) errs.fullName = 'Name can only contain letters, spaces, and "/"';
+            if (!formData.gender) errs.gender = 'Gender is required';
+            if (!formData.educationLevel) errs.educationLevel = 'Education Level is required';
+            if (studentType === 'enrolled') {
+                if (!formData.schoolName.trim()) errs.schoolName = 'School Name is required';
+                if (!formData.classLevel.trim()) errs.classLevel = 'Grade/Class is required';
+            } else {
+                if (!formData.address.trim()) errs.address = 'Address is required';
+            }
+            if (!formData.phoneNumber.trim()) errs.phoneNumber = 'Phone number is required';
+            else if (!/^09\d{8}$/.test(formData.phoneNumber.trim())) errs.phoneNumber = 'Must start with 09 and be 10 digits';
+        }
+        if (s === 3) {
+            if (!formData.email.trim()) errs.email = 'Email is required';
+            else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Invalid email format';
+            if (!formData.username.trim()) errs.username = 'Username is required';
+            if (!formData.password) errs.password = 'Password is required';
+            else if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
+            else if (!(/[a-zA-Z]/.test(formData.password) && /\d/.test(formData.password))) errs.password = 'Must contain letters and numbers';
+            if (studentType === 'enrolled') {
+                if (!formData.parentEmail.trim()) errs.parentEmail = 'Parent Email is required';
+                else if (!/\S+@\S+\.\S+/.test(formData.parentEmail)) errs.parentEmail = 'Invalid email format';
+            }
+        }
+        setFormErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleNext = () => { if (validateStep(regStep)) setRegStep(s => s + 1); };
+    const handleBack = () => { setFormErrors({}); setRegStep(s => s - 1); };
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+    const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success', errors: [] });
 
-    const showFeedback = (title, message, type = 'success') => {
-        setFeedbackModal({ isOpen: true, title, message, type });
+    const showFeedback = (title, message, type = 'success', errors = []) => {
+        setFeedbackModal({ isOpen: true, title, message, type, errors });
     };
 
     const handleDeleteClick = (student) => {
@@ -69,7 +113,6 @@ const StudentManagement = () => {
 
     const handleConfirmDelete = async () => {
         if (!studentToDelete) return;
-
         setIsDeleting(true);
         try {
             await deleteStudentMutation.mutateAsync(studentToDelete.id);
@@ -84,29 +127,19 @@ const StudentManagement = () => {
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        if (!validateStep(3)) return;
         setSubmitting(true);
         try {
-            await registerStudentMutation.mutateAsync(newStudent);
+            const payload = { ...formData, isCurrentStudent: studentType === 'enrolled' };
+            await registerStudentMutation.mutateAsync(payload);
             showFeedback("Success", "Student registered successfully!", "success");
             setIsRegistering(false);
-            setNewStudent({
-                fullName: '',
-                username: '',
-                email: '',
-                password: '',
-                gender: 'Male',
-                phoneNumber: '',
-                address: '',
-                schoolName: '',
-                educationLevel: 'Primary',
-                classLevel: '',
-                isCurrentStudent: false,
-                parentEmail: '',
-                parentPhone: '',
-                courseLevel: 'beginner'
-            });
+            resetForm();
         } catch (error) {
-            showFeedback("Registration Failed", error.response?.data?.message || 'Registration failed', "error");
+            const data = error.response?.data;
+            const errMsg = data?.message || 'Registration failed. Please check your inputs.';
+            const errList = data?.errors || [];
+            showFeedback("Registration Failed", errMsg, "error", errList);
         } finally {
             setSubmitting(false);
         }
@@ -142,192 +175,200 @@ const StudentManagement = () => {
             </div>
 
             {isRegistering && (
-                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                            <Plus className="w-6 h-6 text-primary" /> Register New Student
-                        </h3>
-                        <button onClick={() => setIsRegistering(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-primary/20 shadow-2xl shadow-primary/5 animate-in fade-in slide-in-from-top-4 duration-300 max-w-2xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 className="text-xl font-black text-slate-800">Register New Student</h3>
+                            <p className="text-xs font-bold text-slate-400 mt-0.5">Step {regStep} of 3</p>
+                        </div>
+                        <button onClick={() => { setIsRegistering(false); resetForm(); }} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
                             <XCircle className="w-7 h-7" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Basic Info */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Full Name</label>
-                            <div className="relative group">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Abebe Kebede"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.fullName}
-                                    onChange={(e) => setNewStudent({ ...newStudent, fullName: e.target.value })}
-                                />
-                            </div>
-                        </div>
+                    {/* Progress bar */}
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full mb-8 overflow-hidden">
+                        <div className="h-full bg-primary transition-all duration-300 rounded-full" style={{ width: `${(regStep / 3) * 100}%` }} />
+                    </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Username</label>
-                            <div className="relative group">
-                                <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="abebe_k"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.username}
-                                    onChange={(e) => setNewStudent({ ...newStudent, username: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Email</label>
-                            <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="email"
-                                    required
-                                    placeholder="student@example.com"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.email}
-                                    onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Password</label>
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="password"
-                                    required
-                                    placeholder="••••••••"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.password}
-                                    onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Additional Info */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Phone Number</label>
-                            <div className="relative group">
-                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="tel"
-                                    placeholder="+251 ..."
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.phoneNumber}
-                                    onChange={(e) => setNewStudent({ ...newStudent, phoneNumber: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Education Level</label>
-                            <div className="relative group">
-                                <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <select
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700 appearance-none cursor-pointer"
-                                    value={newStudent.educationLevel}
-                                    onChange={(e) => setNewStudent({ ...newStudent, educationLevel: e.target.value })}
-                                >
-                                    <option value="Primary">Primary (1-8)</option>
-                                    <option value="Secondary">Secondary (9-12)</option>
-                                    <option value="University">University / Graduate</option>
-                                    <option value="Professional">Professional</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Class Level / Year</label>
-                            <div className="relative group">
-                                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Grade 10, Year 2"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.classLevel}
-                                    onChange={(e) => setNewStudent({ ...newStudent, classLevel: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">School / Institution</label>
-                            <div className="relative group">
-                                <School className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Tikur Anbessa Secondary"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.schoolName}
-                                    onChange={(e) => setNewStudent({ ...newStudent, schoolName: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Parent Info */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Parent Email</label>
-                            <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="email"
-                                    placeholder="parent@example.com"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
-                                    value={newStudent.parentEmail}
-                                    onChange={(e) => setNewStudent({ ...newStudent, parentEmail: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 md:col-span-2 lg:col-span-1 py-4">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    checked={newStudent.isCurrentStudent}
-                                    onChange={(e) => setNewStudent({ ...newStudent, isCurrentStudent: e.target.checked })}
-                                />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            </label>
-                            <span className="text-sm font-black text-slate-600">Currently Active Student?</span>
-                        </div>
-
-                        <div className="md:col-span-2 lg:col-span-3 flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-50">
+                    {/* Step 1: Student Type */}
+                    {regStep === 1 && (
+                        <div className="space-y-4">
+                            <h4 className="font-black text-slate-700 mb-4">This student is currently...</h4>
                             <button
                                 type="button"
-                                onClick={() => setIsRegistering(false)}
-                                className="px-8 py-3.5 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all w-full sm:w-auto"
+                                onClick={() => { setStudentType('enrolled'); setRegStep(2); }}
+                                className="w-full flex items-center p-4 border-2 border-slate-100 rounded-2xl hover:border-primary hover:bg-primary/5 transition-all text-left group"
                             >
-                                Cancel
+                                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                    <School className="w-6 h-6" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="font-black text-slate-800">Enrolled in School</p>
+                                    <p className="text-sm text-slate-500">Currently attending a school or institution.</p>
+                                </div>
+                                <ArrowRight className="ml-auto w-5 h-5 text-slate-300 group-hover:text-primary" />
                             </button>
                             <button
-                                type="submit"
-                                disabled={submitting}
-                                className="px-10 py-3.5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                type="button"
+                                onClick={() => { setStudentType('finished'); setRegStep(2); }}
+                                className="w-full flex items-center p-4 border-2 border-slate-100 rounded-2xl hover:border-amber-400 hover:bg-amber-50 transition-all text-left group"
                             >
-                                {submitting ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" /> Registering...
-                                    </>
-                                ) : (
-                                    <>
-                                        Register Student
-                                        <ArrowRight className="w-5 h-5" />
-                                    </>
-                                )}
+                                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                                    <GraduationCap className="w-6 h-6" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="font-black text-slate-800">Finished / Out of School</p>
+                                    <p className="text-sm text-slate-500">Has completed school or is on a break.</p>
+                                </div>
+                                <ArrowRight className="ml-auto w-5 h-5 text-slate-300 group-hover:text-amber-400" />
                             </button>
                         </div>
-                    </form>
+                    )}
+
+                    {/* Step 2: Personal Details */}
+                    {regStep === 2 && (
+                        <div className="space-y-4">
+                            <h4 className="font-black text-slate-700 mb-2">Personal Details</h4>
+                            {/* Full Name */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Full Name</label>
+                                <input
+                                    type="text" name="fullName" value={formData.fullName} onChange={handleFormChange}
+                                    placeholder="e.g. Abebe Kebede"
+                                    className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.fullName ? 'border-red-300 focus:border-red-400' : 'border-slate-100 focus:border-primary'}`}
+                                />
+                                {formErrors.fullName && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.fullName}</p>}
+                            </div>
+                            {/* Gender + Education Level */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gender</label>
+                                    <select name="gender" value={formData.gender} onChange={handleFormChange}
+                                        className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.gender ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`}>
+                                        <option value="">Select</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                    {formErrors.gender && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.gender}</p>}
+                                </div>
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Education Level</label>
+                                    <select name="educationLevel" value={formData.educationLevel} onChange={handleFormChange}
+                                        className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.educationLevel ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`}>
+                                        <option value="">Select Level</option>
+                                        <option value="Primary">Primary</option>
+                                        <option value="High School">High School</option>
+                                        <option value="University">University</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    {formErrors.educationLevel && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.educationLevel}</p>}
+                                </div>
+                            </div>
+                            {/* Enrolled: school + class | Finished: address */}
+                            {studentType === 'enrolled' ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">School Name</label>
+                                        <input type="text" name="schoolName" value={formData.schoolName} onChange={handleFormChange} placeholder="e.g. Tikur Anbessa"
+                                            className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.schoolName ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                        {formErrors.schoolName && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.schoolName}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Grade / Class</label>
+                                        <input type="text" name="classLevel" value={formData.classLevel} onChange={handleFormChange} placeholder="e.g. 10B"
+                                            className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.classLevel ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                        {formErrors.classLevel && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.classLevel}</p>}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Address</label>
+                                    <input type="text" name="address" value={formData.address} onChange={handleFormChange} placeholder="Current address"
+                                        className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.address ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                    {formErrors.address && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.address}</p>}
+                                </div>
+                            )}
+                            {/* Phone */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Phone Number</label>
+                                <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleFormChange} placeholder="09XXXXXXXX"
+                                    className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.phoneNumber ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                {formErrors.phoneNumber && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.phoneNumber}</p>}
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setRegStep(1)} className="w-full py-3 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all">Back</button>
+                                <button type="button" onClick={handleNext} className="w-full py-3 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">Next Step</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Account & Security */}
+                    {regStep === 3 && (
+                        <form onSubmit={handleRegister} className="space-y-4">
+                            <h4 className="font-black text-slate-700 mb-2">Account & Security</h4>
+                            {/* Email + Username */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Email</label>
+                                    <input type="email" name="email" value={formData.email} onChange={handleFormChange} placeholder="student@example.com"
+                                        className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.email ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                    {formErrors.email && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.email}</p>}
+                                </div>
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Username</label>
+                                    <input type="text" name="username" value={formData.username} onChange={handleFormChange} placeholder="abebe_k"
+                                        className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.username ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                    {formErrors.username && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.username}</p>}
+                                </div>
+                            </div>
+                            {/* Password */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Password</label>
+                                <input type="password" name="password" value={formData.password} onChange={handleFormChange} placeholder="••••••••"
+                                    className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl font-bold text-slate-700 outline-none focus:bg-white transition-all ${formErrors.password ? 'border-red-300' : 'border-slate-100 focus:border-primary'}`} />
+                                {formErrors.password && <p className="text-xs text-red-500 font-bold mt-1 ml-1">• {formErrors.password}</p>}
+                            </div>
+                            {/* Guardian Details (enrolled only) */}
+                            {studentType === 'enrolled' && (
+                                <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl space-y-3">
+                                    <p className="text-xs font-black text-primary uppercase tracking-widest">Guardian Details (for referral code)</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <input type="email" name="parentEmail" value={formData.parentEmail} onChange={handleFormChange} placeholder="Parent Email"
+                                                className={`w-full px-3 py-2.5 border rounded-xl text-sm font-bold text-slate-700 outline-none bg-white ${formErrors.parentEmail ? 'border-red-300' : 'border-slate-200 focus:border-primary'}`} />
+                                            {formErrors.parentEmail && <p className="text-xs text-red-500 font-bold mt-1">• {formErrors.parentEmail}</p>}
+                                        </div>
+                                        <div>
+                                            <input type="tel" name="parentPhone" value={formData.parentPhone} onChange={handleFormChange} placeholder="Parent Phone (09...)"
+                                                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none bg-white focus:border-primary" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Course Level */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Preferred Course Level</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['beginner', 'intermediate', 'advanced'].map(level => (
+                                        <button key={level} type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, courseLevel: level }))}
+                                            className={`py-2.5 rounded-xl text-xs font-black border capitalize transition-all ${formData.courseLevel === level ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+                                            {level}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={handleBack} className="w-full py-3 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all">Back</button>
+                                <button type="submit" disabled={submitting}
+                                    className="w-full py-3 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                    {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Registering...</> : <>Register Student <ArrowRight className="w-4 h-4" /></>}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             )}
 
@@ -467,6 +508,7 @@ const StudentManagement = () => {
                 type={feedbackModal.type}
                 title={feedbackModal.title}
                 message={feedbackModal.message}
+                errors={feedbackModal.errors || []}
             />
         </div>
     );

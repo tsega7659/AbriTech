@@ -15,8 +15,8 @@ const getRoleId = async (conn, roleName) => {
   if (rows.length > 0) return rows[0].id;
 
   // If role doesn't exist, insert it (auto-seeding for convenience)
-  const [result] = await conn.execute('INSERT INTO role (name) VALUES (?)', [roleName]);
-  return result.insertId;
+  const [result] = await conn.execute('INSERT INTO role (name) VALUES (?) RETURNING id', [roleName]);
+  return result[0].id;
 };
 
 const login = async (req, res) => {
@@ -34,7 +34,7 @@ const login = async (req, res) => {
   try {
     console.log('[Login] Attempting login for:', identifier);
     const [users] = await pool.execute(
-      'SELECT u.*, r.name as roleName FROM user u JOIN role r ON u.roleId = r.id WHERE LOWER(u.username) = ? OR LOWER(u.email) = ?',
+      'SELECT u.*, r.name as "roleName" FROM "user" u JOIN role r ON u."roleId" = r.id WHERE LOWER(u.username) = ? OR LOWER(u.email) = ?',
       [identifier, identifier]
     );
 
@@ -52,6 +52,9 @@ const login = async (req, res) => {
     }
 
     console.log('[Login] Success for:', identifier, 'Role:', user.roleName);
+    
+    // Update lastLogin
+    await pool.execute('UPDATE "user" SET "lastLogin" = NOW() WHERE id = ?', [user.id]);
 
     const token = jwt.sign(
       { userId: user.id, role: user.roleName, username: user.username },
@@ -91,16 +94,22 @@ const registerStudent = async (req, res) => {
     console.log('--- Student Registration Start ---');
     console.log('Username:', username, 'Email:', email);
     console.log('Parent Email provided:', parentEmail);
+    console.log('[DEBUG] Body fields:', JSON.stringify({
+      fullName: !!fullName, username: !!username, email: !!email, password: !!password,
+      gender, educationLevel, courseLevel, isCurrentStudent,
+      passwordLen: password ? password.length : 0
+    }));
 
     // --- Validation Rules ---
     const errors = [];
 
     // 1. All fields required
     const requiredFields = [
-      'fullName', 'username', 'email', 'password', 'gender', 'classLevel',
-      'schoolName', 'educationLevel', 'courseLevel'
+      'fullName', 'username', 'email', 'password', 'gender', 'educationLevel', 'courseLevel'
     ];
-    if (isCurrentStudent) requiredFields.push('parentEmail', 'parentPhone');
+    if (isCurrentStudent) {
+      requiredFields.push('parentEmail');
+    }
 
     for (const field of requiredFields) {
       if (!req.body[field] || req.body[field].toString().trim() === '') {
@@ -122,15 +131,17 @@ const registerStudent = async (req, res) => {
       errors.push('Parent phone number must start with 09 and be 10 digits');
     }
 
-    // 4. Grade level validation (Numeric only)
+    // 4. Grade level validation (Required check already done, allow alphanumeric)
+    /* 
     if (classLevel && !/^\d+$/.test(classLevel.toString())) {
       errors.push('Grade level must be a number');
     }
+    */
 
     // 5. Password validation (>= 8 chars, letters and numbers)
     if (password) {
-      if (password.length < 8) {
-        errors.push('Password must be at least 8 characters long');
+      if (password.length < 6) {
+        errors.push('Password must be at least 6 characters long');
       }
       if (!(/[a-zA-Z]/.test(password) && /\d/.test(password))) {
         errors.push('Password must contain both letters and numbers');
@@ -149,12 +160,12 @@ const registerStudent = async (req, res) => {
       return res.status(400).json({ message: 'You cannot use your own email as your parent email' });
     }
 
-    // 1b. Validate Parent Email (Role check)
-    if (parentEmail) {
+    // 1b. Validate Parent Email (Role check) - only relevant for current students
+    if (isCurrentStudent && parentEmail) {
       const [existingParentUser] = await conn.execute(
-        `SELECT u.id, r.name as roleName 
-         FROM user u 
-         JOIN role r ON u.roleId = r.id 
+        `SELECT u.id, r.name as "roleName" 
+         FROM "user" u 
+         JOIN role r ON u."roleId" = r.id 
          WHERE u.email = ?`,
         [parentEmail]
       );
@@ -176,7 +187,7 @@ const registerStudent = async (req, res) => {
 
     // 1c. Check if student user exists
     const [existingUsers] = await conn.execute(
-      'SELECT id FROM user WHERE username = ? OR email = ?',
+      'SELECT id FROM "user" WHERE username = ? OR email = ?',
       [username, email]
     );
     if (existingUsers.length > 0) {
@@ -194,11 +205,11 @@ const registerStudent = async (req, res) => {
     // 4. Insert into User table
     console.log('Inserting into User table...');
     const [userResult] = await conn.execute(
-      `INSERT INTO user (fullName, gender, username, email, passwordHash, phoneNumber, parentPhone, address, roleId) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "user" ("fullName", gender, username, email, "passwordHash", "phoneNumber", "parentPhone", address, "roleId") 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [fullName, gender, username, email, passwordHash, phoneNumber, parentPhone, address, roleId]
     );
-    const userId = userResult.insertId;
+    const userId = userResult[0].id;
     console.log('User created with ID:', userId);
 
     // 5. Handle Student specifics (Referral Code)
@@ -208,7 +219,7 @@ const registerStudent = async (req, res) => {
       let unique = false;
       while (!unique) {
         referralCode = generateReferralCode();
-        const [existing] = await conn.execute('SELECT id FROM student WHERE referralCode = ?', [referralCode]);
+        const [existing] = await conn.execute('SELECT id FROM student WHERE referralcode = ?', [referralCode]);
         if (existing.length === 0) unique = true;
       }
       console.log('Unique Referral Code:', referralCode);
@@ -239,10 +250,11 @@ const registerStudent = async (req, res) => {
 
     // 6. Insert into Student table
     console.log('Inserting into Student table...');
+    const normalizedCourseLevel = courseLevel ? courseLevel.toLowerCase() : 'beginner';
     await conn.execute(
-      `INSERT INTO student (userId, isCurrentStudent, classLevel, educationLevel, schoolName, courseLevel, parentEmail, referralCode)
+      `INSERT INTO student (userid, iscurrentstudent, classlevel, educationlevel, schoolname, courselevel, parentemail, referralcode)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, isCurrentStudent ? 1 : 0, classLevel, educationLevel, schoolName, courseLevel, parentEmail, referralCode]
+      [userId, isCurrentStudent ? true : false, classLevel, educationLevel, schoolName, normalizedCourseLevel, parentEmail || null, referralCode]
     );
 
     await conn.commit();
@@ -307,9 +319,9 @@ const registerParent = async (req, res) => {
 
     // 1. Check existing
     const [existingUsers] = await conn.execute(
-      `SELECT u.id, r.name as roleName 
-       FROM user u 
-       JOIN role r ON u.roleId = r.id 
+      `SELECT u.id, r.name as "roleName" 
+       FROM "user" u 
+       JOIN role r ON u."roleId" = r.id 
        WHERE u.username = ? OR u.email = ?`,
       [username, email]
     );
@@ -341,17 +353,17 @@ const registerParent = async (req, res) => {
     // 4. Insert User
     console.log('Inserting into User table...');
     const [userResult] = await conn.execute(
-      `INSERT INTO user (fullName, username, email, passwordHash, phoneNumber, roleId) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "user" ("fullName", username, email, "passwordHash", "phoneNumber", "roleId") 
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [fullName, username, email, passwordHash, phoneNumber, roleId]
     );
-    const userId = userResult.insertId;
+    const userId = userResult[0].id;
     console.log('User created with ID:', userId);
 
     // 5. Insert Parent
     console.log('Inserting into Parent table...');
     await conn.execute(
-      'INSERT INTO parent (userId) VALUES (?)',
+      'INSERT INTO parent ("userId") VALUES (?)',
       [userId]
     );
 
@@ -379,7 +391,7 @@ const registerAdmin = async (req, res) => {
 
     // 1. Check existing
     const [existing] = await conn.execute(
-      'SELECT id FROM user WHERE username = ? OR email = ?',
+      'SELECT id FROM "user" WHERE username = ? OR email = ?',
       [username, email]
     );
     if (existing.length > 0) {
@@ -395,14 +407,14 @@ const registerAdmin = async (req, res) => {
 
     // 4. Insert User
     const [userResult] = await conn.execute(
-      `INSERT INTO user (fullName, username, email, passwordHash, phoneNumber, roleId) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "user" ("fullName", username, email, "passwordHash", "phoneNumber", "roleId") 
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [fullName, username, email, passwordHash, phoneNumber, roleId]
     );
 
     await conn.commit();
     console.log('--- Admin Registration Successful ---');
-    res.status(201).json({ message: 'Admin registered successfully', userId: userResult.insertId });
+    res.status(201).json({ message: 'Admin registered successfully', userId: userResult[0].id });
 
   } catch (error) {
     await conn.rollback();
@@ -436,7 +448,7 @@ const registerTeacher = async (req, res) => {
 
     while (usernameExists) {
       const [existing] = await conn.execute(
-        'SELECT id FROM user WHERE username = ?',
+        'SELECT id FROM "user" WHERE username = ?',
         [finalUsername]
       );
       if (existing.length === 0) {
@@ -449,7 +461,7 @@ const registerTeacher = async (req, res) => {
 
     // 3. Check if email exists
     const [emailCheck] = await conn.execute(
-      'SELECT id FROM user WHERE email = ?',
+      'SELECT id FROM "user" WHERE email = ?',
       [email]
     );
     if (emailCheck.length > 0) {
@@ -466,16 +478,16 @@ const registerTeacher = async (req, res) => {
     // 6. Insert User
     console.log('Inserting user with username:', finalUsername);
     const [userResult] = await conn.execute(
-      `INSERT INTO user (fullName, gender, username, email, passwordHash, phoneNumber, roleId, address) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "user" ("fullName", gender, username, email, "passwordHash", "phoneNumber", "roleId", address) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [fullName, gender, finalUsername, email, passwordHash, phoneNumber, roleId, address]
     );
-    const userId = userResult.insertId;
+    const userId = userResult[0].id;
 
     // 7. Insert into teacher table
     console.log('Inserting into teacher table...');
     await conn.execute(
-      'INSERT INTO teacher (userId, specialization) VALUES (?, ?)',
+      'INSERT INTO teacher ("userId", specialization) VALUES (?, ?)',
       [userId, specialization]
     );
 
@@ -484,7 +496,7 @@ const registerTeacher = async (req, res) => {
       console.log('Assigning courses:', courseIds);
       for (const courseId of courseIds) {
         await conn.execute(
-          'INSERT INTO teachercourse (teacherId, courseId) VALUES (?, ?)',
+          'INSERT INTO teachercourse ("teacherId", "courseId") VALUES (?, ?)',
           [userId, courseId]
         );
       }
@@ -535,7 +547,7 @@ const updateCredentials = async (req, res) => {
 
     // Get current user info
     const [users] = await conn.execute(
-      'SELECT username, email, fullName FROM user WHERE id = ?',
+      'SELECT username, email, "fullName" FROM "user" WHERE id = ?',
       [userId]
     );
 
@@ -551,7 +563,7 @@ const updateCredentials = async (req, res) => {
     // Check if new username is different and available
     if (newUsername && newUsername !== currentUser.username) {
       const [existing] = await conn.execute(
-        'SELECT id FROM user WHERE username = ? AND id != ?',
+        'SELECT id FROM "user" WHERE username = ? AND id != ?',
         [newUsername, userId]
       );
       if (existing.length > 0) {
@@ -565,18 +577,18 @@ const updateCredentials = async (req, res) => {
     // Hash new password if provided
     if (newPassword) {
       const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-      updateFields.push('passwordHash = ?');
+      updateFields.push('"passwordHash" = ?');
       updateValues.push(passwordHash);
     }
 
     // Add userId for WHERE clause
     updateValues.push(userId);
 
-    // Set firstLogin to 0
-    updateFields.push('firstLogin = 0');
+    // Set firstLogin to false
+    updateFields.push('"firstLogin" = false');
 
     // Update user
-    const updateQuery = `UPDATE user SET ${updateFields.join(', ')} WHERE id = ?`;
+    const updateQuery = `UPDATE "user" SET ${updateFields.join(', ')} WHERE id = ?`;
     await conn.execute(updateQuery, updateValues);
 
     // Send confirmation email
@@ -620,7 +632,7 @@ const forgotPassword = async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Check if user exists
-    const [users] = await conn.execute('SELECT id, fullName FROM user WHERE LOWER(email) = ?', [normalizedEmail]);
+    const [users] = await conn.execute('SELECT id, "fullName" FROM "user" WHERE LOWER(email) = ?', [normalizedEmail]);
     if (users.length === 0) {
       console.warn('[ForgotPassword] User not found:', normalizedEmail);
       return res.status(404).json({ message: 'User not found with this email' });
@@ -634,7 +646,7 @@ const forgotPassword = async (req, res) => {
 
     // Update user with OTP and expiry
     await conn.execute(
-      'UPDATE user SET resetPasswordOtp = ?, resetPasswordExpires = ? WHERE id = ?',
+      'UPDATE "user" SET "resetPasswordOtp" = ?, "resetPasswordExpires" = ? WHERE id = ?',
       [otp, expiresAt, user.id]
     );
 
@@ -666,7 +678,7 @@ const verifyOtp = async (req, res) => {
     }
 
     const [users] = await conn.execute(
-      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE email = ?',
+      'SELECT id, "resetPasswordOtp", "resetPasswordExpires" FROM "user" WHERE email = ?',
       [email]
     );
 
@@ -711,7 +723,7 @@ const resetPassword = async (req, res) => {
     }
 
     const [users] = await conn.execute(
-      'SELECT id, resetPasswordOtp, resetPasswordExpires FROM user WHERE LOWER(email) = ?',
+      'SELECT id, "resetPasswordOtp", "resetPasswordExpires" FROM "user" WHERE LOWER(email) = ?',
       [normalizedEmail]
     );
 
@@ -737,7 +749,7 @@ const resetPassword = async (req, res) => {
 
     // Update password and clear OTP
     const [result] = await conn.execute(
-      'UPDATE user SET passwordHash = ?, resetPasswordOtp = NULL, resetPasswordExpires = NULL WHERE id = ?',
+      'UPDATE "user" SET "passwordHash" = ?, "resetPasswordOtp" = NULL, "resetPasswordExpires" = NULL WHERE id = ?',
       [passwordHash, user.id]
     );
     console.log('[ResetPassword] Update result - affectedRows:', result.affectedRows);

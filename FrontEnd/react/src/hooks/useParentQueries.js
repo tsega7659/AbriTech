@@ -14,3 +14,9 @@ export const useLinkedStudents = () => {
         queryFn: parentService.getLinkedStudents
     });
 };
+export const useParentMonthlyReport = () => {
+    return useQuery({
+        queryKey: ['parent', 'monthly-report'],
+        queryFn: parentService.getMonthlyReport
+    });
+};

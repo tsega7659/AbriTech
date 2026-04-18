@@ -13,13 +13,13 @@ const submitMessage = async (req, res) => {
         }
 
         const [result] = await pool.execute(
-            'INSERT INTO contactmessage (firstName, lastName, email, message) VALUES (?, ?, ?, ?)',
+            'INSERT INTO contactmessage ("firstName", "lastName", email, message) VALUES (?, ?, ?, ?) RETURNING id',
             [firstName, lastName, email, message]
         );
 
         res.status(201).json({
             message: 'Your message has been sent successfully. We will get back to you soon!',
-            messageId: result.insertId
+            messageId: result[0].id
         });
     } catch (error) {
         console.error('Submit Contact Message Error:', error);
@@ -32,7 +32,7 @@ const submitMessage = async (req, res) => {
  */
 const getMessages = async (req, res) => {
     try {
-        const [messages] = await pool.execute('SELECT * FROM contactmessage ORDER BY createdAt DESC');
+        const [messages] = await pool.execute('SELECT * FROM contactmessage ORDER BY "createdAt" DESC');
         res.json(messages);
     } catch (error) {
         console.error('Get Contact Messages Error:', error);
@@ -106,7 +106,7 @@ const replyToMessage = async (req, res) => {
 
         // Update database
         await pool.execute(
-            'UPDATE contactmessage SET status = ?, replyMessage = ?, repliedAt = NOW(), repliedBy = ? WHERE id = ?',
+            'UPDATE contactmessage SET status = ?, "replyMessage" = ?, "repliedAt" = NOW(), "repliedBy" = ? WHERE id = ?',
             ['reviewed', replyMessage, adminId, id]
         );
 

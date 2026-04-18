@@ -5,10 +5,10 @@ export default function FeedbackModal({ isOpen, onClose, title, message, type = 
     const configs = {
         success: {
             icon: CheckCircle2,
-            color: "text-green-500",
-            bg: "bg-green-50",
-            ring: "ring-green-100/50",
-            button: "bg-green-500 hover:bg-green-600 shadow-green-200"
+            color: "text-[#FDB813]",
+            bg: "bg-[#FDB813]/10",
+            ring: "ring-[#FDB813]/20",
+            button: "bg-[#FDB813] hover:bg-[#E5A711] shadow-yellow-200"
         },
         error: {
             icon: AlertCircle,

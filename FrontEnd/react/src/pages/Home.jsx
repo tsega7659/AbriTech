@@ -248,37 +248,68 @@ export default function Home() {
                     {loading ? (
                         <Loading fullScreen={false} message="Loading popular courses..." />
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
                             {courses.map((course, index) => (
-                                <Link to="/courses" key={index} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
-                                    <div className="relative h-48 overflow-hidden">
+                                <Link to="/courses" key={index} className="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full  text-left">
+                                    <div className="relative h-48 w-full overflow-hidden bg-gray-50">
                                         <img
                                             src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
                                             alt={course.name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
-                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-gray-900 shadow-sm">
-                                            {course.level}
+                                        <div className="absolute top-4 left-4 flex gap-2">
+                                            <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border border-gray-100">
+                                                {course.category || 'Course'}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="p-6">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{course.name}</h3>
-                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+
+                                    <div className="p-6 flex flex-col flex-1">
+                                        <h3 className="text-xl font-black text-gray-900 mb-2 group-hover:text-primary transition-colors leading-tight">
+                                            {course.name}
+                                        </h3>
+                                        <p className="text-gray-400 text-xs leading-relaxed mb-6 line-clamp-2">
                                             {course.description}
                                         </p>
-                                        <div className="flex justify-between">
-                                            <div>
-                                                <Clock className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                                <span className="text-gray-500 text-sm">Flexible</span>
+
+                                        <div className="mt-auto space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex gap-2.5 items-start">
+                                                    <Clock className="w-4 h-4 text-gray-600 mt-0.5" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Duration</span>
+                                                        <span className="text-xs font-bold text-gray-900">{course.duration || 'Self-Paced'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2.5 items-start">
+                                                    <FaPeopleGroup className="w-4 h-4 text-[#FDB813] mt-0.5" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Enrolled</span>
+                                                        <span className="text-xs font-bold text-gray-900">{course.enrolledCount || course.enrolled || 0}</span>
+                                                    </div>
+                                                </div>
                                             </div>
+
                                             <div>
-                                                <FaPeopleGroup className="inline-block h-4 w-4 text-gray-400 mr-1" />
-                                                <span className="text-gray-500 text-sm">Open</span>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                                    Level: <span className="text-gray-900">{course.level === 'advanced' ? 'All Levels' : (course.level?.toUpperCase() || 'BEGINNER')}</span>
+                                                </p>
+                                                {course.price && parseFloat(course.price) > 0 ? (
+                                                    <div className="flex flex-col items-start gap-1">
+                                                        <span className="text-lg font-black text-gray-900">{course.price} ETB</span>
+                                                        <span className="text-[9px] bg-[#FDB813]/10 text-[#FDB813] px-2 py-0.5 rounded font-black uppercase tracking-widest">Free Preview Inc.</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-start gap-1">
+                                                        <span className="text-lg font-black text-[#FDB813]">Freemium</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="block w-full text-center bg-[#00B4D8] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[#0096B4] transition-all">
+                                                View Course
                                             </div>
                                         </div>
-                                        <span className="text-primary font-medium text-sm hover:text-primary/80 inline-flex items-center mt-4">
-                                            View Details <ArrowRight className="ml-1 h-4 w-4" />
-                                        </span>
                                     </div>
                                 </Link>
                             ))}

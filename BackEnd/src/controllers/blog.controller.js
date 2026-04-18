@@ -3,7 +3,7 @@ const pool = require('../config/db');
 const getAllBlogs = async (req, res) => {
   try {
     const [blogs] = await pool.execute(
-      'SELECT b.*, u.fullName as authorName FROM blog b LEFT JOIN user u ON b.createdBy = u.id ORDER BY b.createdAt DESC'
+      'SELECT b.*, u."fullName" as "authorName" FROM blog b LEFT JOIN "user" u ON b."createdBy" = u.id ORDER BY b."createdAt" DESC'
     );
     res.json(blogs);
   } catch (error) {
@@ -45,11 +45,11 @@ const createBlog = async (req, res) => {
     const finalContent = typeof parsedContent === 'string' ? parsedContent : JSON.stringify(parsedContent);
 
     const [result] = await pool.execute(
-      'INSERT INTO blog (title, content, coverImage, createdBy) VALUES (?, ?, ?, ?)',
+      'INSERT INTO blog (title, content, "coverImage", "createdBy") VALUES (?, ?, ?, ?) RETURNING id',
       [title, finalContent, coverImage, createdBy]
     );
 
-    const newBlogId = result.insertId;
+    const newBlogId = result[0].id;
     const [newBlog] = await pool.execute('SELECT * FROM blog WHERE id = ?', [newBlogId]);
 
     res.status(201).json(newBlog[0]);
@@ -63,7 +63,7 @@ const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
     const [blogs] = await pool.execute(
-      'SELECT b.*, u.fullName as authorName FROM blog b LEFT JOIN user u ON b.createdBy = u.id WHERE b.id = ?',
+      'SELECT b.*, u."fullName" as "authorName" FROM blog b LEFT JOIN "user" u ON b."createdBy" = u.id WHERE b.id = ?',
       [id]
     );
 
@@ -128,7 +128,7 @@ const updateBlog = async (req, res) => {
       params.push(finalContent);
     }
     if (coverImage) {
-      query += 'coverImage = ?, ';
+      query += '"coverImage" = ?, ';
       params.push(coverImage);
     }
 

@@ -22,6 +22,13 @@ export const useAdminDashboardStats = () => {
     });
 };
 
+export const useAdminAnalytics = () => {
+    return useQuery({
+        queryKey: ['admin', 'analytics'],
+        queryFn: adminService.getAnalyticsData
+    });
+};
+
 export const useTeachers = () => {
     return useQuery({
         queryKey: ['admin', 'teachers'],

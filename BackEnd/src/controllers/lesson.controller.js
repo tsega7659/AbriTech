@@ -16,7 +16,7 @@ const createLesson = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { courseId, title, description, summaryText, orderNumber, contentType, resources: resourcesJson, quiz: quizJson } = req.body;
+    const { courseId, title, description, summaryText, orderNumber, contentType, accessType, resources: resourcesJson, quiz: quizJson } = req.body;
 
     // Validate required fields
     if (!courseId || !title || !description || !orderNumber) {
@@ -33,12 +33,13 @@ const createLesson = async (req, res) => {
     }
 
     // Insert Lesson first
+    const normalizedAccessType = (accessType || 'free').toString().toLowerCase();
     const [lessonResult] = await connection.execute(
-      'INSERT INTO lesson (courseId, title, description, summaryText, orderNumber, contentType) VALUES (?, ?, ?, ?, ?, ?)',
-      [courseId, title, description, summaryText || null, orderNumber, contentType || 'lesson']
+      'INSERT INTO lesson ("courseId", title, description, "summaryText", "orderNumber", "contentType", "accessType") VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      [courseId, title, description, summaryText || null, orderNumber, contentType || 'lesson', normalizedAccessType]
     );
 
-    const lessonId = lessonResult.insertId;
+    const lessonId = lessonResult[0].id;
 
     // Handle Resources
     if (resources.length > 0) {
@@ -54,7 +55,7 @@ const createLesson = async (req, res) => {
         }
 
         await connection.execute(
-          'INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO lesson_resource (lessonid, type, contenturl, textcontent, ordernumber) VALUES (?, ?, ?, ?, ?)',
           [lessonId, resItem.type, contentUrl, resItem.textContent || null, i + 1]
         );
       }
@@ -73,7 +74,7 @@ const createLesson = async (req, res) => {
     if (quizQuestions.length > 0) {
       for (const q of quizQuestions) {
         await connection.execute(
-          'INSERT INTO lessonquiz (lessonId, question, optionA, optionB, optionC, optionD, correctOption) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO lessonquiz ("lessonId", question, "optionA", "optionB", "optionC", "optionD", "correctOption") VALUES (?, ?, ?, ?, ?, ?, ?)',
           [lessonId, q.question, q.optionA, q.optionB, q.optionC, q.optionD, q.correctOption]
         );
       }
@@ -94,6 +95,7 @@ const createLesson = async (req, res) => {
         description,
         orderNumber,
         contentType: contentType || 'lesson',
+        accessType: normalizedAccessType,
         resourcesCount: resources.length,
         quizQuestionsCount: quizQuestions.length
       }
@@ -119,12 +121,35 @@ const getLessons = async (req, res) => {
 
     let studentId = null;
     if (role === 'student' && userId) {
-      const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+      const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
       if (students.length > 0) studentId = students[0].id;
     }
 
+    const [courses] = await pool.execute('SELECT "isFree", level FROM course WHERE id = ?', [courseId]);
+    if (courses.length === 0) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    const courseInfo = courses[0];
+    const isFreeCourse = courseInfo.isFree;
+    const isAdvanced = courseInfo.level.toLowerCase() === 'advanced';
+
+    // Check enrollment and payment status
+    let isPaid = false;
+    if (studentId) {
+      const [enrollments] = await pool.execute('SELECT status FROM enrollment WHERE "studentId" = ? AND "courseId" = ?', [studentId, courseId]);
+      if (enrollments.length > 0) {
+        // active means fully paid/enrolled. pending means awaiting payment
+        isPaid = enrollments[0].status === 'active'; 
+      }
+    }
+
+    // Auto-approve if the course is totally free
+    if (isFreeCourse) {
+      isPaid = true;
+    }
+
     const [lessons] = await pool.execute(
-      'SELECT * FROM lesson WHERE courseId = ? ORDER BY orderNumber ASC',
+      'SELECT * FROM lesson WHERE "courseId" = ? ORDER BY "orderNumber" ASC',
       [courseId]
     );
 
@@ -134,7 +159,7 @@ const getLessons = async (req, res) => {
 
     const lessonIds = lessons.map(l => l.id);
     const [resources] = await pool.execute(
-      `SELECT * FROM lesson_resource WHERE lessonId IN (${lessonIds.join(',')}) ORDER BY lessonId, orderNumber ASC`
+      `SELECT * FROM lesson_resource WHERE lessonid IN (${lessonIds.join(',')}) ORDER BY lessonid, ordernumber ASC`
     );
 
     const resourcesMap = {};
@@ -146,17 +171,17 @@ const getLessons = async (req, res) => {
     let progressMap = {};
     if (studentId) {
       const [progress] = await pool.execute(
-        `SELECT lessonId, completed FROM lessonprogress 
-         WHERE studentId = ? AND lessonId IN (${lessonIds.join(',')})`,
+        `SELECT "lessonId", completed FROM lessonprogress 
+         WHERE "studentId" = ? AND "lessonId" IN (${lessonIds.join(',')})`,
         [studentId]
       );
       progress.forEach(p => {
-        progressMap[p.lessonId] = p.completed === 1;
+        progressMap[p.lessonId] = p.completed === true;
       });
     }
 
     const [quizzes] = await pool.execute(
-      `SELECT * FROM lessonquiz WHERE lessonId IN (${lessonIds.join(',')})`
+      `SELECT * FROM lessonquiz WHERE "lessonId" IN (${lessonIds.join(',')})`
     );
 
     // Fetch Quiz Results for the student
@@ -164,13 +189,13 @@ const getLessons = async (req, res) => {
     if (studentId) {
       const [results] = await pool.execute(`
           SELECT 
-            lq.lessonId,
-            SUM(qa.isCorrect) as correctCount,
-            COUNT(qa.id) as totalQuestions
+            lq."lessonId",
+            SUM(CASE WHEN qa."isCorrect" THEN 1 ELSE 0 END) as "correctCount",
+            COUNT(qa.id) as "totalQuestions"
           FROM quizattempt qa
-          JOIN lessonquiz lq ON qa.quizId = lq.id
-          WHERE qa.studentId = ? AND lq.lessonId IN (${lessonIds.join(',')})
-          GROUP BY lq.lessonId
+          JOIN lessonquiz lq ON qa."quizId" = lq.id
+          WHERE qa."studentId" = ? AND lq."lessonId" IN (${lessonIds.join(',')})
+          GROUP BY lq."lessonId"
       `, [studentId]);
 
       results.forEach(r => {
@@ -188,25 +213,50 @@ const getLessons = async (req, res) => {
       quizMap[q.lessonId].push(q);
     });
 
+    // User Role Bypass (Admins and Teachers can see everything)
+    const canBypassLocks = role === 'admin' || role === 'teacher';
+
     const processedLessons = [];
-    let previousCompleted = true;
+    let previousCompleted = true; // For progression locks
 
     for (let i = 0; i < lessons.length; i++) {
       const l = lessons[i];
       l.resources = resourcesMap[l.id] || [];
       l.quiz = quizMap[l.id] || [];
 
+      // Payment Tier Logic
+      let isPaymentLocked = false;
+      if (!isPaid && !canBypassLocks) {
+        if (isAdvanced) {
+          // Fully Paid Model: Everything locked
+          isPaymentLocked = true;
+        } else {
+          // Free Preview Model: Lessons 1-3 (indexes 0,1,2) are free
+          isPaymentLocked = i >= 3;
+        }
+      }
+
       const isCompleted = !!progressMap[l.id];
-      const isLocked = studentId ? !previousCompleted : false;
+      // Progression locks do not apply to Admins/Teachers or to lessons that already require payment (let payment lock take precedence)
+      let isProgressionLocked = false;
+      if (!canBypassLocks && studentId) {
+          isProgressionLocked = !previousCompleted;
+      }
+      
+      const isLocked = isPaymentLocked || isProgressionLocked;
+      const requiresPayment = isPaymentLocked;
 
       processedLessons.push({
         ...l,
         isCompleted,
         isLocked,
+        requiresPayment,
         quizResult: quizResultsMap[l.id] || null
       });
 
-      previousCompleted = isCompleted;
+      // Update previous info for progression lock check
+      // Only an actual completion in the DB should unlock the next lesson
+      previousCompleted = isCompleted || canBypassLocks; 
     }
 
     res.json({ lessons: processedLessons });
@@ -228,13 +278,13 @@ const getLessonById = async (req, res) => {
 
     const lesson = lessons[0];
     const [resources] = await pool.execute(
-      'SELECT * FROM lesson_resource WHERE lessonId = ? ORDER BY orderNumber ASC',
+      'SELECT * FROM lesson_resource WHERE lessonid = ? ORDER BY ordernumber ASC',
       [id]
     );
     lesson.resources = resources;
 
     const [quiz] = await pool.execute(
-      'SELECT * FROM lessonquiz WHERE lessonId = ?',
+      'SELECT * FROM lessonquiz WHERE "lessonId" = ?',
       [id]
     );
     lesson.quiz = quiz;
@@ -251,16 +301,17 @@ const updateLesson = async (req, res) => {
     await connection.beginTransaction();
 
     const { id } = req.params;
-    const { title, description, summaryText, orderNumber, contentType, resources: resourcesJson, quiz: quizJson } = req.body;
+    const { title, description, summaryText, orderNumber, contentType, accessType, resources: resourcesJson, quiz: quizJson } = req.body;
 
     let updateFields = [];
     let updateValues = [];
 
-    if (title) { updateFields.push('title = ?'); updateValues.push(title); }
-    if (description) { updateFields.push('description = ?'); updateValues.push(description); }
-    if (summaryText) { updateFields.push('summaryText = ?'); updateValues.push(summaryText); }
-    if (orderNumber) { updateFields.push('orderNumber = ?'); updateValues.push(orderNumber); }
-    if (contentType) { updateFields.push('contentType = ?'); updateValues.push(contentType); }
+    if (title) { updateFields.push('"title" = ?'); updateValues.push(title); }
+    if (description) { updateFields.push('"description" = ?'); updateValues.push(description); }
+    if (summaryText) { updateFields.push('"summaryText" = ?'); updateValues.push(summaryText); }
+    if (orderNumber) { updateFields.push('"orderNumber" = ?'); updateValues.push(orderNumber); }
+    if (contentType) { updateFields.push('"contentType" = ?'); updateValues.push(contentType); }
+    if (accessType) { updateFields.push('"accessType" = ?'); updateValues.push(accessType.toString().toLowerCase()); }
 
     if (updateFields.length > 0) {
       updateValues.push(id);
@@ -279,7 +330,7 @@ const updateLesson = async (req, res) => {
       // If switching to quiz, we might want to keep or clear resources.
       // For now, let's just process if provided.
       if (resources.length > 0) {
-        await connection.execute('DELETE FROM lesson_resource WHERE lessonId = ?', [id]);
+        await connection.execute('DELETE FROM lesson_resource WHERE lessonid = ?', [id]);
 
         for (let i = 0; i < resources.length; i++) {
           const resItem = resources[i];
@@ -291,7 +342,7 @@ const updateLesson = async (req, res) => {
           }
 
           await connection.execute(
-            'INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO lesson_resource (lessonid, type, contenturl, textcontent, ordernumber) VALUES (?, ?, ?, ?, ?)',
             [id, resItem.type, contentUrl, resItem.textContent || null, i + 1]
           );
         }
@@ -306,11 +357,11 @@ const updateLesson = async (req, res) => {
         console.error('Failed to parse quiz JSON:', e);
       }
 
-      await connection.execute('DELETE FROM lessonquiz WHERE lessonId = ?', [id]);
+      await connection.execute('DELETE FROM lessonquiz WHERE "lessonId" = ?', [id]);
       if (quizQuestions.length > 0) {
         for (const q of quizQuestions) {
           await connection.execute(
-            'INSERT INTO lessonquiz (lessonId, question, optionA, optionB, optionC, optionD, correctOption) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO lessonquiz ("lessonId", question, "optionA", "optionB", "optionC", "optionD", "correctOption") VALUES (?, ?, ?, ?, ?, ?, ?)',
             [id, q.question, q.optionA, q.optionB, q.optionC, q.optionD, q.correctOption]
           );
         }
@@ -320,7 +371,7 @@ const updateLesson = async (req, res) => {
     await connection.commit();
 
     const [updated] = await connection.execute('SELECT * FROM lesson WHERE id = ?', [id]);
-    const [newResources] = await connection.execute('SELECT * FROM lesson_resource WHERE lessonId = ? ORDER BY orderNumber ASC', [id]);
+    const [newResources] = await connection.execute('SELECT * FROM lesson_resource WHERE lessonid = ? ORDER BY ordernumber ASC', [id]);
 
     const finalLesson = updated[0];
     finalLesson.resources = newResources;
@@ -341,7 +392,7 @@ const deleteLesson = async (req, res) => {
     const { id } = req.params;
 
     // Get courseId before deleting
-    const [lesson] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
+    const [lesson] = await pool.execute('SELECT "courseId" FROM lesson WHERE id = ?', [id]);
     if (lesson.length === 0) {
       return res.status(404).json({ message: 'Lesson not found' });
     }
@@ -364,7 +415,7 @@ const markLessonComplete = async (req, res) => {
     const { id } = req.params;
     const { userId } = req.user;
 
-    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) {
       return res.status(403).json({ message: 'Not a student' });
     }
@@ -372,30 +423,30 @@ const markLessonComplete = async (req, res) => {
 
     // Check if it's a quiz content type. If so, completion might be handled via submitQuiz.
     // However, keeping this for manual completion if needed, but usually quizzes are auto-completed on pass.
-    const [lessonInfo] = await pool.execute('SELECT contentType FROM lesson WHERE id = ?', [id]);
+    const [lessonInfo] = await pool.execute('SELECT "contentType" FROM lesson WHERE id = ?', [id]);
     if (lessonInfo.length > 0 && lessonInfo[0].contentType === 'quiz') {
       // For quizzes, we might require passing before allowing this endpoint to work manually?
       // Or just allow it. Let's allow it for now.
     }
 
     const [existing] = await pool.execute(
-      'SELECT id FROM lessonprogress WHERE studentId = ? AND lessonId = ?',
+      'SELECT id FROM lessonprogress WHERE "studentId" = ? AND "lessonId" = ?',
       [studentId, id]
     );
 
     if (existing.length > 0) {
       await pool.execute(
-        'UPDATE lessonprogress SET completed = 1, completedAt = NOW() WHERE id = ?',
+        'UPDATE lessonprogress SET completed = true, "completedAt" = NOW() WHERE id = ?',
         [existing[0].id]
       );
     } else {
       await pool.execute(
-        'INSERT INTO lessonprogress (studentId, lessonId, completed, completedAt) VALUES (?, ?, 1, NOW())',
+        'INSERT INTO lessonprogress ("studentId", "lessonId", completed, "completedAt") VALUES (?, ?, true, NOW())',
         [studentId, id]
       );
     }
 
-    const [lessonData] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [id]);
+    const [lessonData] = await pool.execute('SELECT "courseId" FROM lesson WHERE id = ?', [id]);
     if (lessonData.length > 0) {
       await updateStudentCourseProgress(studentId, lessonData[0].courseId);
     }
@@ -414,16 +465,14 @@ const submitQuiz = async (req, res) => {
     const { userId } = req.user;
     const { answers } = req.body;
 
-    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(403).json({ message: 'Not a student' });
     const studentId = students[0].id;
 
-    // CHECK FOR EXISTING ATTEMPTS
-    // If any question in this lesson has an attempt by this student, block submission.
     const [existingAttempts] = await pool.execute(
       `SELECT qa.id FROM quizattempt qa 
-       JOIN lessonquiz lq ON qa.quizId = lq.id 
-       WHERE qa.studentId = ? AND lq.lessonId = ? LIMIT 1`,
+       JOIN lessonquiz lq ON qa."quizId" = lq.id 
+       WHERE qa."studentId" = ? AND lq."lessonId" = ? LIMIT 1`,
       [studentId, lessonId]
     );
 
@@ -431,7 +480,7 @@ const submitQuiz = async (req, res) => {
       return res.status(403).json({ message: 'You have already attempted this quiz. Only one attempt is allowed.' });
     }
 
-    const [questions] = await pool.execute('SELECT id, correctOption FROM lessonquiz WHERE lessonId = ?', [lessonId]);
+    const [questions] = await pool.execute('SELECT id, "correctOption" FROM lessonquiz WHERE "lessonId" = ?', [lessonId]);
 
     let correctCount = 0;
     const totalQuestions = questions.length;
@@ -442,29 +491,29 @@ const submitQuiz = async (req, res) => {
       if (isCorrect) correctCount++;
 
       const [attempts] = await pool.execute(
-        'SELECT COALESCE(MAX(attemptNumber), 0) as maxAttempt FROM quizattempt WHERE studentId = ? AND quizId = ?',
+        'SELECT COALESCE(MAX("attemptNumber"), 0) as "maxAttempt" FROM quizattempt WHERE "studentId" = ? AND "quizId" = ?',
         [studentId, q.id]
       );
-      const nextAttempt = attempts[0].maxAttempt + 1;
+      const nextAttempt = Number(attempts[0].maxAttempt || 0) + 1;
 
       await pool.execute(
-        'INSERT INTO quizattempt (studentId, quizId, selectedOption, isCorrect, attemptNumber, result) VALUES (?, ?, ?, ?, ?, ?)',
-        [studentId, q.id, selectedOption || 'NONE', isCorrect ? 1 : 0, nextAttempt, isCorrect ? 'pass' : 'fail']
+        'INSERT INTO quizattempt ("studentId", "quizId", "selectedOption", "isCorrect", "attemptNumber", result) VALUES (?, ?, ?, ?, ?, ?)',
+        [studentId, q.id, selectedOption || 'NONE', isCorrect ? true : false, nextAttempt, isCorrect ? 'pass' : 'fail']
       );
     }
 
     const passed = correctCount === totalQuestions;
 
     // Auto-mark lesson/quiz as complete after any submission
-    const [existing] = await pool.execute('SELECT id FROM lessonprogress WHERE studentId = ? AND lessonId = ?', [studentId, lessonId]);
+    const [existing] = await pool.execute('SELECT id FROM lessonprogress WHERE "studentId" = ? AND "lessonId" = ?', [studentId, lessonId]);
     if (existing.length > 0) {
-      await pool.execute('UPDATE lessonprogress SET completed = 1, completedAt = NOW() WHERE id = ?', [existing[0].id]);
+      await pool.execute('UPDATE lessonprogress SET completed = true, "completedAt" = NOW() WHERE id = ?', [existing[0].id]);
     } else {
-      await pool.execute('INSERT INTO lessonprogress (studentId, lessonId, completed, completedAt) VALUES (?, ?, 1, NOW())', [studentId, lessonId]);
+      await pool.execute('INSERT INTO lessonprogress ("studentId", "lessonId", completed, "completedAt") VALUES (?, ?, true, NOW())', [studentId, lessonId]);
     }
 
     // Update Overall Course Progress
-    const [lesson] = await pool.execute('SELECT courseId FROM lesson WHERE id = ?', [lessonId]);
+    const [lesson] = await pool.execute('SELECT "courseId" FROM lesson WHERE id = ?', [lessonId]);
     if (lesson.length > 0) {
       await updateStudentCourseProgress(studentId, lesson[0].courseId);
     }
@@ -485,7 +534,7 @@ const submitQuiz = async (req, res) => {
 const updateCourseProgressForAllStudents = async (courseId) => {
   try {
     const [enrollments] = await pool.execute(
-      'SELECT studentId FROM enrollment WHERE courseId = ?',
+      'SELECT "studentId" FROM enrollment WHERE "courseId" = ?',
       [courseId]
     );
 
@@ -500,7 +549,7 @@ const updateCourseProgressForAllStudents = async (courseId) => {
 const updateStudentCourseProgress = async (studentId, courseId) => {
   try {
     const [totalLessonsResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM lesson WHERE courseId = ?',
+      'SELECT COUNT(*) as total FROM lesson WHERE "courseId" = ?',
       [courseId]
     );
     const totalLessons = Number(totalLessonsResult[0].total);
@@ -508,18 +557,24 @@ const updateStudentCourseProgress = async (studentId, courseId) => {
     const [completedLessonsResult] = await pool.execute(
       `SELECT COUNT(*) as completed 
        FROM lessonprogress lp
-       JOIN lesson l ON lp.lessonId = l.id
-       WHERE lp.studentId = ? AND l.courseId = ? AND lp.completed = 1`,
+       JOIN lesson l ON lp."lessonId" = l.id
+       WHERE lp."studentId" = ? AND l."courseId" = ? AND lp.completed = true`,
       [studentId, courseId]
     );
     const completedLessons = Number(completedLessonsResult[0].completed);
 
     const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-    const status = (progressPercentage === 100 && totalLessons > 0) ? 'completed' : 'active';
 
     await pool.execute(
-      'UPDATE enrollment SET progressPercentage = ?, status = ? WHERE studentId = ? AND courseId = ?',
-      [progressPercentage, status, studentId, courseId]
+      `UPDATE enrollment 
+       SET "progressPercentage" = ?, 
+           status = CASE 
+                      WHEN ? = 100 AND ? > 0 THEN 'completed' 
+                      WHEN status = 'completed' AND ? < 100 THEN 'active' 
+                      ELSE status 
+                    END 
+       WHERE "studentId" = ? AND "courseId" = ?`,
+      [progressPercentage, progressPercentage, totalLessons, progressPercentage, studentId, courseId]
     );
   } catch (error) {
     console.error('Update Student Progress Error:', error);

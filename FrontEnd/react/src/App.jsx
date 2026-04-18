@@ -20,15 +20,13 @@ import StudentCourses from "./pages/dashboard/StudentCourses";
 import ParentDashboard from "./pages/dashboard/ParentDashboard";
 import ParentChildren from "./pages/dashboard/ParentChildren";
 import Grades from "./pages/dashboard/Grades";
-import {
-  StudentPortfolio,
-  StudentProjects,
-  StudentAITutor,
-  ParentReports,
-  ParentEvents
-} from "./pages/dashboard/PlaceholderPages";
+import ParentReports from "./pages/dashboard/ParentReports";
+import ParentEvents from "./pages/dashboard/ParentEvents";
 import CourseDetail from "./pages/dashboard/CourseDetail";
 import LessonPlayer from "./pages/dashboard/LessonPlayer";
+import StudentAnalytics from "./pages/dashboard/StudentAnalytics";
+import StudentPortfolio from "./pages/dashboard/StudentPortfolio";
+import StudentProjects from "./pages/dashboard/StudentProjects";
 import { AuthProvider } from "./context/AuthContext";
 import ChatWidget from "./components/ChatWidget";
 
@@ -81,6 +79,7 @@ function App() {
 
             <Route path="portfolio" element={<StudentPortfolio />} />
             <Route path="projects" element={<StudentProjects />} />
+            <Route path="analytics" element={<StudentAnalytics />} />
           </Route>
 
           <Route path="/dashboard/parent" element={<DashboardLayout role="parent" />}>

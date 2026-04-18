@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Filter, BookOpen, Clock, MoreVertical, Plus } from "lucide-react";
+import { Search, BookOpen, Clock, PlayCircle, MoreVertical, Plus, User, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
@@ -80,23 +80,29 @@ export default function StudentCourses() {
                                     </button>
                                 </div>
 
-                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-6 font-medium">
-                                    <span className="flex items-center gap-1"><BookOpen className="h-4 w-4 text-[#00B4D8]" /> {course.progress || 0}%</span>
-                                    <span className="flex items-center gap-1"><Clock className="h-4 w-4 text-purple-500" /> {Math.floor((course.timeSpentSeconds || 0) / 3600)}h {Math.floor(((course.timeSpentSeconds || 0) % 3600) / 60)}m</span>
+                                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 font-bold border-b border-gray-100 pb-4">
+                                    <span className="flex items-center gap-1.5"><User className="h-4 w-4 text-[#FDB813]" /> {course.instructorName || 'AbriTech'}</span>
+                                    <span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-purple-500" /> {course.duration || 'Self-paced'}</span>
                                 </div>
 
                                 <div className="mt-auto">
-                                    <div className="flex justify-between text-sm font-medium mb-2">
-                                        <span className="text-gray-700">Completion</span>
+                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                        <span className="text-gray-500 uppercase tracking-wider">Progress</span>
                                         <span className="text-[#00B4D8]">{course.progress || 0}%</span>
                                     </div>
-                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
                                         <div className="h-full bg-[#00B4D8] rounded-full transition-all duration-1000" style={{ width: `${course.progress || 0}%` }}></div>
                                     </div>
-                                    <div
-                                        className="block w-full text-center bg-[#00B4D8] text-white font-bold py-2.5 rounded-xl hover:bg-[#0096B4] transition-colors"
-                                    >
-                                        Continue Learning
+                                    
+                                    {course.lastAccessed && (
+                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold mb-4">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>Last accessed: {new Date(course.lastAccessed).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="block w-full text-center bg-blue-50 text-[#00B4D8] font-bold py-2.5 rounded-xl hover:bg-[#00B4D8] hover:text-white transition-colors flex items-center justify-center gap-2">
+                                        <PlayCircle className="h-4 w-4" /> Continue Learning
                                     </div>
                                 </div>
                             </div>

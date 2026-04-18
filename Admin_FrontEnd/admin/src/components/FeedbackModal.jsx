@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
-export default function FeedbackModal({ isOpen, onClose, title, message, type = "success" }) {
+export default function FeedbackModal({ isOpen, onClose, title, message, type = "success", errors = [] }) {
     const configs = {
         success: {
             icon: CheckCircle2,
@@ -73,9 +73,19 @@ export default function FeedbackModal({ isOpen, onClose, title, message, type = 
                         {/* Content */}
                         <div className="p-8 text-center pt-10">
                             <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">{title}</h3>
-                            <p className="text-gray-500 font-medium leading-relaxed mb-8">
+                            <p className="text-gray-500 font-medium leading-relaxed mb-3">
                                 {message}
                             </p>
+                            {errors.length > 0 && (
+                                <ul className="text-left mb-6 space-y-1">
+                                    {errors.map((err, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm font-bold text-rose-500">
+                                            <span className="mt-0.5 flex-shrink-0">•</span>
+                                            <span>{err}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
 
                             <button
                                 onClick={onClose}

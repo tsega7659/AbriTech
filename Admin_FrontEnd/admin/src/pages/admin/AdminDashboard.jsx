@@ -10,7 +10,16 @@ import {
     MoreHorizontal,
     ArrowRight,
     User,
-    Loader2
+    Loader2,
+    DollarSign,
+    Zap,
+    Trophy,
+    ShieldAlert,
+    BarChart3,
+    Activity,
+    UserCheck,
+    HelpCircle,
+    Heart
 } from 'lucide-react';
 import {
     BarChart,
@@ -39,6 +48,7 @@ import {
     useAdminBlogs,
     useParents
 } from '../../hooks/useAdminQueries';
+import Loading from '../../components/Loading';
 
 const AdminDashboard = () => {
     const { data: adminDashboardStats, isLoading: statsLoading } = useAdminDashboardStats();
@@ -95,6 +105,33 @@ const AdminDashboard = () => {
             iconColor: 'text-orange-500',
             badge: 'bg-amber-50 text-amber-600'
         },
+        {
+            label: 'Total Revenue',
+            value: adminDashboardStats?.totalRevenue ? `${adminDashboardStats.totalRevenue} ETB` : '0 ETB',
+            change: adminDashboardStats?.monthlyRecurringRevenue ? `${adminDashboardStats.monthlyRecurringRevenue} ETB MRR` : 'Calculating MRR...',
+            icon: DollarSign,
+            iconColor: 'text-emerald-500',
+            badge: 'bg-emerald-50 text-emerald-600'
+        },
+    ];
+
+    const growthMetrics = [
+        { label: 'New Students (7d)', value: adminDashboardStats?.newRegistrationsThisWeek?.toString() || '0', icon: User, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { label: 'Enrollments (Today)', value: adminDashboardStats?.newEnrollmentsToday?.toString() || '0', icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
+        { label: 'Active Today', value: adminDashboardStats?.activeUsersToday?.toString() || '0', icon: Activity, color: 'text-purple-500', bg: 'bg-purple-50' },
+        { label: 'MRR', value: adminDashboardStats?.monthlyRecurringRevenue ? `${adminDashboardStats.monthlyRecurringRevenue} ETB` : '0 ETB', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
+    ];
+
+    const learningMetrics = [
+        { label: 'Avg Completion', value: adminDashboardStats?.completionRate || '0%', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+        { label: 'Avg Study Time', value: adminDashboardStats?.averageLearningTime ? `${Math.round(adminDashboardStats.averageLearningTime / 60)} min` : '0 min', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+    ];
+
+    const operationalMetrics = [
+        { label: 'Instructor Activity', value: `${Math.round(adminDashboardStats?.instructorActivityRate || 0)}%`, icon: UserCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+        { label: 'Pending Reviews', value: adminDashboardStats?.pendingReviews?.toString() || '0', icon: Loader2, color: 'text-rose-500', bg: 'bg-rose-50' },
+        { label: 'Quiz Success', value: `${Math.round(adminDashboardStats?.quizCompletionRate || 0)}%`, icon: HelpCircle, color: 'text-amber-500', bg: 'bg-amber-50' },
+        { label: 'Parent Engagement', value: `${Math.round(adminDashboardStats?.parentEngagementRate || 0)}%`, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
     ];
 
     const topCoursesData = adminDashboardStats?.topCourses || [];
@@ -102,11 +139,7 @@ const AdminDashboard = () => {
     const categoryData = adminDashboardStats?.categoryStats || [];
 
     if (loading && !adminDashboardStats) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-        );
+        return <Loading message="Fetching dashboard data..." />;
     }
 
     return (
@@ -120,16 +153,58 @@ const AdminDashboard = () => {
             {/* Mini Stats Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {miniStats.map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`}>
+                    <div key={i} className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-primary/20 transition-all cursor-default overflow-hidden relative">
+                        <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
                             <stat.icon className="w-6 h-6" />
                         </div>
                         <div>
                             <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
-                            <p className="text-sm font-medium text-slate-400">{stat.label}</p>
+                            <p className="text-sm font-medium text-slate-400 uppercase tracking-widest text-[10px]">{stat.label}</p>
+                        </div>
+                        <div className="absolute top-0 right-0 p-2 opacity-5 translate-x-2 -translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 transition-transform">
+                             <stat.icon className="w-16 h-16" />
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Growth & Operations Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2">
+                         <BarChart3 className="w-5 h-5 text-primary" />
+                         <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Growth Metrics</h2>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {growthMetrics.map((stat, i) => (
+                            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-50 shadow-sm hover:shadow-md transition-all">
+                                <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-3`}>
+                                    <stat.icon className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-xl font-black text-slate-800">{stat.value}</h4>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2">
+                         <ShieldAlert className="w-5 h-5 text-rose-500" />
+                         <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Operational Status</h2>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {operationalMetrics.map((stat, i) => (
+                            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-50 shadow-sm hover:shadow-md transition-all">
+                                <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-3`}>
+                                    <stat.icon className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-xl font-black text-slate-800">{stat.value}</h4>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Analytical Stats Row */}
@@ -254,9 +329,9 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {/* Recent Activity */}
-                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div className="lg:col-span-2 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm h-full">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
                             <TrendingUp className="w-5 h-5" />
@@ -274,7 +349,7 @@ const AdminDashboard = () => {
                         ) : (
                             adminDashboardStats.recentActivity.map((activity, i) => (
                                 <div key={i} className="flex gap-4">
-                                    <div className="w-10 h-10 bg-slate-100 rounded-full flex-shrink-0 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
+                                    <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-slate-500 font-bold overflow-hidden border-2 border-slate-50">
                                         <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activity.user)}&background=random`} alt="" />
                                     </div>
                                     <div>
@@ -286,42 +361,46 @@ const AdminDashboard = () => {
                                 </div>
                             ))
                         )}
-                        <button className="w-full py-3 mt-4 text-sm font-bold text-primary hover:bg-primary/5 rounded-xl transition-all flex items-center justify-center gap-2">
-                            View all activities <ArrowRight className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
 
-                {/* Course Performance */}
+                {/* Top Students */}
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-1">Course Performance</h3>
-                        <p className="text-sm text-slate-400 mb-8">Completion rates and progress overview</p>
+                    <div className="flex items-center gap-3 mb-8">
+                         <Trophy className="w-6 h-6 text-amber-500" />
+                         <h3 className="text-lg font-bold text-slate-800">Top Students</h3>
                     </div>
-                    <div className="space-y-8">
-                        {(!adminDashboardStats?.coursePerformance || adminDashboardStats.coursePerformance.length === 0) ? (
-                            <div className="text-center py-8 text-slate-400">
-                                <p className="text-sm">No course performance data available</p>
-                            </div>
-                        ) : (
-                            adminDashboardStats.coursePerformance.map((course, i) => (
-                                <div key={i} className="space-y-3">
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <h4 className="font-bold text-slate-700 truncate max-w-[200px]">{course.title}</h4>
-                                            <p className="text-[11px] font-bold text-slate-400 mt-0.5">{course.enr} enrolled • {course.comp} completed</p>
-                                        </div>
-                                        <span className="text-sm font-black text-slate-800">{course.rate}% completion</span>
-                                    </div>
-                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className={cn("h-full transition-all duration-500", parseFloat(course.rate) > 0 ? "bg-primary" : "bg-slate-300")}
-                                            style={{ width: `${course.rate}%` }}
-                                        />
-                                    </div>
+                    <div className="space-y-6">
+                        {adminDashboardStats?.topPerformingStudents?.map((student, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-black text-slate-300">#0{i+1}</span>
+                                    <span className="text-sm font-bold text-slate-700">{student.name}</span>
                                 </div>
-                            ))
-                        )}
+                                <span className="text-xs font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">{student.score} pts</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Difficult Courses */}
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-8">
+                         <ShieldAlert className="w-6 h-6 text-rose-500" />
+                         <h3 className="text-lg font-bold text-slate-800">Most Difficult</h3>
+                    </div>
+                    <div className="space-y-6">
+                        {adminDashboardStats?.mostDifficultCourses?.map((course, i) => (
+                            <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-slate-700 truncate max-w-[120px]">{course.title}</span>
+                                    <span className="font-black text-rose-500">{course.rate}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                     <div className="h-full bg-rose-400" style={{ width: `${course.rate}%` }} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

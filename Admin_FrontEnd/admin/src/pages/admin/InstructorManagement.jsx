@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import {
     UserPlus,
     Search,
-    BookOpen,
     Mail,
-    Lock,
     ShieldCheck,
     MoreHorizontal,
-    MoreVertical,
     CheckCircle2,
     XCircle,
     Link2,
@@ -15,7 +12,8 @@ import {
     Phone,
     Info,
     Copy,
-    Check
+    Check,
+    Loader2
 } from 'lucide-react';
 import {
     useTeachers,

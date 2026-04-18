@@ -103,3 +103,35 @@ export const useUpdateTimeSpent = () => {
             apiClient.patch(`/students/courses/${courseId}/time`, { seconds })
     });
 };
+
+export const useStudentAnalytics = () => {
+    return useQuery({
+        queryKey: ['student', 'analytics'],
+        queryFn: studentService.getAnalytics
+    });
+};
+
+export const useStudentPortfolio = () => {
+    return useQuery({
+        queryKey: ['student', 'portfolio'],
+        queryFn: studentService.getPortfolioData
+    });
+};
+
+export const useUpdateProfile = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: studentService.updateProfile,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['student', 'portfolio'] });
+        }
+    });
+};
+
+export const useCourseAnalytics = (courseId) => {
+    return useQuery({
+        queryKey: ['student', 'courses', 'analytics', courseId],
+        queryFn: () => studentService.getCourseAnalytics(courseId),
+        enabled: !!courseId
+    });
+};

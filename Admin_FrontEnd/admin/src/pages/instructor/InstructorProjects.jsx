@@ -162,7 +162,7 @@ const InstructorProjects = () => {
                                                 onClick={() => {
                                                     setAssessing(sub.id);
                                                     setAssessmentData({
-                                                        status: sub.status || 'approved',
+                                                        status: sub.status === 'pending' ? 'approved' : sub.status,
                                                         score: sub.score,
                                                         maxScore: sub.maxScore || 10,
                                                         feedback: sub.feedback || ''

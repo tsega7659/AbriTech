@@ -100,7 +100,7 @@ export default function Grades() {
                                                                         <p className="text-[10px] font-bold text-gray-400 mt-0.5">{new Date(q.date).toLocaleDateString()}</p>
                                                                     </td>
                                                                     <td className="p-4 text-right">
-                                                                        <span className={`text-sm font-black ${q.score >= 70 ? 'text-green-500' : q.score >= 40 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                                        <span className={`text-sm font-black ${q.score >= 70 ? 'text-[#FDB813]' : q.score >= 40 ? 'text-amber-500' : 'text-rose-500'}`}>
                                                                             {q.score}%
                                                                         </span>
                                                                     </td>
@@ -116,48 +116,46 @@ export default function Grades() {
                                                 </div>
                                             </div>
 
-                                            {/* Projects Table */}
+                                            {/* Projects Overview */}
                                             <div>
                                                 <h4 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                                                     <FileText className="w-4 h-4 text-blue-500" /> Project Submissions
                                                 </h4>
-                                                <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/30">
-                                                    <table className="w-full text-left border-collapse">
-                                                        <thead>
-                                                            <tr className="bg-gray-50 border-b border-gray-100">
-                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest">Project</th>
-                                                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Result</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-gray-100">
-                                                            {course.assignments.map((a, aIdx) => (
-                                                                <tr key={aIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
-                                                                    <td className="p-4">
-                                                                        <p className="font-bold text-gray-800">{a.title}</p>
-                                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                                            <span className={`text-[9px] font-black uppercase tracking-tighter ${a.status === 'approved' ? 'text-green-500' : 'text-amber-500'}`}>{a.status}</span>
-                                                                            <span className="text-[10px] text-gray-300">•</span>
-                                                                            <p className="text-[10px] font-bold text-gray-400">{new Date(a.date).toLocaleDateString()}</p>
+                                                <div className="space-y-4">
+                                                    {course.assignments.map((a, aIdx) => (
+                                                        <div key={aIdx} className="bg-gray-50/50 rounded-2xl border border-gray-100 p-5 hover:bg-gray-50 transition-colors">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <h5 className="font-bold text-gray-900 text-lg">{a.title}</h5>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${a.status === 'approved' ? 'bg-[#FDB813]/10 text-[#FDB813]' : 'bg-amber-50 text-amber-500'}`}>{a.status}</span>
+                                                                        <span className="text-[10px] font-bold text-gray-400">{new Date(a.date).toLocaleDateString()}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    {a.score !== null ? (
+                                                                        <div className="flex flex-col items-end">
+                                                                            <span className="text-xl font-black text-[#00B4D8] leading-none">{a.score}<span className="text-sm text-gray-400">/{a.maxScore}</span></span>
+                                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Final Score</span>
                                                                         </div>
-                                                                    </td>
-                                                                    <td className="py-4 text-center">
-                                                                        {a.score !== null ? (
-                                                                            <span className="text-sm font-black text-primary">{a.score}/{a.maxScore}</span>
-                                                                        ) : (
-                                                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${a.status === 'pending' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'}`}>
-                                                                                {a.status === 'pending' ? 'Reviewing' : 'Draft'}
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                            {course.assignments.length === 0 && (
-                                                                <tr>
-                                                                    <td colSpan="2" className="p-8 text-center text-gray-400 italic text-xs">No projects yet.</td>
-                                                                </tr>
+                                                                    ) : (
+                                                                        <span className="text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">Reviewing</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {a.feedback && (
+                                                                <div className="mt-4 bg-white p-4 rounded-xl border border-gray-100">
+                                                                    <p className="text-xs font-bold text-gray-900 mb-1 flex items-center gap-1.5"><Award className="h-3.5 w-3.5 text-[#FDB813]" /> Instructor Feedback</p>
+                                                                    <p className="text-sm text-gray-600 italic">"{a.feedback}"</p>
+                                                                </div>
                                                             )}
-                                                        </tbody>
-                                                    </table>
+                                                        </div>
+                                                    ))}
+                                                    {course.assignments.length === 0 && (
+                                                        <div className="p-8 text-center bg-gray-50/50 rounded-2xl border border-gray-100">
+                                                            <p className="text-gray-400 italic text-sm">No project submissions yet.</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop } from "lucide-react";
+import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPeopleGroup } from "react-icons/fa6";
+import { FaPeopleGroup, FaUsers } from "react-icons/fa6";
 import Loading from "../components/Loading";
 import { useAllCourses } from "../hooks/useStudentQueries";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../lib/apiClient";
 import FeedbackModal from "../components/FeedbackModal";
+import TelebirrPaymentModal from "../components/TelebirrPaymentModal";
 import { cn } from "../lib/utils";
 import schoolpartership from "../assets/schoolpartner.jpg";
 
@@ -34,10 +35,15 @@ export default function Courses() {
     const [enrolling, setEnrolling] = useState(null);
     const [enrollSuccess, setEnrollSuccess] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+    const [paymentModal, setPaymentModal] = useState({ isOpen: false, courseId: null });
 
-    const showFeedback = (title, message, type = 'success') => {
+    const showFeedback = useCallback((title, message, type = 'success') => {
         setFeedbackModal({ isOpen: true, title, message, type });
-    };
+    }, []);
+
+    const closeFeedback = useCallback(() => {
+        setFeedbackModal(prev => ({ ...prev, isOpen: false }));
+    }, []);
 
     useEffect(() => {
         let filtered = allCoursesData.filter(course => {
@@ -56,20 +62,25 @@ export default function Courses() {
         setFilteredCourses(filtered);
     }, [searchTerm, selectedCategory, selectedLevel, allCoursesData]);
 
-    const handleEnroll = async (courseId) => {
+    const handleEnroll = async (course) => {
         if (!user) {
             navigate('/auth/get-started');
             return;
         }
 
-        setEnrolling(courseId);
+        setEnrolling(course.id);
         try {
-            await apiClient.post('/courses/enroll', { courseId });
+            await apiClient.post('/courses/enroll', { courseId: course.id });
             setEnrollSuccess(true);
             setTimeout(() => {
                 navigate('/dashboard/student');
             }, 2000);
         } catch (error) {
+            // Already enrolled
+            if (error.response?.status === 400) {
+                navigate('/dashboard/student');
+                return;
+            }
             console.error("Failed to enroll:", error);
             showFeedback("Enrollment Failed", error.response?.data?.message || 'Failed to enroll in course', "error");
             setEnrolling(null);
@@ -155,63 +166,104 @@ export default function Courses() {
             </section>
 
             {/* Courses Grid */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <AnimatePresence mode="wait">
                     {filteredCourses.length > 0 ? (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10"
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                         >
                             {filteredCourses.map((course) => (
                                 <motion.div
                                     layout
                                     key={course.id}
-                                    className="group bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2 flex flex-col h-full"
+                                    className="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2 flex flex-col h-full"
                                 >
-                                    <div className="relative h-64 overflow-hidden">
+                                    <div className="relative h-48 overflow-hidden">
                                         <img
                                             src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
                                             alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
-                                        <div className="absolute top-6 left-6 flex gap-2">
-                                            <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-900 shadow-sm border border-white/50">
+                                        <div className="absolute top-4 left-4 flex gap-2">
+                                            <span className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border border-white/50">
                                                 {course.category}
                                             </span>
+                                            {course.hasScholarship && (
+                                                <span className="bg-[#FDB813]/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border-[#FDB813]/50">
+                                                    Scholarship
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="p-8 flex flex-col flex-1">
-                                        <h3 className="text-2xl font-black text-gray-900 mb-3 group-hover:text-primary transition-colors leading-tight">
+                                    <div className="p-5 flex flex-col flex-1">
+                                        <h3 className="text-xl font-black text-gray-900 mb-1.5 group-hover:text-primary transition-colors leading-tight truncate">
                                             {course.name}
                                         </h3>
-                                        <p className="text-gray-500 text-sm leading-relaxed mb-8 line-clamp-2">
+                                        <p className="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-2">
                                             {course.description}
                                         </p>
 
-                                        <div className="mt-auto space-y-6">
-                                            <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                                                <div className="text-sm font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-lg">
-                                                    {course.level === 'advanced' ? 'All Levels' : (course.level?.charAt(0).toUpperCase() + course.level?.slice(1))}
+                                        <div className="mt-auto space-y-4">
+                                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-50">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-0.5">Duration</p>
+                                                        <p className="text-xs font-bold text-gray-700">{course.duration || 'Self-Paced'}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <Clock className="w-4 h-4 text-primary" />
-                                                    <span className="text-xs font-bold text-gray-500">Self-Paced</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-lg bg-[#FDB813]/10 flex items-center justify-center text-[#FDB813]">
+                                                        <Users className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-0.5">Enrolled</p>
+                                                        <p className="text-xs font-bold text-gray-700">{course.enrolledStudents || 0}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                        Level: <span className="text-gray-900 ml-1">{course.level === 'advanced' ? 'All Levels' : (course.level?.toUpperCase())}</span>
+                                                    </div>
+                                                    {course.isFree ? (
+                                                        <div className="text-lg font-black text-[#FDB813]">
+                                                            Freemium
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-lg font-black text-gray-900">{course.hasDiscount ? course.discountPrice : course.price} ETB</span>
+                                                                {course.hasDiscount && (
+                                                                    <span className="text-xs font-bold text-gray-400 line-through">{course.price}</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="bg-[#FDB813]/10 text-[#FDB813] px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter w-fit">
+                                                                {course.level?.toLowerCase() === 'advanced' ? 'Full Access' : 'Free Preview Inc.'}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
                                             {user && user.role === 'student' ? (
                                                 <button
-                                                    onClick={() => handleEnroll(course.id)}
+                                                    onClick={() => handleEnroll(course)}
                                                     disabled={enrolling === course.id}
-                                                    className="w-full bg-[#00B4D8] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                                                    className="w-full py-3.5 bg-[#00B4D8] text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-blue-500/20 hover:bg-[#0096B4] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                                                 >
                                                     {enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
                                                 </button>
                                             ) : (
-                                                <Link to="/auth/get-started" className="block w-full text-center bg-[#00B4D8] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                                                <Link to="/auth/get-started" className="block w-full text-center bg-[#00B4D8] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[#0096B4] transition-all shadow-lg shadow-blue-500/20">
                                                     Enroll Now
                                                 </Link>
                                             )}
@@ -270,9 +322,20 @@ export default function Courses() {
                 )}
             </AnimatePresence>
 
+            <TelebirrPaymentModal
+                isOpen={paymentModal.isOpen}
+                onClose={() => setPaymentModal({ isOpen: false, courseId: null })}
+                courseId={paymentModal.courseId}
+                onSuccess={() => {
+                    setPaymentModal({ isOpen: false, courseId: null });
+                    setEnrollSuccess(true);
+                    setTimeout(() => navigate('/dashboard/student'), 2000);
+                }}
+            />
+
             <FeedbackModal
                 isOpen={feedbackModal.isOpen}
-                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
+                onClose={closeFeedback}
                 type={feedbackModal.type}
                 title={feedbackModal.title}
                 message={feedbackModal.message}

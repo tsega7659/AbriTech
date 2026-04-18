@@ -21,94 +21,57 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
         conn = await pool.getConnection();
 
         for (const item of schema) {
-          const tableName = item.table;
+          const tableName = item.table.toLowerCase();
 
-          // Check if table exists
-          const [tables] = await conn.query(`SHOW TABLES LIKE ?`, [tableName]);
+          // Check if table exists (PostgreSQL way)
+          const [tables] = await conn.query(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1",
+            [tableName]
+          );
 
           if (tables.length === 0) {
             console.log(`Table '${tableName}' does not exist. Creating...`);
+            // Note: item.sql should be PostgreSQL compatible, or we let Prisma handle it.
+            // For now, we attempt to run the existing SQL (might need cleanup)
             await conn.query(item.sql);
           } else if (item.columns) {
             // Table exists, check for missing columns
-            const [columns] = await conn.query(`SHOW COLUMNS FROM ??`, [tableName]);
-            const existingColumnNames = columns.map(c => c.Field);
+            const [columns] = await conn.query(
+              "SELECT column_name as \"Field\", data_type as \"Type\" FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1",
+              [tableName]
+            );
+            const existingColumnNames = columns.map(c => c.Field.toLowerCase());
 
             for (const colDef of item.columns) {
-              const existingCol = columns.find(c => c.Field === colDef.name);
-
-              if (!existingCol) {
-                console.log(`Table '${tableName}': Adding missing column '${colDef.name}'`);
+              const colName = colDef.name.toLowerCase();
+              if (!existingColumnNames.includes(colName)) {
+                console.log(`Table '${tableName}': Adding missing column '${colName}'`);
                 try {
-                  await conn.query(`ALTER TABLE ?? ADD COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
+                  // Postgres syntax: ALTER TABLE "name" ADD COLUMN "name" type
+                  await conn.query(`ALTER TABLE "${tableName}" ADD COLUMN "${colDef.name}" ${colDef.type}`);
                 } catch (alterError) {
                   console.error(`Error adding column '${colDef.name}' to '${tableName}':`, alterError.message);
                 }
-              } else {
-                // Column exists, but we might need to update ENUMs or other types
-                // We'll focus on the 'status' and 'result' columns which often change ENUM values
-                if (colDef.name === 'status' || colDef.name === 'result' || colDef.name === 'submissionType') {
-                  // Compare types roughly (lowercase to avoid case issues)
-                  const schemaType = colDef.type.toLowerCase();
-                  const dbType = existingCol.Type.toLowerCase();
-
-                  // If the schema definition is an ENUM and it's different, update it
-                  if (schemaType.startsWith('enum') && schemaType !== dbType) {
-                    console.log(`Table '${tableName}': Updating column '${colDef.name}' type to match schema`);
-                    try {
-                      await conn.query(`ALTER TABLE ?? MODIFY COLUMN ${colDef.name} ${colDef.type}`, [tableName]);
-                    } catch (modifyError) {
-                      console.error(`Error updating column '${colDef.name}' in '${tableName}':`, modifyError.message);
-                    }
-                  }
+              } else if (colDef.name === 'lastLogin') {
+                // Special check for lastLogin casing (migration fix)
+                const actualColumn = columns.find(c => c.Field.toLowerCase() === 'lastlogin');
+                if (actualColumn && actualColumn.Field !== 'lastLogin') {
+                   console.log(`Table '${tableName}': Correcting casing of 'lastlogin' to 'lastLogin'`);
+                   await conn.query(`ALTER TABLE "${tableName}" RENAME COLUMN "${actualColumn.Field}" TO "lastLogin"`);
                 }
               }
             }
-          } else {
-            // Fallback for tables without structured column definitions in schema.js
-            // Just run the CREATE TABLE IF NOT EXISTS as a safety measure
-            await conn.query(item.sql);
           }
         }
 
         console.log('--- Database Schema Initialized Successfully ---');
-
-        // Post-initialization migration: Move existing lesson content to lesson_resource if applicable
-        try {
-          const [resources] = await conn.query('SELECT COUNT(*) as count FROM lesson_resource');
-          if (resources[0].count === 0) {
-            console.log('lesson_resource table is empty. Checking for legacy content in lesson table...');
-
-            // Check if legacy columns exist in lesson table
-            const [lessonCols] = await conn.query('SHOW COLUMNS FROM lesson');
-            const colNames = lessonCols.map(c => c.Field);
-
-            if (colNames.includes('type') && (colNames.includes('contentUrl') || colNames.includes('textContent'))) {
-              console.log('Legacy content found. Migrating to lesson_resource...');
-              await conn.query(`
-                INSERT INTO lesson_resource (lessonId, type, contentUrl, textContent, orderNumber)
-                SELECT id, type, contentUrl, textContent, 1
-                FROM lesson
-                WHERE type IS NOT NULL AND (contentUrl IS NOT NULL OR textContent IS NOT NULL)
-              `);
-              console.log('Data migration to lesson_resource completed.');
-            }
-          }
-        } catch (migrationError) {
-          console.error('Data migration skipped or failed:', migrationError.message);
-        }
-
         return true;
       } catch (error) {
         console.error(`Database Initialization Attempt ${attempt} failed:`, error.message);
-
         if (attempt === retries) {
-          console.error('Max retries reached. Database initialization failed.');
           initPromise = null;
           return false;
         }
-
-        console.log(`Retrying in ${delay / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } finally {
         if (conn) conn.release();

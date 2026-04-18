@@ -137,19 +137,19 @@ export default function RegisterStudent() {
         return (
             <div className="text-center py-8 space-y-6">
                 <div className="flex justify-center">
-                    <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
+                    <CheckCircle2 className="h-16 w-16 text-[#FDB813] animate-bounce" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Registration Successful!</h2>
-                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
-                    <p className="text-green-800 font-medium mb-2">Welcome to AbriTech!</p>
-                    <p className="text-green-700 text-sm">Your account has been created successfully. You can now sign in to access your modules.</p>
+                <div className="bg-[#FDB813]/10 border border-[#FDB813]/30 rounded-xl p-6 text-left">
+                    <p className="text-[#FDB813] font-black mb-2 uppercase tracking-wide">Welcome to AbriTech!</p>
+                    <p className="text-gray-600 text-sm font-medium">Your account has been created successfully. You can now sign in to access your modules.</p>
                     {successData.referralCode && (
                         <div className="space-y-2 mt-4">
-                            <p className="text-sm text-green-700">Your referral code for your parent:</p>
-                            <div className="bg-white border-2 border-dashed border-green-300 p-4 rounded-lg text-center">
-                                <span className="text-2xl font-black text-green-600 tracking-widest">{successData.referralCode}</span>
+                            <p className="text-xs text-[#FDB813] font-bold uppercase tracking-widest">Your referral code for your parent:</p>
+                            <div className="bg-white border-2 border-dashed border-[#FDB813]/20 p-4 rounded-lg text-center">
+                                <span className="text-2xl font-black text-[#FDB813] tracking-widest">{successData.referralCode}</span>
                             </div>
-                            <p className="text-xs text-green-600 italic mt-2">We've also sent this code to your parent's email.</p>
+                            <p className="text-[10px] text-gray-400 font-bold italic mt-2 uppercase tracking-tighter">We've also sent this code to your parent's email.</p>
                         </div>
                     )}
                 </div>

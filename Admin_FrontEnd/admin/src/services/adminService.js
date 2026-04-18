@@ -6,6 +6,10 @@ export const adminService = {
         const response = await apiClient.get('/admin/dashboard');
         return response.data;
     },
+    getAnalyticsData: async () => {
+        const response = await apiClient.get('/admin/analytics');
+        return response.data;
+    },
 
     // Teachers
     getTeachers: async () => {

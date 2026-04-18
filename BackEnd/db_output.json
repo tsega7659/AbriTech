@@ -1,19 +1,19 @@
 --- Roles ---
 [
   {
-    "id": 5,
+    "id": 1,
     "name": "admin"
   },
   {
-    "id": 9,
+    "id": 2,
     "name": "teacher"
   },
   {
-    "id": 2,
+    "id": 3,
     "name": "student"
   },
   {
-    "id": 3,
+    "id": 4,
     "name": "parent"
   }
 ]
@@ -21,35 +21,35 @@
 --- Users with Roles ---
 [
   {
-    "id": 2,
-    "fullName": "kebede kebe",
-    "username": "kebe123",
-    "email": "kebe@gmail.com",
+    "id": "2",
+    "fullName": "test student",
+    "username": "student",
+    "email": "test1@gmial.com",
     "roleId": 3,
-    "roleName": "parent"
-  },
-  {
-    "id": 3,
-    "fullName": "Bety Abe",
-    "username": "bety123",
-    "email": "bety@gmial.com",
-    "roleId": 2,
     "roleName": "student"
   },
   {
-    "id": 14,
-    "fullName": "Dr. Tadesse Bekele",
-    "username": "dr..tadesse.bekele",
-    "email": "tadesse.bekele@abritech.com",
-    "roleId": 9,
+    "id": "3",
+    "fullName": "test teacher",
+    "username": "test.teacher",
+    "email": "yeabsira.zelalem@aastustudent.edu.et",
+    "roleId": 2,
     "roleName": "teacher"
   },
   {
-    "id": 15,
-    "fullName": "Admin User",
-    "username": "adminn",
-    "email": "adminn@abritech.com",
-    "roleId": 5,
+    "id": "4",
+    "fullName": "test parent",
+    "username": "parent",
+    "email": "yeabsirazelalem791@gmail.com",
+    "roleId": 4,
+    "roleName": "parent"
+  },
+  {
+    "id": "1",
+    "fullName": "Administrator",
+    "username": "admin",
+    "email": "admin@abritech.com",
+    "roleId": 1,
     "roleName": "admin"
   }
 ]
@@ -57,32 +57,32 @@
 --- All Users (Raw) ---
 [
   {
-    "id": 2,
-    "fullName": "kebede kebe",
-    "username": "kebe123",
-    "email": "kebe@gmail.com",
+    "id": "2",
+    "fullName": "test student",
+    "username": "student",
+    "email": "test1@gmial.com",
     "roleId": 3
   },
   {
-    "id": 3,
-    "fullName": "Bety Abe",
-    "username": "bety123",
-    "email": "bety@gmial.com",
+    "id": "3",
+    "fullName": "test teacher",
+    "username": "test.teacher",
+    "email": "yeabsira.zelalem@aastustudent.edu.et",
     "roleId": 2
   },
   {
-    "id": 14,
-    "fullName": "Dr. Tadesse Bekele",
-    "username": "dr..tadesse.bekele",
-    "email": "tadesse.bekele@abritech.com",
-    "roleId": 9
+    "id": "4",
+    "fullName": "test parent",
+    "username": "parent",
+    "email": "yeabsirazelalem791@gmail.com",
+    "roleId": 4
   },
   {
-    "id": 15,
-    "fullName": "Admin User",
-    "username": "adminn",
-    "email": "adminn@abritech.com",
-    "roleId": 5
+    "id": "1",
+    "fullName": "Administrator",
+    "username": "admin",
+    "email": "admin@abritech.com",
+    "roleId": 1
   }
 ]
 

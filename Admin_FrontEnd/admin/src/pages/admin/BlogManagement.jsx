@@ -408,7 +408,7 @@ const BlogManagement = () => {
             )}
 
             {/* Blog List or Loading */}
-            {loading.blogs ? (
+            {loading ? (
                 <Loading fullScreen={false} message="Loading articles..." />
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

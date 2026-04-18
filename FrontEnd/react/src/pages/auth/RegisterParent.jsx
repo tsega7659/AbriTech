@@ -84,12 +84,12 @@ export default function RegisterParent() {
         return (
             <div className="text-center py-12 space-y-4">
                 <div className="flex justify-center">
-                    <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
+                    <CheckCircle2 className="h-16 w-16 text-[#FDB813] animate-bounce" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Registration Successful!</h2>
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-4">
-                    <p className="text-green-800 font-medium">Welcome to AbriTech!</p>
-                    <p className="text-green-700 text-sm mt-1">Your parent account has been created. Please log in to link your child and monitor their progress.</p>
+                <div className="bg-[#FDB813]/10 border border-[#FDB813]/30 rounded-xl p-4 mt-4">
+                    <p className="text-[#FDB813] font-black uppercase tracking-wide">Welcome to AbriTech!</p>
+                    <p className="text-gray-600 font-medium text-sm mt-1">Your parent account has been created. Please log in to link your child and monitor their progress.</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
                     <p className="text-blue-700 font-medium">Redirecting to login page...</p>

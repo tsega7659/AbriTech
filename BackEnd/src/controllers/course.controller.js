@@ -2,7 +2,11 @@ const pool = require('../config/db');
 
 const getAllCourses = async (req, res) => {
   try {
-    const [courses] = await pool.execute('SELECT * FROM course');
+    const [courses] = await pool.execute(`
+      SELECT c.*, 
+             (SELECT COUNT(*) FROM enrollment e WHERE e."courseId" = c.id) as enrolledStudents 
+      FROM course c
+    `);
     res.json(courses);
   } catch (error) {
     console.error('Get All Courses Error:', error);
@@ -12,7 +16,10 @@ const getAllCourses = async (req, res) => {
 
 const createCourse = async (req, res) => {
   try {
-    const { name, category, level, description } = req.body;
+    const { 
+      name, category, level, description, duration, 
+      price, isFree, hasDiscount, discountPrice, hasScholarship 
+    } = req.body;
 
     // Handle Image Upload
     let imageUrl = '';
@@ -29,14 +36,24 @@ const createCourse = async (req, res) => {
     const youtubeLink = '#lesson-video-links';
 
     const [result] = await pool.execute(
-      'INSERT INTO course (name, category, level, youtubeLink, image, description) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, category, level, youtubeLink, imageUrl || null, description || null]
+      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice", "hasScholarship") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      [
+        name, category, level, youtubeLink, imageUrl || null, description || null, 
+        duration || null, price || 0, 
+        isFree === 'true' || isFree === true, 
+        hasDiscount === 'true' || hasDiscount === true, 
+        discountPrice || null, 
+        hasScholarship === 'true' || hasScholarship === true
+      ]
     );
 
     res.status(201).json({
       message: 'Course created successfully',
-      courseId: result.insertId,
-      course: { id: result.insertId, name, category, level, youtubeLink, image: imageUrl, description }
+      courseId: result[0].id,
+      course: { 
+        id: result[0].id, name, category, level, youtubeLink, image: imageUrl, description,
+        duration, price, isFree, hasDiscount, discountPrice, hasScholarship
+      }
     });
 
   } catch (error) {
@@ -55,7 +72,7 @@ const enrollCourse = async (req, res) => {
     }
 
     // Get student ID from userId
-    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) {
       return res.status(403).json({ message: 'Access denied. Not a student account.' });
     }
@@ -63,7 +80,7 @@ const enrollCourse = async (req, res) => {
 
     // Check if already enrolled
     const [existing] = await pool.execute(
-      'SELECT id FROM enrollment WHERE studentId = ? AND courseId = ?',
+      'SELECT id FROM enrollment WHERE "studentId" = ? AND "courseId" = ?',
       [studentId, courseId]
     );
 
@@ -71,13 +88,24 @@ const enrollCourse = async (req, res) => {
       return res.status(400).json({ message: 'Already enrolled in this course' });
     }
 
+    // Fetch course details
+    const [courses] = await pool.execute('SELECT "isFree" FROM course WHERE id = ?', [courseId]);
+    if (courses.length === 0) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    const isFree = courses[0].isFree;
+    const initialStatus = isFree ? 'active' : 'pending';
+
     // Enroll student
     await pool.execute(
-      'INSERT INTO enrollment (studentId, courseId, progressPercentage, status) VALUES (?, ?, 0, "active")',
-      [studentId, courseId]
+      'INSERT INTO enrollment ("studentId", "courseId", "progressPercentage", status) VALUES (?, ?, 0, ?)',
+      [studentId, courseId, initialStatus]
     );
 
-    res.status(200).json({ message: 'Successfully enrolled in course' });
+    res.status(200).json({ 
+      message: isFree ? 'Successfully enrolled in course' : 'Enrolled in Free Preview. Payment required for full access.',
+      status: initialStatus
+    });
 
   } catch (error) {
     console.error('Enroll Course Error:', error);
@@ -88,7 +116,10 @@ const enrollCourse = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category, level, description } = req.body;
+    const { 
+      name, category, level, description, duration, 
+      price, isFree, hasDiscount, discountPrice, hasScholarship 
+    } = req.body;
     let imageUrl = req.file ? req.file.path : undefined;
 
     // Check if course exists
@@ -120,6 +151,30 @@ const updateCourse = async (req, res) => {
     if (imageUrl) {
       query += 'image = ?, ';
       params.push(imageUrl);
+    }
+    if (duration !== undefined) {
+      query += 'duration = ?, ';
+      params.push(duration);
+    }
+    if (price !== undefined) {
+      query += 'price = ?, ';
+      params.push(price);
+    }
+    if (isFree !== undefined) {
+      query += '"isFree" = ?, ';
+      params.push(isFree === 'true' || isFree === true);
+    }
+    if (hasDiscount !== undefined) {
+      query += '"hasDiscount" = ?, ';
+      params.push(hasDiscount === 'true' || hasDiscount === true);
+    }
+    if (discountPrice !== undefined) {
+      query += '"discountPrice" = ?, ';
+      params.push(discountPrice);
+    }
+    if (hasScholarship !== undefined) {
+      query += '"hasScholarship" = ?, ';
+      params.push(hasScholarship === 'true' || hasScholarship === true);
     }
 
     // If no fields to update

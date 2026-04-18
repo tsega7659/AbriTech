@@ -3,8 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 ////////////////////
@@ -36,6 +35,7 @@ enum SubmissionType {
 }
 
 enum SubmissionStatus {
+  draft
   pending
   approved
   rejected
@@ -54,6 +54,32 @@ enum NotificationType {
   system
 }
 
+enum LessonAccessType {
+  free
+  preview
+  locked
+  paid
+}
+
+enum ProjectStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+}
+
+enum EventType {
+  hackathon
+  summer_camp
+  competition
+  deadline
+}
+
 ////////////////////
 // ROLES & USERS
 ////////////////////
@@ -63,12 +89,15 @@ model Role {
   name  RoleName @unique
 
   users User[]
+
+  @@map("role")
 }
 
 model User {
   id           BigInt   @id @default(autoincrement())
   fullName     String
   gender       String?
+  age          Int?
 
   username     String   @unique
   email        String   @unique
@@ -84,12 +113,25 @@ model User {
   student      Student?
   parent       Parent?
 
+  // Gamification
+  points       Int      @default(0)
+  streak       Int      @default(0)
+
   notifications Notification[]
   blogs         Blog[]
   aiChats       AIChatLog[]
   teacherCourses TeacherCourse[]
+  
+  // Portfolios & Payments
+  portfolio     Portfolio?
+  payments      Payment[]
+  eventRegistrations EventRegistration[]
+  badges        UserBadge[]
 
+  activeAt     DateTime @default(now())
   createdAt    DateTime @default(now())
+
+  @@map("user")
 }
 
 ////////////////////
@@ -115,16 +157,21 @@ model Student {
   lessonProgress    LessonProgress[]
   quizAttempts      QuizAttempt[]
   assignmentSubs    AssignmentSubmission[]
+  projects          Project[]
 
   parents           ParentStudent[]
+
+  @@map("student")
 }
 
 model Parent {
   id        BigInt   @id @default(autoincrement())
   userId    BigInt   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  user              User     @relation(fields: [userId], references: [id])
 
   students  ParentStudent[]
+
+  @@map("parent")
 }
 
 model ParentStudent {
@@ -134,6 +181,8 @@ model ParentStudent {
 
   parent    Parent   @relation(fields: [parentId], references: [id])
   student   Student  @relation(fields: [studentId], references: [id])
+
+  @@map("parentstudent")
 }
 
 ////////////////////
@@ -149,13 +198,23 @@ model Course {
   youtubeLink String
   image       String?
   description String?
+  
+  // Pricing & Meta
+  duration    String?
+  price       Float?      @default(0)
+  isFree      Boolean     @default(true)
+  discount    Float?      @default(0)
+  scholarshipAvailable Boolean @default(false)
 
   lessons     Lesson[]
   enrollments Enrollment[]
   assignments Assignment[]
   teacherCourses TeacherCourse[]
+  payments     Payment[]
 
   createdAt   DateTime @default(now())
+
+  @@map("course")
 }
 
 model TeacherCourse {
@@ -165,6 +224,8 @@ model TeacherCourse {
 
   teacher   User   @relation(fields: [teacherId], references: [id])
   course    Course @relation(fields: [courseId], references: [id])
+
+  @@map("teachercourse")
 }
 
 ////////////////////
@@ -177,12 +238,18 @@ model Enrollment {
   courseId           BigInt
 
   progressPercentage Float            @default(0)
+  timeSpentSeconds   Int              @default(0)
   status             EnrollmentStatus @default(active)
+  finalGrade         String?
 
   student            Student @relation(fields: [studentId], references: [id])
   course             Course  @relation(fields: [courseId], references: [id])
 
+  certificate        Certificate?
+
   enrolledAt         DateTime @default(now())
+
+  @@map("enrollment")
 }
 
 model Lesson {
@@ -192,6 +259,8 @@ model Lesson {
   description String
   summaryText String?
   orderNumber Int
+  
+  accessType  LessonAccessType @default(locked)
 
   course      Course @relation(fields: [courseId], references: [id])
 
@@ -199,6 +268,8 @@ model Lesson {
   quizzes     LessonQuiz[]
   aiSummary   LessonAISummary?
   aiChatLogs  AIChatLog[]
+
+  @@map("lesson")
 }
 
 model LessonProgress {
@@ -211,6 +282,8 @@ model LessonProgress {
 
   student    Student @relation(fields: [studentId], references: [id])
   lesson     Lesson  @relation(fields: [lessonId], references: [id])
+
+  @@map("lessonprogress")
 }
 
 ////////////////////
@@ -232,6 +305,8 @@ model LessonQuiz {
 
   lesson        Lesson @relation(fields: [lessonId], references: [id])
   attempts      QuizAttempt[]
+
+  @@map("lessonquiz")
 }
 
 model QuizAttempt {
@@ -248,10 +323,12 @@ model QuizAttempt {
   quiz           LessonQuiz @relation(fields: [quizId], references: [id])
 
   attemptedAt    DateTime @default(now())
+
+  @@map("quizattempt")
 }
 
 ////////////////////
-// ASSIGNMENTS
+// ASSIGNMENTS & PROJECTS
 ////////////////////
 
 model Assignment {
@@ -261,9 +338,12 @@ model Assignment {
   description      String
   dueDate          DateTime?
   requiresApproval Boolean @default(true)
+  maxPoints        Int     @default(100)
 
   course           Course @relation(fields: [courseId], references: [id])
   submissions      AssignmentSubmission[]
+
+  @@map("assignment")
 }
 
 model AssignmentSubmission {
@@ -276,12 +356,154 @@ model AssignmentSubmission {
 
   status           SubmissionStatus @default(pending)
   result           ResultStatus?
+  score            Float?
+  maxScore         Int              @default(100)
   feedback         String?
 
   assignment       Assignment @relation(fields: [assignmentId], references: [id])
   student          Student    @relation(fields: [studentId], references: [id])
 
   submittedAt      DateTime @default(now())
+
+  @@map("assignmentsubmission")
+}
+
+model Project {
+  id               BigInt        @id @default(autoincrement())
+  studentId        BigInt
+  title            String
+  description      String
+  image            String?
+  video            String?
+  files            String?       // URL or JSON string for multiple files
+  githubLink       String?
+  
+  status           ProjectStatus @default(pending)
+  score            Float?
+  feedback         String?
+  
+  student          Student       @relation(fields: [studentId], references: [id])
+  
+  submittedAt      DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("project")
+}
+
+////////////////////
+// PORTFOLIOS & CERTIFICATES
+////////////////////
+
+model Portfolio {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  
+  bio          String?
+  isPublished  Boolean  @default(false)
+  linkedIn     String?
+  github       String?
+  website      String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("portfolio")
+}
+
+model Certificate {
+  id               BigInt     @id @default(autoincrement())
+  enrollmentId     BigInt     @unique
+  enrollment       Enrollment @relation(fields: [enrollmentId], references: [id])
+  
+  verificationCode String     @unique
+  issuedAt         DateTime   @default(now())
+
+  @@map("certificate")
+}
+
+////////////////////
+// PAYMENTS
+////////////////////
+
+model Payment {
+  id             BigInt        @id @default(autoincrement())
+  userId         BigInt
+  courseId       BigInt
+  amount         Float
+  currency       String        @default("ETB")
+  provider       String        @default("Telebirr")
+  transactionId  String?       @unique
+  status         PaymentStatus @default(pending)
+  
+  user           User          @relation(fields: [userId], references: [id])
+  course         Course        @relation(fields: [courseId], references: [id])
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("payment")
+}
+
+////////////////////
+// EVENTS
+////////////////////
+
+model Event {
+  id           BigInt             @id @default(autoincrement())
+  title        String
+  description  String
+  type         EventType
+  date         DateTime
+  location     String?
+  registerLink String?
+  
+  registrations EventRegistration[]
+  
+  createdAt    DateTime           @default(now())
+
+  @@map("event")
+}
+
+model EventRegistration {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt
+  eventId    BigInt
+  
+  user       User     @relation(fields: [userId], references: [id])
+  event      Event    @relation(fields: [eventId], references: [id])
+  
+  registeredAt DateTime @default(now())
+
+  @@map("eventregistration")
+}
+
+////////////////////
+// GAMIFICATION
+////////////////////
+
+model Badge {
+  id          BigInt      @id @default(autoincrement())
+  name        String      @unique
+  description String
+  image       String
+  
+  users       UserBadge[]
+
+  @@map("badge")
+}
+
+model UserBadge {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  badgeId   BigInt
+  
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  
+  awardedAt DateTime @default(now())
+
+  @@map("userbadge")
 }
 
 ////////////////////
@@ -296,6 +518,8 @@ model LessonAISummary {
   lesson    Lesson @relation(fields: [lessonId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@map("lessonaisummary")
 }
 
 model AIChatLog {
@@ -310,6 +534,8 @@ model AIChatLog {
   lesson      Lesson? @relation(fields: [lessonId], references: [id])
 
   createdAt   DateTime @default(now())
+
+  @@map("aichatlog")
 }
 
 ////////////////////
@@ -329,6 +555,8 @@ model Notification {
   user      User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@map("notification")
 }
 
 ////////////////////
@@ -346,4 +574,6 @@ model Blog {
   author      User @relation(fields: [createdBy], references: [id])
 
   createdAt   DateTime @default(now())
+
+  @@map("blog")
 }
