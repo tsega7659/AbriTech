@@ -181,6 +181,64 @@ const getLinkedStudents = async (req, res) => {
   }
 };
 
+const getDetailedCourseProgress = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+    const { userId } = req.user;
+
+    // 1. Verify this student belongs to this parent
+    const [parent] = await pool.execute('SELECT id FROM parent WHERE "userId" = ?', [userId]);
+    if (parent.length === 0) return res.status(403).json({ message: "Not a parent" });
+
+    const [link] = await pool.execute(
+      'SELECT id FROM parentstudent WHERE "parentId" = ? AND "studentId" = ?',
+      [parent[0].id, studentId]
+    );
+    if (link.length === 0) return res.status(403).json({ message: "Access denied. Student not linked to you." });
+
+    // 2. Fetch Course Stats (Progress & Time)
+    const [enrollment] = await pool.execute(`
+      SELECT "progressPercentage", "timeSpentSeconds", status, "enrolledAt"
+      FROM enrollment 
+      WHERE "studentId" = ? AND "courseId" = ?
+    `, [studentId, courseId]);
+
+    if (enrollment.length === 0) return res.status(404).json({ message: "No enrollment found for this course" });
+
+    // 3. Fetch Quiz Attempts for this student and course
+    // Note: Quizzes are linked to lessons, which are linked to the course.
+    const [quizzes] = await pool.execute(`
+      SELECT l.title as "lessonTitle", lq.question, qa."selectedOption", qa."isCorrect", qa.result, qa."attemptedAt"
+      FROM quizattempt qa
+      JOIN lessonquiz lq ON qa."quizId" = lq.id
+      JOIN lesson l ON lq."lessonId" = l.id
+      WHERE qa."studentId" = ? AND l."courseId" = ?
+      ORDER BY qa."attemptedAt" DESC
+    `, [studentId, courseId]);
+
+    // 4. Fetch Projects for this student
+    // Note: In the current schema, Projects are linked to the Student directly. 
+    // If they were linked to courses, we'd filter that too.
+    // For now, let's return projects where the student is working on.
+    const [projects] = await pool.execute(`
+      SELECT title, description, status, score, "githubLink", "submittedAt"
+      FROM project
+      WHERE "studentId" = ?
+      ORDER BY "submittedAt" DESC
+    `, [studentId]);
+
+    res.json({
+      overview: enrollment[0],
+      quizzes,
+      projects
+    });
+
+  } catch (error) {
+    console.error('Get Detailed Progress Error:', error);
+    res.status(500).json({ message: 'Failed to fetch detailed progress', error: error.message });
+  }
+};
+
 const getAllParents = async (req, res) => {
   try {
     const [parents] = await pool.execute(`
@@ -254,6 +312,7 @@ module.exports = {
   linkStudent,
   getDashboard,
   getLinkedStudents,
+  getDetailedCourseProgress,
   getAllParents,
   deleteParent
 };

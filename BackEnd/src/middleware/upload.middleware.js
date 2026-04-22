@@ -10,14 +10,18 @@ const cloudinary = require('../config/cloudinary');
 const upload = (folderName) => {
     const storage = new CloudinaryStorage({
         cloudinary: cloudinary,
-        params: {
-            folder: folderName,
-            resource_type: 'auto', // Support non-image files like PDF and Video
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'doc', 'docx', 'mp4', 'mkv'],
-            public_id: (req, file) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                return `${uniqueSuffix}-${file.originalname.split('.')[0]}`;
-            }
+        params: async (req, file) => {
+            // Check if file is a document (PDF, Word, etc.)
+            const isRaw = file.mimetype === 'application/pdf' || 
+                          file.mimetype.includes('msword') || 
+                          file.mimetype.includes('officedocument') || 
+                          file.originalname.toLowerCase().endsWith('.pdf');
+            
+            return {
+                folder: folderName,
+                resource_type: isRaw ? 'raw' : 'auto', 
+                public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname.split('.')[0]}`
+            };
         },
     });
 

@@ -24,6 +24,14 @@ export const adminService = {
         const response = await apiClient.delete(`/teachers/${id}`);
         return response.data;
     },
+    getInstructorDetails: async (id) => {
+        const response = await apiClient.get(`/admin/instructors/${id}`);
+        return response.data;
+    },
+    updateInstructorCourses: async (id, courseIds) => {
+        const response = await apiClient.put(`/admin/instructors/${id}/courses`, { courseIds });
+        return response.data;
+    },
 
     // Students
     getStudents: async () => {
@@ -36,6 +44,10 @@ export const adminService = {
     },
     deleteStudent: async (id) => {
         const response = await apiClient.delete(`/students/${id}`);
+        return response.data;
+    },
+    getStudentDetails: async (id) => {
+        const response = await apiClient.get(`/admin/students/${id}`);
         return response.data;
     },
 
@@ -122,6 +134,20 @@ export const adminService = {
     },
     deleteParent: async (id) => {
         const response = await apiClient.delete(`/parents/${id}`);
+        return response.data;
+    },
+    getParentDetails: async (id) => {
+        const response = await apiClient.get(`/admin/parents/${id}`);
+        return response.data;
+    },
+
+    // Projects
+    getProjects: async () => {
+        const response = await apiClient.get('/admin/projects');
+        return response.data;
+    },
+    reviewProject: async (id, assessmentData) => {
+        const response = await apiClient.put(`/admin/projects/${id}/review`, assessmentData);
         return response.data;
     }
 };

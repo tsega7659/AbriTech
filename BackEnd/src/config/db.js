@@ -41,6 +41,7 @@ const CAMEL_CASE_COLUMNS = [
   "firstName", "lastName", "replyMessage", "repliedAt", "repliedBy",
   "youtubeLink", "isFree", "scholarshipAvailable", "hasDiscount", "discountPrice",
   "hasScholarship", "courseId", "summaryText", "accessType", "contentType",
+  "enrolledStudents", "lessonCount",
   "isCurrentStudent", "classLevel", "educationLevel", "schoolName", "courseLevel",
   "parentEmail", "referralCode", "studentId", "progressPercentage", "timeSpentSeconds",
   "finalGrade", "enrolledAt", "lessonId", "completedAt", "parentId",

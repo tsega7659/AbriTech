@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Clock, Users, Shield, Cpu, } from "lucide-react";
+import { ArrowRight, BookOpen, Clock, Users, Shield, Cpu, ShieldAlert, } from "lucide-react";
 import { motion } from "framer-motion";
 import { FaPeopleGroup } from "react-icons/fa6";
 import hero from "../assets/hero.jpg"
@@ -11,6 +11,7 @@ import Loading from "../components/Loading";
 
 import { useAllCourses } from "../hooks/useStudentQueries";
 import apiClient from "../lib/apiClient";
+import { cn } from "../lib/utils";
 
 const API_BASE_URL = apiClient.defaults.baseURL.replace('/api', '');
 
@@ -233,7 +234,7 @@ export default function Home() {
             </section>
 
             {/* Popular Courses Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="max-w-7xl mx-32 px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-end mb-12">
                     <div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Popular Courses</h2>
@@ -250,15 +251,15 @@ export default function Home() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
                             {courses.map((course, index) => (
-                                <Link to="/courses" key={index} className="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full  text-left">
+                                <Link to="/courses" key={index} className="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full w-  text-left">
                                     <div className="relative h-48 w-full overflow-hidden bg-gray-50">
                                         <img
                                             src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
                                             alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
-                                        <div className="absolute top-4 left-4 flex gap-2">
-                                            <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border border-gray-100">
+                                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                            <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#00B4D8] shadow-sm border border-gray-100">
                                                 {course.category || 'Course'}
                                             </span>
                                         </div>
@@ -285,7 +286,23 @@ export default function Home() {
                                                     <FaPeopleGroup className="w-4 h-4 text-[#FDB813] mt-0.5" />
                                                     <div className="flex flex-col">
                                                         <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Enrolled</span>
-                                                        <span className="text-xs font-bold text-gray-900">{course.enrolledCount || course.enrolled || 0}</span>
+                                                        <span className="text-xs font-bold text-gray-900">{course.enrolledStudents || 0}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2.5 items-start">
+                                                    <BookOpen className="w-4 h-4 text-purple-500 mt-0.5" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Lessons</span>
+                                                        <span className="text-xs font-bold text-gray-900">{course.lessonCount || 0} Modules</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2.5 items-start">
+                                                    <ShieldAlert className={cn("w-4 h-4 mt-0.5", course.isFree ? "text-green-500" : "text-amber-500")} />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Payment</span>
+                                                        <span className={cn("text-xs font-bold", course.isFree ? "text-green-600" : "text-amber-600")}>
+                                                            {course.isFree ? 'Free Access' : 'Paid Course'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -294,14 +311,28 @@ export default function Home() {
                                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
                                                     Level: <span className="text-gray-900">{course.level === 'advanced' ? 'All Levels' : (course.level?.toUpperCase() || 'BEGINNER')}</span>
                                                 </p>
-                                                {course.price && parseFloat(course.price) > 0 ? (
+                                                {course.isFree ? (
                                                     <div className="flex flex-col items-start gap-1">
-                                                        <span className="text-lg font-black text-gray-900">{course.price} ETB</span>
-                                                        <span className="text-[9px] bg-[#FDB813]/10 text-[#FDB813] px-2 py-0.5 rounded font-black uppercase tracking-widest">Free Preview Inc.</span>
+                                                        <span className="text-lg font-black text-green-600">Free Course</span>
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-start gap-1">
-                                                        <span className="text-lg font-black text-[#FDB813]">Freemium</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg font-black text-gray-900">
+                                                                {course.hasDiscount ? course.discountPrice : course.price} ETB
+                                                            </span>
+                                                            {course.hasDiscount && (
+                                                                <span className="text-sm text-gray-400 line-through font-bold">
+                                                                    {course.price} ETB
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {course.hasDiscount && (
+                                                            <span className="text-[10px] bg-red-50 text-red-600 px-2.5 py-1 rounded-lg font-black uppercase tracking-wider border border-red-100 shadow-sm animate-pulse">
+                                                                Hurry! {Math.round(((course.price - course.discountPrice) / course.price) * 100)}% OFF
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[9px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-black uppercase tracking-widest">Free Preview Inc.</span>
                                                     </div>
                                                 )}
                                             </div>

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Lightbulb, Instagram, Linkedin, Send } from "lucide-react";
-import { FaTiktok } from "react-icons/fa";
-
+import logo from "../assets/logo.png";
+import { FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa6";
+import { Send } from "lucide-react";
 
 export default function Footer() {
     return (
@@ -9,27 +9,26 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     <div className="col-span-1 md:col-span-1">
-                        <Link to="/" className="flex items-center gap-2 mb-6">
-                            <div className="bg-[#00B4D8]/10 p-2 rounded-xl">
-                                <Lightbulb className="h-6 w-6 text-[#00B4D8]" />
-                            </div>
-                            <span className="font-bold text-2xl tracking-tight text-white">AbriTech</span>
+                        <div className="flex"> 
+                            <Link to="/" className="flex items-center gap-2 px-6 mb-6">
+                            <img src={logo} alt="AbriTech Logo" className="" />
                         </Link>
                         <p className="text-white mb-8 leading-relaxed">
                             "Connecting Education to Innovation"
-                        </p>
+                        </p></div>
+                       
                         <p className="text-gray-400 mb-8 leading-relaxed">
                             Making high-quality STEM education accessible, affordable and relevant for Ethiopian youth.
                         </p>
                         <div className="flex space-x-4">
                             <a href="https://www.instagram.com/abritech_solutions?igsh=MW9mcnYwYjgwcDBqNw%3D%3D&utm_source=qr" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
-                                <Instagram className="h-5 w-5" />
+                                <FaInstagram className="h-5 w-5" />
                             </a>
                             <a href="https://t.me/abritechsolutions" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <Send className="h-5 w-5" />
                             </a>
                             <a href="https://www.linkedin.com/company/abritech/" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
-                                <Linkedin className="h-5 w-5" />
+                                <FaLinkedin className="h-5 w-5" />
                             </a>
                             <a href="https://www.tiktok.com/@abritech_solutions?is_from_webapp=1&sender_device=pc" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <FaTiktok className="h-5 w-5" />

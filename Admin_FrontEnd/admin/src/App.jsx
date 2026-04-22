@@ -15,6 +15,7 @@ import ProjectReview from './pages/admin/ProjectReview';
 import BlogManagement from './pages/admin/BlogManagement';
 import MessageManagement from './pages/admin/MessageManagement';
 import Payments from './pages/admin/Payments';
+import ActivityMonitoring from './pages/admin/ActivityMonitoring';
 import Settings from './pages/common/Settings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
@@ -48,6 +49,7 @@ function App() {
           <Route path="messages" element={<MessageManagement />} />
           <Route path="payments" element={<Payments />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="activity" element={<ActivityMonitoring />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

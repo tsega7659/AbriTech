@@ -64,11 +64,42 @@ export const useParents = () => {
     });
 };
 
+export const useStudentDetails = (id) => {
+    return useQuery({
+        queryKey: ['admin', 'student', id],
+        queryFn: () => adminService.getStudentDetails(id),
+        enabled: !!id
+    });
+};
+
+export const useInstructorDetails = (id) => {
+    return useQuery({
+        queryKey: ['admin', 'instructor', id],
+        queryFn: () => adminService.getInstructorDetails(id),
+        enabled: !!id
+    });
+};
+
+export const useParentDetails = (id) => {
+    return useQuery({
+        queryKey: ['admin', 'parent', id],
+        queryFn: () => adminService.getParentDetails(id),
+        enabled: !!id
+    });
+};
+
 export const useLessons = (courseId) => {
     return useQuery({
         queryKey: ['admin', 'lessons', courseId],
         queryFn: () => lessonService.getLessons(courseId),
         enabled: !!courseId
+    });
+};
+
+export const useProjects = () => {
+    return useQuery({
+        queryKey: ['admin', 'projects'],
+        queryFn: adminService.getProjects
     });
 };
 
@@ -88,6 +119,17 @@ export const useDeleteTeacher = () => {
     return useMutation({
         mutationFn: adminService.deleteTeacher,
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'teachers'] })
+    });
+};
+
+export const useAssignInstructorCourses = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, courseIds }) => adminService.updateInstructorCourses(userId, courseIds),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'teachers'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'instructor', variables.userId] });
+        }
     });
 };
 
@@ -208,6 +250,17 @@ export const useDeleteLesson = () => {
         mutationFn: ({ id, courseId }) => lessonService.deleteLesson(id),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['admin', 'lessons', variables.courseId] });
+        }
+    });
+};
+
+export const useReviewProject = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, assessmentData }) => adminService.reviewProject(id, assessmentData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'projects'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
         }
     });
 };

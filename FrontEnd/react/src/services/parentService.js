@@ -9,6 +9,10 @@ const parentService = {
     getLinkedStudents: async () => {
         const response = await apiClient.get('/parents/linked-students');
         return response.data;
+    },
+    getDetailedProgress: async (studentId, courseId) => {
+        const response = await apiClient.get(`/parents/progress/${studentId}/${courseId}`);
+        return response.data;
     }
 };
 

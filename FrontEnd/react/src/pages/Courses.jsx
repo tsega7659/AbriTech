@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop, Users } from "lucide-react";
+import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop, Users, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPeopleGroup, FaUsers } from "react-icons/fa6";
 import Loading from "../components/Loading";
@@ -187,67 +187,110 @@ export default function Courses() {
                                             alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
-                                        <div className="absolute top-4 left-4 flex gap-2">
-                                            <span className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border border-white/50">
+                                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                            <span className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-[#00B4D8] shadow-sm border border-white/50">
                                                 {course.category}
                                             </span>
-                                            {course.hasScholarship && (
-                                                <span className="bg-[#FDB813]/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-900 shadow-sm border-[#FDB813]/50">
-                                                    Scholarship
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
 
                                     <div className="p-5 flex flex-col flex-1">
-                                        <h3 className="text-xl font-black text-gray-900 mb-1.5 group-hover:text-primary transition-colors leading-tight truncate">
-                                            {course.name}
-                                        </h3>
+                                        
+                                        <div className="flex items-center gap-2 mb-3">
+                                            {course.isFree ? (
+                                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-green-200">
+                                                    Free Access
+                                                </span>
+                                            ) : (
+                                                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-amber-200">
+                                                    Paid Course
+                                                </span>
+                                            )}
+                                            <span className="text-gray-400 text-[10px] font-bold">|</span>
+                                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-tight">
+                                                {course.level === 'advanced' ? 'All Levels' : course.level}
+                                            </span>
+                                        </div>
                                         <p className="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-2">
                                             {course.description}
                                         </p>
 
                                         <div className="mt-auto space-y-4">
-                                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-50">
+                                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                                        <Clock className="w-3.5 h-3.5" />
+                                                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                                        <Clock className="w-4 h-4" />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-0.5">Duration</p>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">Duration</p>
                                                         <p className="text-xs font-bold text-gray-700">{course.duration || 'Self-Paced'}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-[#FDB813]/10 flex items-center justify-center text-[#FDB813]">
-                                                        <Users className="w-3.5 h-3.5" />
+                                                    <div className="w-8 h-8 rounded-xl bg-[#FDB813]/10 flex items-center justify-center text-[#FDB813]">
+                                                        <Users className="w-4 h-4" />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-0.5">Enrolled</p>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">Enrolled</p>
                                                         <p className="text-xs font-bold text-gray-700">{course.enrolledStudents || 0}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500">
+                                                        <BookOpen className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">Lessons</p>
+                                                        <p className="text-xs font-bold text-gray-700">{course.lessonCount || 0} Modules</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-xl flex items-center justify-center",
+                                                        course.isFree ? "bg-green-50 text-green-500" : "bg-amber-50 text-amber-500"
+                                                    )}>
+                                                        <Shield className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">Payment</p>
+                                                        <p className={cn(
+                                                            "text-xs font-bold",
+                                                            course.isFree ? "text-green-600" : "text-amber-600"
+                                                        )}>{course.isFree ? 'Free Access' : 'Paid Course'}</p>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                <div className="flex flex-col gap-1 w-full">
+                                                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">
                                                         Level: <span className="text-gray-900 ml-1">{course.level === 'advanced' ? 'All Levels' : (course.level?.toUpperCase())}</span>
                                                     </div>
                                                     {course.isFree ? (
-                                                        <div className="text-lg font-black text-[#FDB813]">
-                                                            Freemium
+                                                        <div className="text-lg font-black text-green-600">
+                                                            Free Course
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-lg font-black text-gray-900">{course.hasDiscount ? course.discountPrice : course.price} ETB</span>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xl font-black text-gray-900 leading-none">
+                                                                        {course.hasDiscount ? course.discountPrice : course.price} ETB
+                                                                    </span>
+                                                                    {course.hasDiscount && (
+                                                                        <span className="text-xs font-bold text-gray-400 line-through">
+                                                                            {course.price}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                                 {course.hasDiscount && (
-                                                                    <span className="text-xs font-bold text-gray-400 line-through">{course.price}</span>
+                                                                    <span className="text-[10px] bg-red-50 text-red-600 px-2.5 py-1 rounded-lg font-black uppercase tracking-wider border border-red-100 shadow-sm animate-pulse">
+                                                                        Save {Math.round(((course.price - course.discountPrice) / course.price) * 100)}%
+                                                                    </span>
                                                                 )}
                                                             </div>
-                                                            <div className="bg-[#FDB813]/10 text-[#FDB813] px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter w-fit">
-                                                                {course.level?.toLowerCase() === 'advanced' ? 'Full Access' : 'Free Preview Inc.'}
+                                                            <div className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest w-fit border border-amber-100">
+                                                                {course.level?.toLowerCase() === 'advanced' ? 'Full Access' : 'Free Preview Included'}
                                                             </div>
                                                         </div>
                                                     )}
@@ -297,17 +340,7 @@ export default function Courses() {
             {/* Modals and Overlays */}
             <AnimatePresence>
                 {enrolling && !enrollSuccess && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[2.5rem] p-12 max-w-sm w-full text-center space-y-6 shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gray-100">
-                                <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 2, ease: "linear" }} className="h-full bg-primary" />
-                            </div>
-                            <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-primary mx-auto animate-bounce">
-                                <Cpu className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Processing</h3>
-                        </div>
-                    </motion.div>
+                    <Loading message="Processing enrollment..." />
                 )}
 
                 {enrollSuccess && (

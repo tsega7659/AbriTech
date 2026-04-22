@@ -20,3 +20,11 @@ export const useParentMonthlyReport = () => {
         queryFn: parentService.getMonthlyReport
     });
 };
+
+export const useDetailedProgress = (studentId, courseId) => {
+    return useQuery({
+        queryKey: ['parent', 'progress', studentId, courseId],
+        queryFn: () => parentService.getDetailedProgress(studentId, courseId),
+        enabled: !!studentId && !!courseId
+    });
+};

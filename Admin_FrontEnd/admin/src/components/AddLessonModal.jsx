@@ -243,9 +243,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                             <div className="flex bg-white p-1 rounded-xl border border-slate-100 shadow-sm shrink-0">
                                 {[
                                     { id: 'free', label: 'Free' },
-                                    { id: 'preview', label: 'Preview' },
                                     { id: 'paid', label: 'Paid' },
-                                    { id: 'locked', label: 'Locked' }
                                 ].map((type) => (
                                     <button
                                         key={type.id}

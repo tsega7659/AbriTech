@@ -1,18 +1,24 @@
-const db = require('./src/config/db');
+const pool = require('./src/config/db');
 
 async function test() {
-  const sql = 'INSERT INTO enrollment ("studentId", "courseId", "progressPercentage", status) VALUES (?, ?, 0, ?)';
-  const transformed = db.pgPool ? "Has pgPool" : "No pgPool";
-  console.log(transformed);
-  
-  try {
-    const poolMock = db;
-    const res = await poolMock.execute(sql, [1, 2, 'pending']);
-    console.log("Success:", res);
-  } catch (e) {
-    console.error("Error executing:", e);
-  } finally {
-    process.exit();
-  }
+    try {
+        const res = await pool.execute('SELECT s.id, u.username FROM student s JOIN "user" u ON s."userId" = u.id LIMIT 1');
+        if (!res[0][0]) { console.log('No student found'); return; }
+        const studentId = res[0][0].id;
+        console.log('ID:', studentId);
+
+        const sql = `
+            SELECT u.id, u."fullName" as "fullName", u.email, u.username, u."phoneNumber" as "phoneNumber", s."schoolName" as "schoolName"
+            FROM "user" u
+            JOIN student s ON u.id = s."userId"
+            WHERE s.id = ?
+        `;
+        const details = await pool.execute(sql, [studentId]);
+        console.log('DETAILS:', details[0][0]);
+    } catch(e) {
+        console.error(e)
+    } finally {
+        process.exit(0);
+    }
 }
 test();

@@ -6,6 +6,7 @@ import {
     BookOpen,
     CheckSquare,
     TrendingUp,
+    Activity,
     LogOut,
     Menu,
     X,
@@ -71,6 +72,7 @@ const DashboardLayout = ({ role }) => {
     const adminLinks = [
         { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
+        { to: '/admin/activity', icon: Activity, label: 'Activity Log' },
         { to: '/admin/courses', icon: BookOpen, label: 'Courses' },
         { to: '/admin/blogs', icon: FileText, label: 'Blogs' },
         { to: '/admin/students', icon: Users, label: 'Students' },

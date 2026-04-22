@@ -134,7 +134,7 @@ const getEnrolledCourses = async (req, res) => {
         e."progressPercentage" as progress,
         e."timeSpentSeconds",
         e."enrolledAt",
-        (SELECT u."fullName" FROM "user" u JOIN teachercourse tc ON u.id = tc."teacherId" WHERE tc."courseId" = c.id LIMIT 1) as "instructorName",
+        (SELECT u."fullName" FROM "user" u JOIN teacher t ON u.id = t."userId" JOIN teachercourse tc ON t.id = tc."teacherId" WHERE tc."courseId" = c.id LIMIT 1) as "instructorName",
         (SELECT MAX(lp."completedAt") FROM lessonprogress lp JOIN lesson l ON lp."lessonId" = l.id WHERE lp."studentId" = ? AND l."courseId" = c.id) as "lastAccessed"
       FROM course c
       JOIN enrollment e ON c.id = e."courseId"

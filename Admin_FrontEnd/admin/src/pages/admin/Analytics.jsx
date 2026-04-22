@@ -142,9 +142,33 @@ const Analytics = () => {
                                         outerRadius={80}
                                         paddingAngle={8}
                                         dataKey="value"
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        nameKey="name"
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                     >
                                         {analytics?.demographics?.gender?.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                    <Legend verticalAlign="bottom" height={36}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </SectionCard>
+                        <SectionCard title="Enrollment Distribution" description="Paid vs Free students" icon={PieChartIcon}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={analytics?.revenue?.enrollmentTypes}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={8}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                        {analytics?.revenue?.enrollmentTypes?.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
@@ -261,6 +285,8 @@ const Analytics = () => {
                                         outerRadius={80}
                                         paddingAngle={8}
                                         dataKey="value"
+                                        nameKey="name"
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                     >
                                         {analytics?.revenue?.enrollmentTypes?.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

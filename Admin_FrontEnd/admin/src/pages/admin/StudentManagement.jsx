@@ -13,9 +13,16 @@ import {
     School,
     GraduationCap,
     ArrowRight,
-    Loader2
+    Loader2,
+    Calendar,
+    Award,
+    Mail as MailIcon,
+    Phone as PhoneIcon,
+    MapPin,
+    UserCheck,
+    Briefcase
 } from 'lucide-react';
-import { useStudentsList, useRegisterStudent, useDeleteStudent } from '../../hooks/useAdminQueries';
+import { useStudentsList, useRegisterStudent, useDeleteStudent, useStudentDetails } from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
@@ -101,6 +108,13 @@ const StudentManagement = () => {
     const [studentToDelete, setStudentToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success', errors: [] });
+    const [selectedStudentId, setSelectedStudentId] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    const handleRowClick = (studentId) => {
+        setSelectedStudentId(studentId);
+        setIsDetailModalOpen(true);
+    };
 
     const showFeedback = (title, message, type = 'success', errors = []) => {
         setFeedbackModal({ isOpen: true, title, message, type, errors });
@@ -418,7 +432,11 @@ const StudentManagement = () => {
                                 </tr>
                             ) : filteredStudents.length > 0 ? (
                                 filteredStudents.map((student) => (
-                                    <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                                    <tr
+                                        key={student.id}
+                                        className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                                        onClick={() => handleRowClick(student.id)}
+                                    >
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black shadow-sm ring-1 ring-primary/5">
@@ -450,7 +468,7 @@ const StudentManagement = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right whitespace-nowrap">
-                                            <div className="flex items-center justify-end gap-2 transition-opacity">
+                                            <div className="flex items-center justify-end gap-2 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                                 <button className="p-2.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" title="Edit Student">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
@@ -510,6 +528,200 @@ const StudentManagement = () => {
                 message={feedbackModal.message}
                 errors={feedbackModal.errors || []}
             />
+
+            {/* Student Detail Modal */}
+            <StudentDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => { setIsDetailModalOpen(false); setSelectedStudentId(null); }}
+                studentId={selectedStudentId}
+            />
+        </div>
+    );
+};
+
+const StudentDetailModal = ({ isOpen, onClose, studentId }) => {
+    const { data: student, isLoading } = useStudentDetails(studentId);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+            <div className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
+                {/* Header Section */}
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0 relative bg-slate-50/50">
+                    <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 bg-primary/10 rounded-[1.5rem] p-1.5 ring-4 ring-white shadow-lg overflow-hidden">
+                            <img
+                                src={`https://ui-avatars.com/api/?name=${student?.fullName || 'User'}&background=4dbfec&color=fff&size=200`}
+                                alt=""
+                                className="w-full h-full rounded-[1rem] object-cover"
+                            />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-2xl font-black text-slate-800">{student?.fullName || 'Loading...'}</h3>
+                                {student?.isCurrentStudent && (
+                                    <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-green-500/20">
+                                        Current Student
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-slate-400 font-bold flex items-center gap-2 mt-1">
+                                <MailIcon className="w-4 h-4" /> {student?.email}
+                            </p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl border border-slate-100 transition-all active:scale-95 shadow-sm">
+                        <XCircle className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Content Section */}
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    {isLoading ? (
+                        <div className="h-64 flex flex-col items-center justify-center gap-4 text-slate-400">
+                            <Loader2 className="w-10 h-10 animate-spin" />
+                            <p className="font-bold text-sm">Synchronizing profiles...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            {/* Left Column: Personal & Academic Info */}
+                            <div className="lg:col-span-7 space-y-8">
+                                {/* Academic Info */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <GraduationCap className="w-4 h-4" /> Academic Background
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">School</p>
+                                            <p className="font-black text-slate-700">{student?.schoolName || 'N/A'}</p>
+                                        </div>
+                                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Class/Grade</p>
+                                            <p className="font-black text-slate-700">{student?.classLevel || 'N/A'}</p>
+                                        </div>
+                                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Education Level</p>
+                                            <p className="font-black text-slate-700">{student?.educationLevel || 'N/A'}</p>
+                                        </div>
+                                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Student Type</p>
+                                            <p className="font-black text-slate-700">{student?.isCurrentStudent ? 'Currently Enrolled' : 'Alumni / Finished'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Enrollments */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        Course Enrollments
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {student?.enrollments?.length > 0 ? student.enrollments.map((env, i) => (
+                                            <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 transition-colors shadow-sm group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary font-black text-xs ring-1 ring-primary/10">
+                                                        {env.courseName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-slate-700 text-sm">{env.courseName}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Joined {new Date(env.enrolledAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${env.progressPercentage}%` }} />
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-slate-700">{env.progressPercentage}%</span>
+                                                    </div>
+                                                    <span className={`text-[9px] font-black uppercase tracking-widest ${env.status === 'completed' ? 'text-green-500' : 'text-primary'}`}>
+                                                        {env.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Active Enrollments</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Profile Details & Guardian */}
+                            <div className="lg:col-span-5 space-y-8">
+                                {/* Profile Details */}
+                                <div className="p-6 bg-slate-900 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+
+                                    </div>
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                        <UserCheck className="w-4 h-4" /> Account Identification
+                                    </h4>
+                                    <div className="space-y-5 relative">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white/50">
+                                                <UserCheck className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-0.5">Username</p>
+                                                <p className="font-bold text-sm tracking-tight">{student?.username}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white/50">
+                                                <Award className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-0.5">Referral Code</p>
+                                                <p className="font-mono font-bold text-sm text-primary tracking-widest">{student?.referralCode || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white/50">
+                                                <PhoneIcon className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-0.5">Mobile Number</p>
+                                                <p className="font-bold text-sm tracking-tight">{student?.phoneNumber || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Guardian Info */}
+                                <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 relative overflow-hidden">
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                        Parent / Guardian
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <div className="bg-white p-4 rounded-2xl border border-primary/10 shadow-sm">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</p>
+                                            <p className="font-black text-slate-800 text-sm tracking-tight">{student?.parentName || 'No parent linked'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-primary/10 shadow-sm">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
+                                            <p className="font-bold text-slate-700 text-sm truncate">{student?.parentEmail || 'N/A'}</p>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Section */}
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0">
+                    <button onClick={onClose} className="px-8 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
+                        Close Overview
+                    </button>
+
+                </div>
+            </div>
         </div>
     );
 };

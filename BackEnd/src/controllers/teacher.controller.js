@@ -15,7 +15,7 @@ const getAllTeachers = async (req, res) => {
         json_agg(c.name) as "assignedCourses"
       FROM "user" u
       JOIN teacher t ON u.id = t."userId"
-      LEFT JOIN teachercourse tc ON u.id = tc."teacherId"
+      LEFT JOIN teachercourse tc ON t.id = tc."teacherId"
       LEFT JOIN course c ON tc."courseId" = c.id
       GROUP BY 
         u.id, 
@@ -55,10 +55,14 @@ const getDashboard = async (req, res) => {
     try {
         const { userId } = req.user; // From auth middleware
 
+        const [teachers] = await pool.execute('SELECT id FROM teacher WHERE "userId" = ?', [userId]);
+        if (teachers.length === 0) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacherProfileId = teachers[0].id;
+
         // Get assigned courses count
         const [assignedCourses] = await pool.execute(
             'SELECT COUNT(*) as count FROM teachercourse WHERE "teacherId" = ?',
-            [userId]
+            [teacherProfileId]
         );
 
         // Get total students across all assigned courses
@@ -67,7 +71,7 @@ const getDashboard = async (req, res) => {
             FROM teachercourse tc
             JOIN enrollment e ON tc."courseId" = e."courseId"
             WHERE tc."teacherId" = ?
-        `, [userId]);
+        `, [teacherProfileId]);
 
         // Get count of lessons/courses assigned to teacher that students have enrolled in
         // and calculate average progress
@@ -76,7 +80,7 @@ const getDashboard = async (req, res) => {
             FROM teachercourse tc
             JOIN enrollment e ON tc."courseId" = e."courseId"
             WHERE tc."teacherId" = ?
-        `, [userId]);
+        `, [teacherProfileId]);
         const averageCompletion = Math.round(progressResult[0].average || 0);
 
         // Get active assignments count for their courses
@@ -85,7 +89,7 @@ const getDashboard = async (req, res) => {
             FROM teachercourse tc
             JOIN assignment a ON tc."courseId" = a."courseId"
             WHERE tc."teacherId" = ?
-        `, [userId]);
+        `, [teacherProfileId]);
         const activeAssignments = assignmentsResult[0].count;
 
         res.json({
@@ -104,6 +108,10 @@ const getAssignedCourses = async (req, res) => {
     try {
         const { userId } = req.user; // From auth middleware
 
+        const [teachers] = await pool.execute('SELECT id FROM teacher WHERE "userId" = ?', [userId]);
+        if (teachers.length === 0) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacherProfileId = teachers[0].id;
+
         const [courses] = await pool.execute(`
             SELECT 
                 c.id,
@@ -119,7 +127,7 @@ const getAssignedCourses = async (req, res) => {
             WHERE tc."teacherId" = ?
             GROUP BY c.id
             ORDER BY c.name
-        `, [userId]);
+        `, [teacherProfileId]);
 
         res.json(courses);
     } catch (error) {
@@ -143,7 +151,7 @@ const deleteTeacher = async (req, res) => {
         }
 
         // 1. Delete teacher courses
-        await conn.execute('DELETE FROM teachercourse WHERE "teacherId" = ?', [id]);
+        await conn.execute('DELETE FROM teachercourse WHERE "teacherId" = ?', [teacher[0].id]);
 
         // 2. Delete teacher record
         await conn.execute('DELETE FROM teacher WHERE "userId" = ?', [id]);
@@ -164,8 +172,12 @@ const deleteTeacher = async (req, res) => {
 
 const getEnrolledStudents = async (req, res) => {
     try {
-        const { userId } = req.user; // Teacher's userId
+        const { userId } = req.user;
         const { courseId } = req.query;
+
+        const [teachers] = await pool.execute('SELECT id FROM teacher WHERE "userId" = ?', [userId]);
+        if (teachers.length === 0) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacherProfileId = teachers[0].id;
 
         let query = `
             SELECT 
@@ -182,7 +194,7 @@ const getEnrolledStudents = async (req, res) => {
             WHERE tc."teacherId" = ?
         `;
 
-        const params = [userId];
+        const params = [teacherProfileId];
 
         if (courseId) {
             query += " AND c.id = ? ";
@@ -223,14 +235,18 @@ const getStudentCourseDetail = async (req, res) => {
 
         console.log(`[DEBUG] Fetching detail for studentId: ${studentId}, courseId: ${courseId}, teacherId: ${teacherId}`);
 
+        const [teachers] = await pool.execute('SELECT id FROM teacher WHERE "userId" = ?', [teacherId]);
+        if (teachers.length === 0) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacherProfileId = teachers[0].id;
+
         // Verify this teacher is actually teaching this course
         const [teachingCheck] = await pool.execute(
             'SELECT id FROM teachercourse WHERE "teacherId" = ? AND "courseId" = ?',
-            [teacherId, courseId]
+            [teacherProfileId, courseId]
         );
 
         if (teachingCheck.length === 0) {
-            console.log(`[DEBUG] Teacher ${teacherId} not authorized for course ${courseId}`);
+            console.log(`[DEBUG] Teacher profile ${teacherProfileId} not authorized for course ${courseId}`);
             return res.status(403).json({ message: 'Unauthorized. You do not teach this course.' });
         }
 
@@ -301,6 +317,9 @@ const getStudentCourseDetail = async (req, res) => {
 const getAllSubmissions = async (req, res) => {
     try {
         const { userId: teacherId } = req.user;
+        const [teachers] = await pool.execute('SELECT id FROM teacher WHERE "userId" = ?', [teacherId]);
+        if (teachers.length === 0) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacherProfileId = teachers[0].id;
 
         const [submissions] = await pool.execute(`
             SELECT 
@@ -317,7 +336,7 @@ const getAllSubmissions = async (req, res) => {
             JOIN "user" u ON s."userId" = u.id
             WHERE tc."teacherId" = ?
             ORDER BY sub."submittedAt" DESC
-        `, [teacherId]);
+        `, [teacherProfileId]);
 
         res.json(submissions);
     } catch (error) {

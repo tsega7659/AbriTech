@@ -249,7 +249,7 @@ const CourseManagement = () => {
                                 </div>
                             )}
                         </div>
-                        <button onClick={() => { setIsAdding(false); setIsEditing(null); }} disabled={submitting} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl disabled:opacity-50">
+                        <button onClick={handleCancel} disabled={submitting} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-xl disabled:opacity-50">
                             <XCircle className="w-6 h-6" />
                         </button>
                     </div>
@@ -443,7 +443,7 @@ const CourseManagement = () => {
                         <div className="lg:col-span-3 flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-50">
                             <button
                                 type="button"
-                                onClick={() => setIsAdding(false)}
+                                onClick={handleCancel}
                                 className="px-8 py-4 rounded-2xl font-black text-slate-500 hover:bg-slate-100 transition-all w-full sm:w-auto uppercase tracking-widest text-xs"
                             >
                                 Cancel

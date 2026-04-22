@@ -4,7 +4,8 @@ const getAllCourses = async (req, res) => {
   try {
     const [courses] = await pool.execute(`
       SELECT c.*, 
-             (SELECT COUNT(*) FROM enrollment e WHERE e."courseId" = c.id) as enrolledStudents 
+             (SELECT COUNT(*) FROM enrollment e WHERE e."courseId" = c.id) as enrolledStudents,
+             (SELECT COUNT(*) FROM lesson l WHERE l."courseId" = c.id) as lessonCount
       FROM course c
     `);
     res.json(courses);
