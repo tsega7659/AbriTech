@@ -7,13 +7,14 @@ const Loading = ({
 }) => {
     // Unified version (used for both fullScreen and inline, with different wrappers)
     const LoadingContent = () => {
-        const isSmall = size === 'small' || variant === 'inline';
+        const isSmall = size === 'small';
         const isPage = variant === 'page' || variant === 'overlay';
+        const isInline = variant === 'inline';
 
         return (
-            <div className="relative flex flex-col items-center">
+            <div className={`relative flex flex-col items-center ${isSmall ? 'scale-75' : ''}`}>
                 {/* Animated Logo/Spinner Container */}
-                <div className={`relative ${isPage ? 'h-24 w-24' : 'h-12 w-12'}`}>
+                <div className={`relative ${isPage ? 'h-24 w-24' : (isSmall ? 'h-8 w-8' : 'h-12 w-12')}`}>
                     {/* Outer Ring - Blue */}
                     <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-[#00B4D8] border-r-[#00B4D8]/30" style={{ animationDuration: '1.5s' }}></div>
 
@@ -22,7 +23,7 @@ const Loading = ({
 
                     {/* Center Pulse */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className={`${isPage ? 'h-4 w-4' : 'h-2 w-2'} animate-ping rounded-full bg-[#00B4D8]`}></div>
+                        <div className={`${isPage ? 'h-4 w-4' : (isSmall ? 'h-1 w-1' : 'h-2 w-2')} animate-ping rounded-full bg-[#00B4D8]`}></div>
                     </div>
                 </div>
 

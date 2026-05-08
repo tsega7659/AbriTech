@@ -17,52 +17,29 @@ const getAllUsers = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        // Basic Stats
-        const [[{ totalstudents: totalStudents }]] = await pool.execute('SELECT COUNT(*) as totalStudents FROM student');
-        const [[{ totalteachers: totalTeachers }]] = await pool.execute('SELECT COUNT(*) as totalTeachers FROM teacher');
-        const [[{ totalcourses: totalCourses }]] = await pool.execute('SELECT COUNT(*) as totalCourses FROM course');
-        const [[{ totalenrollments: totalEnrollments }]] = await pool.execute('SELECT COUNT(*) as totalEnrollments FROM enrollment');
-        const [[{ totalparents: totalParents }]] = await pool.execute('SELECT COUNT(*) as totalParents FROM parent');
-        const [[{ pendingreviews: pendingReviews }]] = await pool.execute("SELECT COUNT(*) as pendingReviews FROM assignmentsubmission WHERE status = 'pending'");
-        const [[{ totalrevenue: totalRevenue }]] = await pool.execute("SELECT COALESCE(SUM(amount), 0) as totalRevenue FROM payment WHERE status = 'success'");
-        
-        // Growth Metrics
-        const [[{ registrations: newRegistrationsThisWeek }]] = await pool.execute(`
-            SELECT COUNT(*) as registrations FROM "user" 
-            WHERE "createdAt" >= NOW() - INTERVAL '7 days'
-        `);
-        const [[{ enrollments: newEnrollmentsToday }]] = await pool.execute(`
-            SELECT COUNT(*) as enrollments FROM enrollment 
-            WHERE "enrolledAt" >= CURRENT_DATE
-        `);
-        const [[{ active: activeUsersToday }]] = await pool.execute(`
-            SELECT COUNT(*) as active FROM "user" 
-            WHERE "lastLogin" >= CURRENT_DATE
-        `);
-        const [[{ mrr: monthlyRecurringRevenue }]] = await pool.execute(`
-            SELECT COALESCE(SUM(amount), 0) as mrr FROM payment 
-            WHERE status = 'success' AND "createdAt" >= NOW() - INTERVAL '30 days'
-        `);
-
-        // Learning Metrics
-        const [[{ avgtime: averageLearningTime }]] = await pool.execute(`
-            SELECT COALESCE(AVG("timeSpentSeconds"), 0) as avgtime FROM enrollment
-        `);
-
-        // Enrollment Trend (Current month vs Last month)
-        const [[{ count: currentMonthEnrollments }]] = await pool.execute(`
-            SELECT COUNT(*) as count FROM enrollment 
-            WHERE "enrolledAt" >= DATE_TRUNC('month', NOW())
-        `);
-        const [[{ count: lastMonthEnrollments }]] = await pool.execute(`
-            SELECT COUNT(*) as count FROM enrollment 
-            WHERE "enrolledAt" >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month'
-            AND "enrolledAt" < DATE_TRUNC('month', NOW())
+        // Optimized: Fetch all basic counts and simple metrics in ONE query
+        const [[stats]] = await pool.execute(`
+            SELECT 
+                (SELECT COUNT(*) FROM student) as "totalStudents",
+                (SELECT COUNT(*) FROM teacher) as "totalTeachers",
+                (SELECT COUNT(*) FROM course) as "totalCourses",
+                (SELECT COUNT(*) FROM enrollment) as "totalEnrollments",
+                (SELECT COUNT(*) FROM parent) as "totalParents",
+                (SELECT COUNT(*) FROM assignmentsubmission WHERE status = 'pending') as "pendingReviews",
+                (SELECT COALESCE(SUM(amount), 0) FROM payment WHERE status = 'success') as "totalRevenue",
+                (SELECT COUNT(*) FROM "user" WHERE "createdAt" >= NOW() - INTERVAL '7 days') as "newRegistrationsThisWeek",
+                (SELECT COUNT(*) FROM enrollment WHERE "enrolledAt" >= CURRENT_DATE) as "newEnrollmentsToday",
+                (SELECT COUNT(*) FROM "user" WHERE "lastLogin" >= CURRENT_DATE) as "activeUsersToday",
+                (SELECT COALESCE(SUM(amount), 0) FROM payment WHERE status = 'success' AND "createdAt" >= NOW() - INTERVAL '30 days') as "mrr",
+                (SELECT COALESCE(AVG("timeSpentSeconds"), 0) FROM enrollment) as "avgLearningTime",
+                (SELECT COUNT(*) FROM enrollment WHERE "enrolledAt" >= DATE_TRUNC('month', NOW())) as "currentMonthEnrollments",
+                (SELECT COUNT(*) FROM enrollment WHERE "enrolledAt" >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month' AND "enrolledAt" < DATE_TRUNC('month', NOW())) as "lastMonthEnrollments",
+                (SELECT COALESCE((SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::FLOAT / NULLIF(COUNT(*), 0)) * 100, 0) FROM enrollment) as "completionRateVal"
         `);
 
         let enrollmentChange = '+0% this month';
-        const curr = Number(currentMonthEnrollments || 0);
-        const last = Number(lastMonthEnrollments || 0);
+        const curr = Number(stats.currentMonthEnrollments || 0);
+        const last = Number(stats.lastMonthEnrollments || 0);
 
         if (last > 0) {
             const change = ((curr - last) / last) * 100;
@@ -71,14 +48,9 @@ const getDashboardStats = async (req, res) => {
             enrollmentChange = `+100% this month`;
         }
 
-        // Completion Rate
-        const [[{ rate: completionRateVal }]] = await pool.execute(`
-            SELECT COALESCE((SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::FLOAT / NULLIF(COUNT(*), 0)) * 100, 0) as rate 
-            FROM enrollment
-        `);
-        const completionRate = `${Math.round(completionRateVal)}% completion rate`;
+        const completionRate = `${Math.round(stats.completionRateVal)}% completion rate`;
 
-        // Top Courses
+        // Top Courses (Still separate as it returns multiple rows)
         const [topCourses] = await pool.execute(`
             SELECT c.name, COUNT(e.id) as value
             FROM course c
@@ -95,7 +67,6 @@ const getDashboardStats = async (req, res) => {
             GROUP BY category
         `);
 
-        // Colors for pie chart
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f43f5e', '#6366f1'];
         const categoryStats = categoryStatsRaw.map((stat, index) => ({
             ...stat,
@@ -103,7 +74,7 @@ const getDashboardStats = async (req, res) => {
             color: colors[index % colors.length]
         }));
 
-        // Recent Activity (Last 2 days)
+        // Combined activity query
         const [recentActivity] = await pool.execute(`
             SELECT * FROM (
                 (SELECT u."fullName" as user, CONCAT('enrolled in ', c.name) as action, e."enrolledAt" as time 
@@ -112,22 +83,21 @@ const getDashboardStats = async (req, res) => {
                  JOIN "user" u ON s."userId" = u.id 
                  JOIN course c ON e."courseId" = c.id
                  WHERE e."enrolledAt" >= NOW() - INTERVAL '2 days')
-                UNION
+                UNION ALL
                 (SELECT u."fullName" as user, CONCAT('submitted ', a.title) as action, sub."submittedAt" as time 
                  FROM assignmentsubmission sub 
                  JOIN student s ON sub."studentId" = s.id 
                  JOIN "user" u ON s."userId" = u.id 
                  JOIN assignment a ON sub."assignmentId" = a.id
                  WHERE sub."submittedAt" >= NOW() - INTERVAL '2 days')
-                UNION
-                (SELECT u."fullName" as user, CONCAT('joined the platform') as action, u."createdAt" as time 
+                UNION ALL
+                (SELECT u."fullName" as user, 'joined the platform' as action, u."createdAt" as time 
                  FROM "user" u
                  WHERE u."createdAt" >= NOW() - INTERVAL '2 days')
-                UNION
+                UNION ALL
                 (SELECT u."fullName" as user, CONCAT('paid ', p.amount, ' ETB for a course') as action, p."createdAt" as time 
                  FROM payment p
-                 JOIN enrollment e ON p."studentId" = e."studentId" AND p."courseId" = e."courseId"
-                 JOIN student s ON e."studentId" = s.id
+                 JOIN student s ON p."userId" = s."userId"
                  JOIN "user" u ON s."userId" = u.id
                  WHERE p.status = 'success' AND p."createdAt" >= NOW() - INTERVAL '2 days')
             ) AS combined
@@ -135,69 +105,24 @@ const getDashboardStats = async (req, res) => {
             LIMIT 10
         `);
 
-        // Course Performance
-        const [coursePerformance] = await pool.execute(`
-            SELECT 
-                c.name as title, 
-                COUNT(e.id) as enr, 
-                SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END) as comp,
-                ROUND(COALESCE(SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END)::NUMERIC / NULLIF(COUNT(e.id), 0) * 100, 0), 1) as rate
-            FROM course c
-            LEFT JOIN enrollment e ON c.id = e."courseId"
-            GROUP BY c.id, c.name
-            ORDER BY enr DESC
-            LIMIT 5
-        `);
-
         res.json({
-            totalStudents: Number(totalStudents),
-            totalTeachers: Number(totalTeachers),
-            totalCourses: Number(totalCourses),
-            totalEnrollments: Number(totalEnrollments),
-            totalParents: Number(totalParents),
-            pendingReviews: Number(pendingReviews),
+            totalStudents: Number(stats.totalStudents),
+            totalTeachers: Number(stats.totalTeachers),
+            totalCourses: Number(stats.totalCourses),
+            totalEnrollments: Number(stats.totalEnrollments),
+            totalParents: Number(stats.totalParents),
+            pendingReviews: Number(stats.pendingReviews),
             enrollmentChange,
             completionRate,
-            totalRevenue: Number(totalRevenue),
-            newRegistrationsThisWeek: Number(newRegistrationsThisWeek),
-            newEnrollmentsToday: Number(newEnrollmentsToday),
-            activeUsersToday: Number(activeUsersToday),
-            monthlyRecurringRevenue: Number(monthlyRecurringRevenue),
-            averageLearningTime: Number(averageLearningTime),
-            
-            // Operational Metrics
-            topPerformingStudents: (await pool.execute(`
-                SELECT u."fullName" as name, ROUND(AVG(p.score)::numeric, 1) as score 
-                FROM "user" u 
-                JOIN student s ON u.id = s."userId" 
-                JOIN project p ON s.id = p."studentId" 
-                WHERE p.status = 'approved' 
-                GROUP BY u.id, u."fullName" 
-                ORDER BY score DESC LIMIT 5
-            `))[0],
-            mostDifficultCourses: (await pool.execute(`
-                SELECT c.name as title, ROUND(AVG(e."progressPercentage")::numeric, 1) as rate 
-                FROM course c 
-                LEFT JOIN enrollment e ON c.id = e."courseId" 
-                GROUP BY c.id, c.name 
-                ORDER BY rate ASC LIMIT 5
-            `))[0],
-            instructorActivityRate: Number((await pool.execute(`
-                SELECT COALESCE((COUNT(DISTINCT tc."teacherId")::FLOAT / NULLIF((SELECT COUNT(*) FROM teacher), 0)) * 100, 0) as rate 
-                FROM teachercourse tc
-            `))[0][0].rate || 0),
-            parentEngagementRate: Number((await pool.execute(`
-                SELECT COALESCE((COUNT(DISTINCT ps."studentId")::FLOAT / NULLIF((SELECT COUNT(*) FROM student), 0)) * 100, 0) as rate 
-                FROM parentstudent ps
-            `))[0][0].rate || 0),
-            quizCompletionRate: Number((await pool.execute(`
-                SELECT COALESCE(AVG(CASE WHEN "isCorrect" THEN 100 ELSE 0 END)::FLOAT, 0) as rate FROM quizattempt
-            `))[0][0].rate || 0),
-
+            totalRevenue: Number(stats.totalRevenue),
+            newRegistrationsThisWeek: Number(stats.newRegistrationsThisWeek),
+            newEnrollmentsToday: Number(stats.newEnrollmentsToday),
+            activeUsersToday: Number(stats.activeUsersToday),
+            monthlyRecurringRevenue: Number(stats.mrr),
+            averageLearningTime: Number(stats.avgLearningTime),
             topCourses: topCourses.map(c => ({ ...c, value: Number(c.value) })),
             categoryStats,
-            recentActivity,
-            coursePerformance
+            recentActivity
         });
     } catch (error) {
         console.error('Get Dashboard Stats Error:', error);
@@ -447,25 +372,47 @@ const getInstructorDetails = async (req, res) => {
 
 const getParentDetails = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params; // This is the userId from the frontend
         const [parents] = await pool.execute(`
-            SELECT u.*, p.id as "parentId"
+            SELECT u.id, u."fullName", u.email, u.username, u."phoneNumber", u.gender, u.address, u."createdAt", p.id as "parentId"
             FROM "user" u
             JOIN parent p ON u.id = p."userId"
-            WHERE p.id = ?
+            WHERE u.id = ?
         `, [id]);
 
         if (parents.length === 0) return res.status(404).json({ message: 'Parent not found' });
 
+        const parentId = parents[0].parentId;
+
         const [students] = await pool.execute(`
-            SELECT u."fullName", u.email, s.id as "studentId"
+            SELECT u."fullName", u.email, s.id as "studentId", s."classLevel", u.username
             FROM parentstudent ps
             JOIN student s ON ps."studentId" = s.id
             JOIN "user" u ON s."userId" = u.id
             WHERE ps."parentId" = ?
-        `, [id]);
+        `, [parentId]);
 
-        res.json({ ...parents[0], students });
+        // Add some stats for the premium modal
+        const [[{ totalEnrollments }]] = await pool.execute(`
+            SELECT COUNT(*) as "totalEnrollments"
+            FROM enrollment e
+            JOIN parentstudent ps ON e."studentId" = ps."studentId"
+            WHERE ps."parentId" = ?
+        `, [parentId]);
+
+        const [[{ avgProgress }]] = await pool.execute(`
+            SELECT COALESCE(AVG(e."progressPercentage"), 0) as "avgProgress"
+            FROM enrollment e
+            JOIN parentstudent ps ON e."studentId" = ps."studentId"
+            WHERE ps."parentId" = ?
+        `, [parentId]);
+
+        res.json({ 
+            ...parents[0], 
+            students, 
+            totalEnrollments: Number(totalEnrollments), 
+            avgProgress: Math.round(Number(avgProgress)) 
+        });
     } catch (error) {
         console.error('Get Parent Details Error:', error);
         res.status(500).json({ message: 'Failed to fetch parent details' });

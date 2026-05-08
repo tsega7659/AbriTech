@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const courseService = require('../services/course.service');
 
 const getAllCourses = async (req, res) => {
   try {
@@ -89,12 +90,13 @@ const enrollCourse = async (req, res) => {
       return res.status(400).json({ message: 'Already enrolled in this course' });
     }
 
-    // Fetch course details
-    const [courses] = await pool.execute('SELECT "isFree" FROM course WHERE id = ?', [courseId]);
-    if (courses.length === 0) {
+    // Fetch course details using centralized service
+    const course = await courseService.getCourseById(courseId);
+    if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    const isFree = courses[0].isFree;
+    
+    const isFree = course.isFree;
     const initialStatus = isFree ? 'active' : 'pending';
 
     // Enroll student
@@ -208,9 +210,59 @@ const deleteCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Note: In a real app, you might want to check for dependencies (enrollments, lessons, etc.)
-    // For now, we'll do a simple delete. If there are FK constraints, it will error out or cascade if configured.
-    await pool.execute('DELETE FROM course WHERE id = ?', [id]);
+    // Use a transaction connection to delete dependent records safely
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // 1. Delete TeacherCourse
+      await connection.execute('DELETE FROM teachercourse WHERE "courseId" = ?', [id]);
+
+      // 2. Delete Payments
+      await connection.execute('DELETE FROM payment WHERE "courseId" = ?', [id]);
+
+      // 3. Delete Projects
+      await connection.execute('DELETE FROM project WHERE "courseId" = ?', [id]);
+
+      // 4. Delete Enrollments and related Certificates
+      const [enrollments] = await connection.execute('SELECT id FROM enrollment WHERE "courseId" = ?', [id]);
+      for (const e of enrollments) {
+        await connection.execute('DELETE FROM certificate WHERE "enrollmentId" = ?', [e.id]);
+        await connection.execute('DELETE FROM enrollment WHERE id = ?', [e.id]);
+      }
+
+      // 5. Delete Assignments and related Submissions
+      const [assignments] = await connection.execute('SELECT id FROM assignment WHERE "courseId" = ?', [id]);
+      for (const a of assignments) {
+        await connection.execute('DELETE FROM assignmentsubmission WHERE "assignmentId" = ?', [a.id]);
+        await connection.execute('DELETE FROM assignment WHERE id = ?', [a.id]);
+      }
+
+      // 6. Delete Lessons and related records
+      const [lessons] = await connection.execute('SELECT id FROM lesson WHERE "courseId" = ?', [id]);
+      for (const l of lessons) {
+        await connection.execute('DELETE FROM lessonprogress WHERE "lessonId" = ?', [l.id]);
+        await connection.execute('DELETE FROM aichatlog WHERE "lessonId" = ?', [l.id]);
+        await connection.execute('DELETE FROM lessonaisummary WHERE "lessonId" = ?', [l.id]);
+
+        const [quizzes] = await connection.execute('SELECT id FROM lessonquiz WHERE "lessonId" = ?', [l.id]);
+        for (const q of quizzes) {
+          await connection.execute('DELETE FROM quizattempt WHERE "quizId" = ?', [q.id]);
+          await connection.execute('DELETE FROM lessonquiz WHERE id = ?', [q.id]);
+        }
+        await connection.execute('DELETE FROM lesson WHERE id = ?', [l.id]);
+      }
+
+      // Finally, delete the Course
+      await connection.execute('DELETE FROM course WHERE id = ?', [id]);
+
+      await connection.commit();
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
 
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {

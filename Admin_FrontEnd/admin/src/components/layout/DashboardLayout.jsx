@@ -22,6 +22,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import logo from '../../assets/logo.png';
+import { useAuth } from '../../context/AuthContext';
 import LogoutModal from '../LogoutModal';
 
 function cn(...inputs) {
@@ -44,18 +45,11 @@ const SidebarLink = ({ to, icon: Icon, label, active }) => (
 );
 
 const DashboardLayout = ({ role }) => {
+    const { user, logout } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const [user, setUser] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
 
     // Auto-close sidebar on mobile when route changes
     useEffect(() => {
@@ -63,8 +57,7 @@ const DashboardLayout = ({ role }) => {
     }, [location.pathname]);
 
     const handleLogoutConfirm = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        logout();
         navigate('/login');
         setIsLogoutModalOpen(false);
     };

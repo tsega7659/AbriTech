@@ -10,9 +10,11 @@ import {
     Filter,
     Search,
     ChevronRight,
+    ChevronLeft,
     CheckCircle2,
     AlertCircle,
-    Smartphone
+    Smartphone,
+    MoreHorizontal
 } from 'lucide-react';
 import {
     AreaChart,
@@ -21,10 +23,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    Cell
+    ResponsiveContainer
 } from 'recharts';
 
 const revenueData = [
@@ -43,10 +42,15 @@ const transactions = [
     { id: 'TXN-003', student: 'Samuel Desta', course: 'Python Mastery', amount: '1,200 ETB', date: '2024-03-19', status: 'pending', method: 'Telebirr' },
     { id: 'TXN-004', student: 'Betty G.', course: 'UI/UX Design', amount: '2,999 ETB', date: '2024-03-18', status: 'completed', method: 'Telebirr' },
     { id: 'TXN-005', student: 'Kebede Kassaye', course: 'Mobile Dev', amount: '3,500 ETB', date: '2024-03-18', status: 'failed', method: 'Telebirr' },
+    { id: 'TXN-006', student: 'Saron Belay', course: 'AI Fundamentals', amount: '4,200 ETB', date: '2024-03-17', status: 'completed', method: 'Telebirr' },
+    { id: 'TXN-007', student: 'Dawit L.', course: '3D Modeling', amount: '2,100 ETB', date: '2024-03-17', status: 'completed', method: 'Telebirr' },
+    { id: 'TXN-008', student: 'Elias T.', course: 'React Native', amount: '3,800 ETB', date: '2024-03-16', status: 'pending', method: 'Telebirr' },
 ];
 
 const Payments = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const stats = [
         { label: 'Total Revenue', value: '145,280 ETB', change: '+12.5%', trend: 'up', icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' },
@@ -54,6 +58,17 @@ const Payments = () => {
         { label: 'Pending Deposits', value: '8,500 ETB', change: '-2.1%', trend: 'down', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
         { label: 'Success Rate', value: '98.2%', change: '+0.5%', trend: 'up', icon: CheckCircle2, color: 'text-purple-500', bg: 'bg-purple-50' },
     ];
+
+    const filteredTransactions = transactions.filter(txn => 
+        txn.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        txn.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        txn.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <div className="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
@@ -66,9 +81,6 @@ const Payments = () => {
                 <div className="flex items-center gap-3">
                     <button className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-black text-xs text-slate-600 hover:bg-slate-50 transition-all uppercase tracking-widest">
                         <Download className="w-4 h-4" /> Export CSV
-                    </button>
-                    <button className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all uppercase tracking-widest">
-                        Withdraw Funds
                     </button>
                 </div>
             </div>
@@ -92,101 +104,57 @@ const Payments = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Revenue Chart */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-8">
-                        <div className="flex items-center gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100">
-                            {['7D', '1M', '3M', '1Y'].map((t) => (
-                                <button key={t} className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${t === '7D' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-                                    {t}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="mb-8">
-                        <h3 className="text-lg font-black text-slate-800">Revenue Growth</h3>
-                        <p className="text-sm font-bold text-slate-400">Daily earnings overview</p>
-                    </div>
-                    <div className="h-[300px] w-full mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={revenueData}>
-                                <defs>
-                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4dbfec" stopOpacity={0.1}/>
-                                        <stop offset="95%" stopColor="#4dbfec" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis 
-                                    dataKey="day" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                                    dy={10}
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
-                                />
-                                <Tooltip 
-                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '16px' }}
-                                    itemStyle={{ fontWeight: 800, color: '#4dbfec' }}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="amount" 
-                                    stroke="#4dbfec" 
-                                    strokeWidth={4} 
-                                    fillOpacity={1} 
-                                    fill="url(#colorRev)" 
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+            {/* Revenue Chart - Now full width of the main area */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8">
+                    <div className="flex items-center gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100">
+                        {['7D', '1M', '3M', '1Y'].map((t) => (
+                            <button key={t} className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${t === '7D' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                                {t}
+                            </button>
+                        ))}
                     </div>
                 </div>
-
-                {/* Popular Methods */}
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-800 mb-6">Payment Methods</h3>
-                    <div className="space-y-6">
-                        <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                    <Smartphone className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-slate-800 text-sm">Telebirr</h4>
-                                    <p className="text-xs font-bold text-slate-400">92% of users</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary transition-colors" />
-                        </div>
-
-                        <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer opacity-50 grayscale">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-slate-300">
-                                    <CreditCard className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-slate-500 text-sm">Credit Card</h4>
-                                    <p className="text-xs font-bold text-slate-300">Coming soon</p>
-                                </div>
-                            </div>
-                            <div className="px-3 py-1 bg-white rounded-full text-[8px] font-black uppercase tracking-widest text-slate-400">Soon</div>
-                        </div>
-                    </div>
-
-                    <div className="mt-8 p-6 bg-primary/5 rounded-3xl border border-primary/10">
-                        <div className="flex items-center gap-2 text-primary mb-2">
-                            <AlertCircle className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Financial Tip</span>
-                        </div>
-                        <p className="text-xs font-bold text-slate-600 leading-relaxed">
-                            Courses with a <span className="text-primary font-black">20% discount</span> are currently seeing a 3x higher conversion rate in Addis Ababa.
-                        </p>
-                    </div>
+                <div className="mb-8">
+                    <h3 className="text-lg font-black text-slate-800">Revenue Growth</h3>
+                    <p className="text-sm font-bold text-slate-400">Daily earnings overview</p>
+                </div>
+                <div className="h-[350px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={revenueData}>
+                            <defs>
+                                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#4dbfec" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#4dbfec" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis 
+                                dataKey="day" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                                dy={10}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
+                            />
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '16px' }}
+                                itemStyle={{ fontWeight: 800, color: '#4dbfec' }}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="amount" 
+                                stroke="#4dbfec" 
+                                strokeWidth={4} 
+                                fillOpacity={1} 
+                                fill="url(#colorRev)" 
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
@@ -205,7 +173,10 @@ const Payments = () => {
                                 placeholder="Search transactions..."
                                 className="pl-12 pr-4 py-3 bg-slate-50 rounded-2xl border border-transparent focus:bg-white focus:border-primary/20 outline-none font-bold text-sm w-full md:w-64 transition-all"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             />
                         </div>
                         <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-primary transition-all">
@@ -227,7 +198,7 @@ const Payments = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {transactions.map((txn) => (
+                            {currentItems.map((txn) => (
                                 <tr key={txn.id} className="group hover:bg-slate-50/30 transition-all">
                                     <td className="px-8 py-6">
                                         <span className="text-xs font-black text-primary bg-primary/5 px-2.5 py-1 rounded-lg">#{txn.id}</span>
@@ -267,6 +238,38 @@ const Payments = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="p-8 border-t border-slate-50 flex items-center justify-between">
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTransactions.length)} of {filteredTransactions.length} transactions
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="p-2.5 bg-slate-50 rounded-xl text-slate-400 hover:text-primary disabled:opacity-30 disabled:hover:text-slate-400 transition-all border border-transparent hover:border-primary/20"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="p-2.5 bg-slate-50 rounded-xl text-slate-400 hover:text-primary disabled:opacity-30 disabled:hover:text-slate-400 transition-all border border-transparent hover:border-primary/20"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

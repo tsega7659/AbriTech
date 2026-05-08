@@ -69,21 +69,53 @@ export default function Courses() {
         }
 
         setEnrolling(course.id);
-        try {
-            await apiClient.post('/courses/enroll', { courseId: course.id });
-            setEnrollSuccess(true);
-            setTimeout(() => {
-                navigate('/dashboard/student');
-            }, 2000);
-        } catch (error) {
-            // Already enrolled
-            if (error.response?.status === 400) {
-                navigate('/dashboard/student');
-                return;
+        
+        // If course is free, use regular enrollment
+        if (course.isFree || (!course.price && !course.discountPrice)) {
+            try {
+                await apiClient.post('/courses/enroll', { courseId: course.id });
+                setEnrollSuccess(true);
+                setTimeout(() => {
+                    navigate('/dashboard/student');
+                }, 2000);
+            } catch (error) {
+                // Already enrolled
+                if (error.response?.status === 400 && typeof error.response.data.message === 'string' && error.response.data.message.includes('already enrolled')) {
+                    navigate('/dashboard/student');
+                    return;
+                }
+                console.error("Failed to enroll:", error);
+                showFeedback("Enrollment Failed", error.response?.data?.message || 'Failed to enroll in course', "error");
+                setEnrolling(null);
             }
-            console.error("Failed to enroll:", error);
-            showFeedback("Enrollment Failed", error.response?.data?.message || 'Failed to enroll in course', "error");
-            setEnrolling(null);
+        } else {
+            // Paid course, initialize Chapa payment
+            try {
+                const response = await apiClient.post('/payments/chapa/initialize', { courseId: course.id });
+                if (response.data.success && response.data.checkoutUrl) {
+                    window.location.href = response.data.checkoutUrl;
+                } else {
+                    showFeedback("Payment Initialization Failed", "Could not get checkout URL from Chapa", "error");
+                    setEnrolling(null);
+                }
+            } catch (error) {
+                setEnrolling(null);
+                if (error.response?.status === 400 && typeof error.response.data.message === 'string' && error.response.data.message.includes('already enrolled')) {
+                    navigate('/dashboard/student');
+                    return;
+                }
+                
+                console.error("Failed to initialize payment:", error);
+                let errMsg = 'Failed to initialize payment. Please try again.';
+                
+                if (error.code === 'ERR_NETWORK') {
+                    errMsg = "Could not connect to the server. Please check your internet connection.";
+                } else if (error.response?.data?.message) {
+                    errMsg = error.response.data.message;
+                }
+                
+                showFeedback("Payment Failed", errMsg, "error");
+            }
         }
     };
 

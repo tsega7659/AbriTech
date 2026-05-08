@@ -205,7 +205,8 @@ const schema = [
       { name: 'progressPercentage', type: 'FLOAT DEFAULT 0' },
       { name: 'timeSpentSeconds', type: 'INT DEFAULT 0' },
       { name: 'status', type: "VARCHAR(255) DEFAULT 'active'" },
-      { name: 'enrolledAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
+      { name: 'enrolledAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'updatedAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ],
     foreignKeys: [
       'FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE',
@@ -213,14 +214,15 @@ const schema = [
     ],
     sql: `CREATE TABLE IF NOT EXISTS enrollment (
       id BIGSERIAL PRIMARY KEY,
-      studentId BIGINT NOT NULL,
-      courseId BIGINT NOT NULL,
-      progressPercentage FLOAT DEFAULT 0,
-      timeSpentSeconds INT DEFAULT 0,
+      "studentId" BIGINT NOT NULL,
+      "courseId" BIGINT NOT NULL,
+      "progressPercentage" FLOAT DEFAULT 0,
+      "timeSpentSeconds" INT DEFAULT 0,
       status VARCHAR(255) DEFAULT 'active',
-      enrolledAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
-      FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
+      "enrolledAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("studentId") REFERENCES student(id) ON DELETE CASCADE,
+      FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE
     )`
   },
   {
@@ -527,14 +529,18 @@ const schema = [
     table: 'payment',
     columns: [
       { name: 'id', type: 'BIGSERIAL PRIMARY KEY' },
+      { name: 'userId', type: 'BIGINT' },
       { name: 'studentId', type: 'BIGINT NOT NULL' },
       { name: 'courseId', type: 'BIGINT NOT NULL' },
       { name: 'amount', type: 'DECIMAL(10, 2) NOT NULL' },
+      { name: 'transactionId', type: 'VARCHAR(255)' },
       { name: 'transactionReference', type: 'VARCHAR(255) UNIQUE' },
       { name: 'status', type: "VARCHAR(50) DEFAULT 'pending'" },
+      { name: 'provider', type: 'VARCHAR(50)' },
       { name: 'paymentMethod', type: "VARCHAR(50) DEFAULT 'Telebirr'" },
       { name: 'phoneNumber', type: 'VARCHAR(20)' },
-      { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
+      { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'updatedAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ],
     foreignKeys: [
       'FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE',
@@ -542,16 +548,20 @@ const schema = [
     ],
     sql: `CREATE TABLE IF NOT EXISTS payment (
       id BIGSERIAL PRIMARY KEY,
-      studentId BIGINT NOT NULL,
-      courseId BIGINT NOT NULL,
+      "userId" BIGINT,
+      "studentId" BIGINT NOT NULL,
+      "courseId" BIGINT NOT NULL,
       amount DECIMAL(10, 2) NOT NULL,
-      transactionReference VARCHAR(255) UNIQUE,
+      "transactionId" VARCHAR(255),
+      "transactionReference" VARCHAR(255) UNIQUE,
       status VARCHAR(50) DEFAULT 'pending',
-      paymentMethod VARCHAR(50) DEFAULT 'Telebirr',
-      phoneNumber VARCHAR(20),
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (studentId) REFERENCES student(id) ON DELETE CASCADE,
-      FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
+      provider VARCHAR(50),
+      "paymentMethod" VARCHAR(50) DEFAULT 'Telebirr',
+      "phoneNumber" VARCHAR(20),
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("studentId") REFERENCES student(id) ON DELETE CASCADE,
+      FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE
     )`
   },
   {
