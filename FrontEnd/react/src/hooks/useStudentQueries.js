@@ -15,7 +15,10 @@ export const useAllCourses = () => {
         queryKey: ['courses'],
         queryFn: async () => {
             const response = await apiClient.get('/courses');
-            return response.data;
+            const data = response.data;
+            if (Array.isArray(data)) return data;
+            if (data && Array.isArray(data.courses)) return data.courses;
+            return [];
         }
     });
 };

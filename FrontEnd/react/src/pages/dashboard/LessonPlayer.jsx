@@ -286,7 +286,9 @@ export default function LessonPlayer() {
     };
 
     const handleSubmitQuiz = async () => {
-        if (Object.keys(quizAnswers).length < activeLesson.quiz.length) {
+        if (!activeLesson?.quiz?.length) return;
+        const answered = Object.keys(quizAnswers ?? {}).length;
+        if (answered < activeLesson.quiz.length) {
             showFeedback("Incomplete Quiz", "Please answer all questions before submitting.", "warning");
             return;
         }
@@ -381,7 +383,7 @@ export default function LessonPlayer() {
                     {!quizResult && (
                         <button
                             onClick={handleSubmitQuiz}
-                            disabled={submitQuizMutation.isPending || Object.keys(quizAnswers).length < activeLesson.quiz.length}
+                            disabled={submitQuizMutation.isPending || Object.keys(quizAnswers ?? {}).length < (activeLesson?.quiz?.length ?? 0)}
                             className="px-12 py-4 bg-primary text-gray-800 rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
                         >
                             {submitQuizMutation.isPending ? 'Checking answers...' : 'Submit Quiz'}

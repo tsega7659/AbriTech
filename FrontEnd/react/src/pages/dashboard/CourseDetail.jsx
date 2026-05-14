@@ -39,7 +39,8 @@ export default function CourseDetail() {
 
             try {
                 const response = await apiClient.get(`/courses`);
-                const foundCourse = response.data.find(c => c.id === parseInt(courseId));
+                const list = Array.isArray(response.data) ? response.data : [];
+                const foundCourse = list.find(c => c.id === parseInt(courseId));
                 setCourse(foundCourse);
             } catch (error) {
                 console.error("Failed to fetch course details:", error);

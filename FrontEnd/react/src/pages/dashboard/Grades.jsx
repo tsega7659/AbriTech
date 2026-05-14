@@ -9,7 +9,7 @@ export default function Grades() {
 
     useEffect(() => {
         // Expand the first course by default when data arrives
-        if (courseGrades.length > 0 && Object.keys(expandedCourses).length === 0) {
+        if (courseGrades.length > 0 && Object.keys(expandedCourses ?? {}).length === 0) {
             setExpandedCourses({ [courseGrades[0].courseName]: true });
         }
     }, [courseGrades]);

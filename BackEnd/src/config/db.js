@@ -33,6 +33,13 @@ const pgPool = new Pool({
   connectionTimeoutMillis: 20000,
   idleTimeoutMillis: 30000,
   max: 10,
+  keepAlive: true,
+});
+
+// Idle clients that lose the TCP session (pooler timeouts, restarts, Wi‑Fi blips)
+// emit 'error'; without a listener the process crashes with "Unhandled 'error' event".
+pgPool.on('error', (err) => {
+  console.error('[pg pool] Unexpected error on idle client:', err.message);
 });
 
 const RESERVED_TABLES = ['user', 'session', 'role'];

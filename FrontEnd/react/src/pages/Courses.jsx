@@ -46,9 +46,13 @@ export default function Courses() {
     }, []);
 
     useEffect(() => {
-        let filtered = allCoursesData.filter(course => {
-            const matchesSearch = (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                course.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        const list = Array.isArray(allCoursesData) ? allCoursesData : [];
+        const q = (searchTerm || '').toLowerCase();
+        let filtered = list.filter((course) => {
+            if (!course || course.id == null) return false;
+            const name = (course.name ?? '').toLowerCase();
+            const desc = (course.description ?? '').toLowerCase();
+            const matchesSearch = name.includes(q) || desc.includes(q);
             const matchesCategory = selectedCategory === "All" || course.category === selectedCategory;
 
             let normalizedCourseLevel = course.level;
