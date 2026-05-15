@@ -1,7 +1,7 @@
 import React from 'react';
 
 const Loading = ({ fullScreen = true, message = 'Loading...', size = 'default' }) => {
-    // Unified version (used for both fullScreen and inline, with different wrappers)
+    // Standard Loading Content (Dual-ring style)
     const LoadingContent = () => (
         <div className="relative flex flex-col items-center">
             {/* Animated Logo/Spinner Container */}
@@ -39,7 +39,7 @@ const Loading = ({ fullScreen = true, message = 'Loading...', size = 'default' }
 
     if (fullScreen) {
         return (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-md transition-all duration-500">
+            <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/60 backdrop-blur-md transition-all duration-500">
                 <LoadingContent />
             </div>
         );

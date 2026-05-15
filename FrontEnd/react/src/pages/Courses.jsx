@@ -4,6 +4,7 @@ import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckC
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPeopleGroup, FaUsers } from "react-icons/fa6";
 import Loading from "../components/Loading";
+import PaymentOverlay from "../components/PaymentOverlay";
 import { useAllCourses } from "../hooks/useStudentQueries";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../lib/apiClient";
@@ -33,6 +34,7 @@ export default function Courses() {
     const [selectedLevel, setSelectedLevel] = useState("All");
     const [filteredCourses, setFilteredCourses] = useState([]);
     const [enrolling, setEnrolling] = useState(null);
+    const [enrollOverlayMessage, setEnrollOverlayMessage] = useState('Please wait…');
     const [enrollSuccess, setEnrollSuccess] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, courseId: null });
@@ -73,15 +75,19 @@ export default function Courses() {
         }
 
         setEnrolling(course.id);
-        
+
+        const isFree = course.isFree || (!course.price && !course.discountPrice);
+        setEnrollOverlayMessage(isFree ? 'Enrolling…' : 'Opening checkout…');
+
         // If course is free, use regular enrollment
-        if (course.isFree || (!course.price && !course.discountPrice)) {
+        if (isFree) {
             try {
                 await apiClient.post('/courses/enroll', { courseId: course.id });
+                setEnrollOverlayMessage('Enrolled. Redirecting…');
                 setEnrollSuccess(true);
                 setTimeout(() => {
                     navigate('/dashboard/student');
-                }, 2000);
+                }, 1500);
             } catch (error) {
                 // Already enrolled
                 if (error.response?.status === 400 && typeof error.response.data.message === 'string' && error.response.data.message.includes('already enrolled')) {
@@ -375,19 +381,8 @@ export default function Courses() {
 
             {/* Modals and Overlays */}
             <AnimatePresence>
-                {enrolling && !enrollSuccess && (
-                    <Loading message="Processing enrollment..." />
-                )}
-
-                {enrollSuccess && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] bg-primary flex items-center justify-center p-4">
-                        <div className="text-center space-y-8">
-                            <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white mx-auto shadow-2xl">
-                                <CheckCircle2 className="h-12 w-12" />
-                            </div>
-                            <h2 className="text-5xl font-black text-white uppercase tracking-tighter">Welcome Aboard!</h2>
-                        </div>
-                    </motion.div>
+                {(enrolling || enrollSuccess) && (
+                    <PaymentOverlay message={enrollOverlayMessage} />
                 )}
             </AnimatePresence>
 
@@ -408,6 +403,7 @@ export default function Courses() {
                 type={feedbackModal.type}
                 title={feedbackModal.title}
                 message={feedbackModal.message}
+                variant="minimal"
             />
 
             {/* School Partnership CTA */}

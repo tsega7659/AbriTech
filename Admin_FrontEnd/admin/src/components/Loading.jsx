@@ -5,11 +5,10 @@ const Loading = ({
     message = 'Loading...', 
     size = 'default' 
 }) => {
-    // Unified version (used for both fullScreen and inline, with different wrappers)
+    // Standard Loading Content (Dual-ring style)
     const LoadingContent = () => {
         const isSmall = size === 'small';
         const isPage = variant === 'page' || variant === 'overlay';
-        const isInline = variant === 'inline';
 
         return (
             <div className={`relative flex flex-col items-center ${isSmall ? 'scale-75' : ''}`}>

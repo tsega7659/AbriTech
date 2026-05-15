@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Loader2, Smartphone, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import apiClient from '../lib/apiClient';
 
 export default function TelebirrPaymentModal({ isOpen, onClose, courseId, onSuccess }) {
-    const [step, setStep] = useState('input'); // 'input', 'processing', 'success', 'error'
+    const [step, setStep] = useState('input');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [course, setCourse] = useState(null);
@@ -16,17 +16,16 @@ export default function TelebirrPaymentModal({ isOpen, onClose, courseId, onSucc
             setPhoneNumber('');
             setErrorMsg('');
             setLoadingCourse(true);
-            
-            // Fetch course details for pricing
+
             apiClient.get('/courses')
-                .then(res => {
-                    const c = res.data.find(c => c.id === parseInt(courseId));
+                .then((res) => {
+                    const list = Array.isArray(res.data) ? res.data : [];
+                    const c = list.find((item) => item.id === parseInt(courseId, 10));
                     setCourse(c);
                     setLoadingCourse(false);
                 })
-                .catch(err => {
-                    console.error("Failed to fetch course details for payment", err);
-                    setErrorMsg('Failed to load course details. Please try again.');
+                .catch(() => {
+                    setErrorMsg('Could not load course details.');
                     setLoadingCourse(false);
                 });
         }
@@ -34,12 +33,11 @@ export default function TelebirrPaymentModal({ isOpen, onClose, courseId, onSucc
 
     const handlePayment = async () => {
         if (!phoneNumber) {
-            setErrorMsg('Please enter your phone number.');
+            setErrorMsg('Enter your phone number.');
             return;
         }
-
         if (!/^(09|07)\d{8}$/.test(phoneNumber)) {
-            setErrorMsg('Please enter a valid Ethiopian phone number (e.g., 0912345678).');
+            setErrorMsg('Use a valid number (e.g. 0912345678).');
             return;
         }
 
@@ -47,25 +45,20 @@ export default function TelebirrPaymentModal({ isOpen, onClose, courseId, onSucc
         setErrorMsg('');
 
         try {
-            const res = await apiClient.post('/payments/telebirr', {
-                courseId,
-                phoneNumber
-            });
-
+            const res = await apiClient.post('/payments/telebirr', { courseId, phoneNumber });
             if (res.data.success) {
                 setStep('success');
                 setTimeout(() => {
                     onSuccess();
                     onClose();
-                }, 3000);
+                }, 2000);
             } else {
                 setStep('error');
                 setErrorMsg(res.data.message || 'Payment failed.');
             }
         } catch (error) {
-            console.error(error);
             setStep('error');
-            setErrorMsg(error.response?.data?.message || 'Payment failed. Please check your Telebirr balance or try again.');
+            setErrorMsg(error.response?.data?.message || 'Payment failed. Try again.');
         }
     };
 
@@ -75,116 +68,151 @@ export default function TelebirrPaymentModal({ isOpen, onClose, courseId, onSucc
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-slate-900/10 backdrop-blur-md"
+                />
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    transition={{ type: "spring", duration: 0.5 }}
-                    className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl relative overflow-hidden flex flex-col"
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    className="relative w-full max-w-sm bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-white overflow-hidden z-10"
                 >
-                    {/* Header */}
-                    <div className="bg-[#8cc63f] p-6 text-white text-center relative">
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                        >
-                            <X className="w-5 h-5 text-white" />
-                        </button>
-                        <h2 className="text-2xl font-black mb-1">Telebirr</h2>
-                        <p className="text-white/80 font-medium text-sm">Secure Mobile Payment</p>
-                    </div>
+                    <div className="p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100">
+                                    <Smartphone className="w-5 h-5 text-slate-600" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 tracking-tight">Telebirr</h2>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
 
-                    <div className="p-8 pb-10 flex flex-col items-center">
                         {loadingCourse ? (
-                            <div className="py-10 flex flex-col items-center justify-center">
-                                <Loader2 className="w-8 h-8 text-[#8cc63f] animate-spin mb-4" />
-                                <p className="text-gray-500 font-medium">Loading details...</p>
+                            <div className="py-12 flex flex-col items-center gap-3">
+                                <Loader2 className="w-8 h-8 animate-spin text-slate-200" />
+                                <p className="text-sm font-medium text-slate-400">Loading course...</p>
                             </div>
-                        ) : step === 'input' ? (
-                            <div className="w-full space-y-6">
-                                <div className="text-center space-y-1 bg-gray-50 p-4 rounded-3xl border border-gray-100">
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Paying for</p>
-                                    <h3 className="text-lg font-black text-gray-900 leading-tight">{course?.name}</h3>
-                                    <p className="text-xl font-black text-[#8cc63f] mt-2">{price} ETB</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2">Phone Number</label>
-                                    <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                            <Smartphone className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            type="tel"
-                                            value={phoneNumber}
-                                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                                            placeholder="0912..."
-                                            maxLength={10}
-                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:border-[#8cc63f] focus:ring-4 focus:ring-[#8cc63f]/10 outline-none transition-all font-bold text-gray-900"
-                                        />
-                                    </div>
-                                    {errorMsg && (
-                                        <p className="text-rose-500 text-xs font-bold pl-2 flex items-center gap-1">
-                                            <AlertCircle className="w-3 h-3" /> {errorMsg}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handlePayment}
-                                    className="w-full bg-[#8cc63f] hover:bg-[#7ebd34] active:scale-95 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[#8cc63f]/30 transition-all flex items-center justify-center gap-2"
-                                >
-                                    Pay with Telebirr
-                                </button>
-                                <p className="text-[10px] text-gray-400 text-center font-bold px-4 leading-relaxed">
-                                    You will receive a USSD prompt on your phone. Enter your PIN to confirm the payment.
-                                </p>
-                            </div>
-                        ) : step === 'processing' ? (
-                            <div className="py-8 w-full flex flex-col items-center justify-center space-y-6 text-center">
-                                <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center relative shadow-inner">
+                        ) : (
+                            <div className="min-h-[300px] flex flex-col justify-between">
+                                {step === 'input' && (
                                     <motion.div 
-                                        animate={{ rotate: 360 }}
-                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                                        className="absolute inset-0 rounded-[2rem] border-2 border-dashed border-[#8cc63f]/30"
-                                    />
-                                    <Smartphone className="w-10 h-10 text-[#8cc63f] animate-pulse" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-black text-gray-900 leading-tight">Check your phone</h3>
-                                    <p className="text-sm font-medium text-gray-500 max-w-[200px]">
-                                        A payment request has been sent to <span className="font-bold text-gray-900">{phoneNumber}</span>. Enter your PIN to complete.
-                                    </p>
-                                </div>
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="space-y-6"
+                                    >
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Course Details</p>
+                                            <p className="text-sm font-semibold text-slate-900 line-clamp-1">{course?.name}</p>
+                                            <p className="text-xl font-black text-slate-900 mt-2">{price} ETB</p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="tel"
+                                                    value={phoneNumber}
+                                                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                                                    placeholder="0912345678"
+                                                    maxLength={10}
+                                                    className={`w-full px-5 py-4 rounded-2xl bg-white border ${errorMsg ? 'border-rose-200 focus:border-rose-400' : 'border-slate-100 focus:border-slate-300'} text-slate-900 text-base font-medium focus:outline-none transition-all shadow-sm`}
+                                                />
+                                                {errorMsg && (
+                                                    <motion.p 
+                                                        initial={{ opacity: 0, y: -5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="mt-2 text-xs font-medium text-rose-500 ml-1"
+                                                    >
+                                                        {errorMsg}
+                                                    </motion.p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handlePayment}
+                                            className="w-full py-4.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-sm transition-all active:scale-[0.98] shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2 group"
+                                        >
+                                            Pay Now
+                                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                                        </button>
+                                    </motion.div>
+                                )}
+
+                                {step === 'processing' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="py-12 flex flex-col items-center text-center space-y-6"
+                                    >
+                                        <div className="relative">
+                                            <motion.div
+                                                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
+                                                transition={{ duration: 2, repeat: Infinity }}
+                                                className="absolute inset-0 bg-blue-400 rounded-full blur-2xl"
+                                            />
+                                            <div className="relative w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center">
+                                                <Loader2 className="w-10 h-10 animate-spin text-slate-900" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-lg font-bold text-slate-900">Confirm Payment</p>
+                                            <p className="text-sm text-slate-500 font-medium">Check your phone and enter your Telebirr PIN to complete the transaction.</p>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {step === 'success' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="py-12 flex flex-col items-center text-center space-y-6"
+                                    >
+                                        <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center">
+                                            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-xl font-black text-slate-900">Payment Confirmed</p>
+                                            <p className="text-sm text-slate-500 font-medium">Redirecting you to your course...</p>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {step === 'error' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="py-12 flex flex-col items-center text-center space-y-6"
+                                    >
+                                        <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center">
+                                            <AlertCircle className="w-10 h-10 text-rose-500" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-lg font-bold text-slate-900">Transaction Failed</p>
+                                            <p className="text-sm text-rose-500 font-medium">{errorMsg}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => { setStep('input'); setErrorMsg(''); }}
+                                            className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-bold text-xs transition-all uppercase tracking-wider"
+                                        >
+                                            Try Again
+                                        </button>
+                                    </motion.div>
+                                )}
                             </div>
-                        ) : step === 'success' ? (
-                            <div className="py-8 w-full flex flex-col items-center justify-center space-y-6 text-center animate-in zoom-in duration-300">
-                                <div className="w-24 h-24 bg-green-50 rounded-[2rem] flex items-center justify-center text-green-500 shadow-inner">
-                                    <CheckCircle2 className="w-12 h-12" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-black text-gray-900">Payment Success</h3>
-                                    <p className="text-sm font-medium text-gray-500">Your course has been unlocked!</p>
-                                </div>
-                            </div>
-                        ) : step === 'error' ? (
-                            <div className="py-8 w-full flex flex-col items-center justify-center space-y-6 text-center animate-in zoom-in duration-300">
-                                <div className="w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center text-rose-500 shadow-inner">
-                                    <AlertCircle className="w-12 h-12" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-black text-gray-900">Payment Failed</h3>
-                                    <p className="text-sm font-medium text-rose-500">{errorMsg}</p>
-                                </div>
-                                <button
-                                    onClick={() => { setStep('input'); setErrorMsg(''); }}
-                                    className="px-6 py-3 bg-gray-100 font-bold text-gray-500 rounded-xl hover:bg-gray-200 transition-colors text-xs uppercase"
-                                >
-                                    Try Again
-                                </button>
-                            </div>
-                        ) : null}
+                        )}
                     </div>
                 </motion.div>
             </div>
