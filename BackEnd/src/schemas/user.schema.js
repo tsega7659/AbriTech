@@ -25,9 +25,9 @@ const studentRegisterSchema = baseUserSchema.extend({
   educationLevel: z.string().min(1, 'Education level is required'),
   classLevel: z.string().optional(),
   isCurrentStudent: z.boolean().default(false),
-  parentEmail: z.string().email('Invalid parent email format').optional(),
-  parentPhone: z.string().regex(/^09\d{8}$/, 'Parent phone must start with 09 and be 10 digits').optional(),
-  courseLevel: z.enum(['beginner', 'intermediate', 'advanced']).default('beginner')
+  parentEmail: z.preprocess(val => val === '' ? undefined : val, z.string().email('Invalid parent email format').optional()),
+  parentPhone: z.preprocess(val => val === '' ? undefined : val, z.string().regex(/^09\d{8}$/, 'Parent phone must start with 09 and be 10 digits').optional()),
+  courseLevel: z.string().toLowerCase().pipe(z.enum(['beginner', 'intermediate', 'advanced'])).default('beginner')
 }).refine(data => {
   if (data.isCurrentStudent && !data.parentEmail) return false;
   return true;
@@ -35,7 +35,7 @@ const studentRegisterSchema = baseUserSchema.extend({
   message: "Parent email is required for current students",
   path: ["parentEmail"]
 }).refine(data => {
-  if (data.email.toLowerCase() === data.parentEmail?.toLowerCase()) return false;
+  if (data.email && data.parentEmail && data.email.toLowerCase() === data.parentEmail.toLowerCase()) return false;
   return true;
 }, {
   message: "Student and parent emails cannot be the same",
