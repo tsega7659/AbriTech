@@ -143,11 +143,33 @@ const registerParent = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const {
+    let {
       fullName, username, email, password, phoneNumber
     } = req.body;
 
-    // 1. Check existing
+    // 1. Generate username if not provided
+    if (!username) {
+      let generatedUsername = generateUsername(fullName);
+      let usernameExists = true;
+      let counter = 1;
+      let finalUsername = generatedUsername;
+
+      while (usernameExists) {
+        const [existing] = await conn.execute(
+          'SELECT id FROM "user" WHERE username = ?',
+          [finalUsername]
+        );
+        if (existing.length === 0) {
+          usernameExists = false;
+        } else {
+          finalUsername = `${generatedUsername}${counter}`;
+          counter++;
+        }
+      }
+      username = finalUsername;
+    }
+
+    // 2. Check existing
     const [existingUsers] = await conn.execute(
       `SELECT u.id, r.name as "roleName" 
        FROM "user" u 
@@ -161,11 +183,11 @@ const registerParent = async (req, res) => {
       return res.status(400).json({ message: 'Username or Email already exists' });
     }
 
-    // 2. Hash Password
+    // 3. Hash Password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const roleId = await getRoleId(conn, 'parent');
 
-    // 3. Insert User
+    // 4. Insert User
     const [userResult] = await conn.execute(
       `INSERT INTO "user" ("fullName", username, email, "passwordHash", "phoneNumber", "roleId") 
        VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
@@ -173,11 +195,11 @@ const registerParent = async (req, res) => {
     );
     const userId = userResult[0].id;
 
-    // 4. Insert Parent
+    // 5. Insert Parent
     await conn.execute('INSERT INTO parent ("userId") VALUES (?)', [userId]);
 
     await conn.commit();
-    res.status(201).json({ message: 'Parent registered successfully', userId });
+    res.status(201).json({ message: 'Parent registered successfully', userId, username });
   } catch (error) {
     await conn.rollback();
     console.error('Register Parent Error:', error);
@@ -192,11 +214,33 @@ const registerAdmin = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const { fullName, username, email, password, phoneNumber = null } = req.body;
+    let { fullName, username, email, password, phoneNumber = null } = req.body;
 
     console.log('--- Admin Registration Start ---');
 
-    // 1. Check existing
+    // 1. Generate username if not provided
+    if (!username) {
+      let generatedUsername = generateUsername(fullName);
+      let usernameExists = true;
+      let counter = 1;
+      let finalUsername = generatedUsername;
+
+      while (usernameExists) {
+        const [existing] = await conn.execute(
+          'SELECT id FROM "user" WHERE username = ?',
+          [finalUsername]
+        );
+        if (existing.length === 0) {
+          usernameExists = false;
+        } else {
+          finalUsername = `${generatedUsername}${counter}`;
+          counter++;
+        }
+      }
+      username = finalUsername;
+    }
+
+    // 2. Check existing
     const [existing] = await conn.execute(
       'SELECT id FROM "user" WHERE username = ? OR email = ?',
       [username, email]
@@ -206,13 +250,13 @@ const registerAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Username or Email already exists' });
     }
 
-    // 2. Hash Password
+    // 3. Hash Password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // 3. Get Role ID
+    // 4. Get Role ID
     const roleId = await getRoleId(conn, 'admin');
 
-    // 4. Insert User
+    // 5. Insert User
     const [userResult] = await conn.execute(
       `INSERT INTO "user" ("fullName", username, email, "passwordHash", "phoneNumber", "roleId") 
        VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
@@ -221,7 +265,7 @@ const registerAdmin = async (req, res) => {
 
     await conn.commit();
     console.log('--- Admin Registration Successful ---');
-    res.status(201).json({ message: 'Admin registered successfully', userId: userResult[0].id });
+    res.status(201).json({ message: 'Admin registered successfully', userId: userResult[0].id, username });
 
   } catch (error) {
     await conn.rollback();

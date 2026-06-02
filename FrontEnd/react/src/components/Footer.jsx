@@ -9,9 +9,9 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     <div className="col-span-1 md:col-span-1">
-                        <div className="flex"> 
+                        <div className=""> 
                             <Link to="/" className="flex items-center gap-2 px-6 mb-6">
-                            <img src={logo} alt="AbriTech Logo" className="" />
+                            <img src={logo} alt="AbriTech Logo" className="w-32" />
                         </Link>
                         <p className="text-white mb-8 leading-relaxed">
                             "Connecting Education to Innovation"

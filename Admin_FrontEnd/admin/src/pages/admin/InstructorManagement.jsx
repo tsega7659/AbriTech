@@ -99,7 +99,12 @@ const InstructorManagement = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const data = await registerTeacherMutation.mutateAsync(newInstructor);
+            // Convert courseIds to numbers to ensure proper type validation
+            const instructorData = {
+                ...newInstructor,
+                courseIds: newInstructor.courseIds.map(id => Number(id))
+            };
+            const data = await registerTeacherMutation.mutateAsync(instructorData);
             setRegistrationResult(data);
             setIsRegistering(false);
             setNewInstructor({
@@ -248,7 +253,8 @@ const InstructorManagement = () => {
                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
                                     type="tel"
-                                    placeholder="+251 ..."
+                                    required
+                                    placeholder="09XXXXXXXX"
                                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
                                     value={newInstructor.phoneNumber}
                                     onChange={(e) => setNewInstructor({ ...newInstructor, phoneNumber: e.target.value })}

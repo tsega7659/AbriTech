@@ -169,12 +169,11 @@ const ParentManagement = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Username</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Username <span className="text-slate-300">(Auto-generated if empty)</span></label>
                             <div className="relative group">
                                 <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
                                     type="text"
-                                    required
                                     placeholder="username"
                                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
                                     value={newParent.username}
