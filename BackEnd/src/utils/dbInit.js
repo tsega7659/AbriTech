@@ -71,6 +71,7 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
           console.log('Checking teachercourse constraints...');
           const [constraints] = await conn.query(`
             SELECT 
+                tc.constraint_name,
                 ccu.table_name AS foreign_table_name
             FROM 
                 information_schema.table_constraints AS tc 
@@ -82,14 +83,21 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
                   AND ccu.table_schema = tc.table_schema
             WHERE tc.constraint_type = 'FOREIGN KEY' 
               AND tc.table_name = 'teachercourse' 
-              AND kcu.column_name = 'teacherId';
+              AND LOWER(kcu.column_name) = 'teacherid';
           `);
 
-          if (constraints.length > 0 && constraints[0].foreign_table_name === 'user') {
-            console.log('Table \'teachercourse\': Correcting foreign key from "user" to "teacher"');
-            await conn.query('ALTER TABLE teachercourse DROP CONSTRAINT IF EXISTS teachercourse_teacherId_fkey');
-            await conn.query('ALTER TABLE teachercourse ADD CONSTRAINT teachercourse_teacherId_fkey FOREIGN KEY ("teacherId") REFERENCES teacher(id) ON DELETE CASCADE');
+          for (const constr of constraints) {
+            console.log(`Table 'teachercourse': Dropping existing foreign key '${constr.constraint_name}'`);
+            await conn.query(`ALTER TABLE teachercourse DROP CONSTRAINT IF EXISTS "${constr.constraint_name}"`);
           }
+
+          // Clean up orphan records that don't have a matching teacher id
+          console.log('Table \'teachercourse\': Cleaning up records with invalid teacher references...');
+          await conn.query('DELETE FROM teachercourse WHERE "teacherId" NOT IN (SELECT id FROM teacher)');
+
+          console.log('Table \'teachercourse\': Adding corrected foreign key pointing to "teacher"');
+          await conn.query('ALTER TABLE teachercourse ADD CONSTRAINT "teachercourse_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES teacher(id) ON DELETE CASCADE');
+          console.log('Table \'teachercourse\': Foreign key corrected successfully.');
         } catch (migrationError) {
           console.error('Migration Error (teachercourse):', migrationError.message);
         }
