@@ -56,8 +56,8 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
                 // Special check for lastLogin casing (migration fix)
                 const actualColumn = columns.find(c => c.Field.toLowerCase() === 'lastlogin');
                 if (actualColumn && actualColumn.Field !== 'lastLogin') {
-                   console.log(`Table '${tableName}': Correcting casing of 'lastlogin' to 'lastLogin'`);
-                   await conn.query(`ALTER TABLE "${tableName}" RENAME COLUMN "${actualColumn.Field}" TO "lastLogin"`);
+                  console.log(`Table '${tableName}': Correcting casing of 'lastlogin' to 'lastLogin'`);
+                  await conn.query(`ALTER TABLE "${tableName}" RENAME COLUMN "${actualColumn.Field}" TO "lastLogin"`);
                 }
               }
             }
@@ -65,6 +65,35 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
         }
 
         console.log('--- Database Schema Initialized Successfully ---');
+
+        // Migration: Fix teachercourse foreign key if it points to "user" instead of "teacher"
+        try {
+          console.log('Checking teachercourse constraints...');
+          const [constraints] = await conn.query(`
+            SELECT 
+                ccu.table_name AS foreign_table_name
+            FROM 
+                information_schema.table_constraints AS tc 
+                JOIN information_schema.key_column_usage AS kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                  AND tc.table_schema = kcu.table_schema
+                JOIN information_schema.constraint_column_usage AS ccu
+                  ON ccu.constraint_name = tc.constraint_name
+                  AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY' 
+              AND tc.table_name = 'teachercourse' 
+              AND kcu.column_name = 'teacherId';
+          `);
+
+          if (constraints.length > 0 && constraints[0].foreign_table_name === 'user') {
+            console.log('Table \'teachercourse\': Correcting foreign key from "user" to "teacher"');
+            await conn.query('ALTER TABLE teachercourse DROP CONSTRAINT IF EXISTS teachercourse_teacherId_fkey');
+            await conn.query('ALTER TABLE teachercourse ADD CONSTRAINT teachercourse_teacherId_fkey FOREIGN KEY ("teacherId") REFERENCES teacher(id) ON DELETE CASCADE');
+          }
+        } catch (migrationError) {
+          console.error('Migration Error (teachercourse):', migrationError.message);
+        }
+
         return true;
       } catch (error) {
         console.error(`Database Initialization Attempt ${attempt} failed:`, error.message);

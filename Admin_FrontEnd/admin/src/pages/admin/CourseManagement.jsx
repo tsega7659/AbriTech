@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Search,
     Plus,
@@ -32,6 +33,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import FeedbackModal from '../../components/FeedbackModal';
 
 const CourseManagement = () => {
+    const navigate = useNavigate();
     const { data: courses = [], isLoading: coursesLoading } = useAdminCourses();
     const { data: teachers = [] } = useTeachers();
 
@@ -333,7 +335,7 @@ const CourseManagement = () => {
                             <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                                 <DollarSign className="w-4 h-4 text-primary" /> Pricing & Access Control
                             </h4>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pricing Type</label>
@@ -375,7 +377,7 @@ const CourseManagement = () => {
                                 {!newCourse.isFree && (
                                     <div className="flex flex-col justify-end space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
                                         <label className="flex items-center gap-3 cursor-pointer group w-fit">
-                                            <div 
+                                            <div
                                                 onClick={() => setNewCourse({ ...newCourse, hasDiscount: !newCourse.hasDiscount })}
                                                 className={`w-10 h-6 rounded-full transition-all relative ${newCourse.hasDiscount ? 'bg-green-500' : 'bg-slate-200'}`}
                                             >
@@ -402,10 +404,10 @@ const CourseManagement = () => {
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 <div className="flex flex-col justify-end space-y-2 lg:col-start-1">
                                     <label className="flex items-center gap-3 cursor-pointer group w-fit">
-                                        <div 
+                                        <div
                                             onClick={() => setNewCourse({ ...newCourse, hasScholarship: !newCourse.hasScholarship })}
                                             className={`w-10 h-6 rounded-full transition-all relative ${newCourse.hasScholarship ? 'bg-blue-500' : 'bg-slate-200'}`}
                                         >
@@ -511,7 +513,7 @@ const CourseManagement = () => {
                                     <tr
                                         key={course.id}
                                         className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                                        onClick={() => window.location.href = `/admin/courses/${course.id}/lessons`}
+                                        onClick={() => navigate(`/admin/courses/${course.id}/lessons`)}
                                     >
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-5">

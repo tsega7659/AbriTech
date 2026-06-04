@@ -185,14 +185,14 @@ const schema = [
       { name: 'courseId', type: 'BIGINT NOT NULL' }
     ],
     foreignKeys: [
-      'FOREIGN KEY (teacherId) REFERENCES "user"(id) ON DELETE CASCADE',
+      'FOREIGN KEY (teacherId) REFERENCES teacher(id) ON DELETE CASCADE',
       'FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE'
     ],
     sql: `CREATE TABLE IF NOT EXISTS teachercourse (
       id BIGSERIAL PRIMARY KEY,
       teacherId BIGINT NOT NULL,
       courseId BIGINT NOT NULL,
-      FOREIGN KEY (teacherId) REFERENCES "user"(id) ON DELETE CASCADE,
+      FOREIGN KEY (teacherId) REFERENCES teacher(id) ON DELETE CASCADE,
       FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
     )`
   },
