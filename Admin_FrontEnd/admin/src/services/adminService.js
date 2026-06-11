@@ -10,6 +10,10 @@ export const adminService = {
         const response = await apiClient.get('/admin/analytics');
         return response.data;
     },
+    updateTeacherSpecialization: async (teacherId, specialization) => {
+        const response = await apiClient.put(`/admin/teachers/${teacherId}/specialization`, { specialization });
+        return response.data;
+    },
 
     // Teachers
     getTeachers: async () => {

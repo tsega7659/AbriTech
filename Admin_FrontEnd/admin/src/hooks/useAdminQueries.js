@@ -264,3 +264,16 @@ export const useReviewProject = () => {
         }
     });
 };
+
+export const useUpdateTeacherSpecialization = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, specialization }) => adminService.updateTeacherSpecialization(userId, specialization),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'instructor', variables.userId] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'teachers'] });
+        }
+    });
+};
+
+

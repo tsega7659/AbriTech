@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Activity, 
-    Search, 
-    Filter, 
-    ChevronRight, 
-    Clock, 
-    User, 
-    Link as LinkIcon, 
+import {
+    Activity,
+    Search,
+    Filter,
+    ChevronRight,
+    Clock,
+    User,
+    Link as LinkIcon,
     Eye,
     X,
     Calendar,
     Tag,
     Info,
-    ExternalLink
+    ExternalLink,
+    ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../../lib/apiClient';
@@ -37,7 +38,12 @@ const StatusBadge = ({ type }) => {
 const ActivityDetailModal = ({ activity, onClose }) => {
     if (!activity) return null;
 
-    const details = typeof activity.details === 'string' ? JSON.parse(activity.details) : activity.details;
+    let details = {};
+    try {
+        details = typeof activity.details === 'string' ? JSON.parse(activity.details) : (activity.details || {});
+    } catch (e) {
+        details = { info: activity.details };
+    }
 
     return (
         <motion.div
@@ -54,7 +60,6 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                 className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header */}
                 <div className="relative p-8 pb-0 flex justify-between items-start">
                     <div>
                         <StatusBadge type={activity.type} />
@@ -66,7 +71,7 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                             {new Date(activity.time).toLocaleString()}
                         </p>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-2 hover:bg-slate-50 rounded-xl transition-colors group"
                     >
@@ -74,12 +79,10 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-8 space-y-6">
-                    {/* User Section */}
                     <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden shadow-sm">
-                             <img
+                            <img
                                 src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activity.user)}&background=4dbfec&color=fff`}
                                 alt={activity.user}
                             />
@@ -90,29 +93,31 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Metadata Grid */}
                     <div className="grid grid-cols-1 gap-4">
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <Info className="w-3 h-3" /> Event Details
                             </h3>
                             <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6 divide-y divide-slate-200">
-                                {Object.entries(details).map(([key, value]) => (
-                                    <div key={key} className="py-3 first:pt-0 last:pb-0 flex justify-between items-center group">
-                                        <span className="text-xs font-bold text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                        <span className="text-sm font-black text-slate-700">
-                                            {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                        </span>
-                                    </div>
-                                ))}
+                                {Object.entries(details).length > 0 ? (
+                                    Object.entries(details).map(([key, value]) => (
+                                        <div key={key} className="py-3 first:pt-0 last:pb-0 flex justify-between items-center group">
+                                            <span className="text-xs font-bold text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                            <span className="text-sm font-black text-slate-700">
+                                                {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-400 font-bold italic">No additional metadata</p>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="p-8 pt-0">
-                    <button 
+                    <button
                         onClick={onClose}
                         className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-900 transition-all shadow-lg active:scale-95"
                     >
@@ -124,12 +129,15 @@ const ActivityDetailModal = ({ activity, onClose }) => {
     );
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function ActivityMonitoring() {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('All');
     const [selectedActivity, setSelectedActivity] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         fetchLogs();
@@ -150,17 +158,27 @@ export default function ActivityMonitoring() {
     const types = ['All', 'Enrollment', 'Project', 'Assignment', 'User Registration', 'Payment'];
 
     const filteredActivities = activities.filter(activity => {
-        const matchesSearch = activity.user.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             activity.action.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = activity.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            activity.action.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = selectedType === 'All' || activity.type === selectedType;
         return matchesSearch && matchesType;
     });
 
+    const totalPages = Math.ceil(filteredActivities.length / ITEMS_PER_PAGE);
+    const paginatedActivities = filteredActivities.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Reset pagination on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedType]);
+
     if (loading) return <Loading fullScreen={false} message="Analyzing system activity..." />;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
-            {/* Header Area */}
+        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -171,45 +189,42 @@ export default function ActivityMonitoring() {
                     </div>
                     <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Real-time platform activity tracking</p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-4">
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             placeholder="Search activities..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="pl-11 pr-6 py-3.5 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-72 text-sm font-bold shadow-sm"
                         />
                     </div>
-                    <button 
+                    <button
                         onClick={fetchLogs}
-                        className="px-6 py-3.5 bg-white border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                        className="px-6 py-3.5 bg-white border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all shadow-sm active:scale-95 flex items-center gap-2"
                     >
                         Refresh Logs
                     </button>
                 </div>
             </div>
 
-            {/* Filter Tabs */}
             <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
                 {types.map(type => (
                     <button
                         key={type}
                         onClick={() => setSelectedType(type)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                            selectedType === type 
-                            ? 'bg-slate-800 text-white border-slate-800 shadow-lg shadow-slate-200' 
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${selectedType === type
+                            ? 'bg-slate-800 text-white border-slate-800 shadow-lg shadow-slate-200'
                             : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
-                        }`}
+                            }`}
                     >
                         {type}
                     </button>
                 ))}
             </div>
 
-            {/* Activities Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -223,11 +238,8 @@ export default function ActivityMonitoring() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-sm">
-                            {filteredActivities.map((activity, idx) => (
-                                <motion.tr 
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
+                            {paginatedActivities.map((activity, idx) => (
+                                <tr
                                     key={idx}
                                     onClick={() => setSelectedActivity(activity)}
                                     className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
@@ -253,11 +265,11 @@ export default function ActivityMonitoring() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-5 text-right whitespace-nowrap">
-                                        <button className="p-2 text-slate-300 group-hover:text-primary transition-all">
+                                        <div className="p-2 text-slate-300 group-hover:text-primary transition-all inline-block">
                                             <ChevronRight className="w-5 h-5" />
-                                        </button>
+                                        </div>
                                     </td>
-                                </motion.tr>
+                                </tr>
                             ))}
                             {filteredActivities.length === 0 && (
                                 <tr>
@@ -272,14 +284,46 @@ export default function ActivityMonitoring() {
                         </tbody>
                     </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="p-8 border-t border-slate-50 flex items-center justify-between flex-wrap gap-4">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredActivities.length)} of {filteredActivities.length} logs
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="p-2.5 bg-slate-50 rounded-xl text-slate-400 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-primary/20"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="p-2.5 bg-slate-50 rounded-xl text-slate-400 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-primary/20"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Active Monitoring Modal */}
             <AnimatePresence>
                 {selectedActivity && (
-                    <ActivityDetailModal 
-                        activity={selectedActivity} 
-                        onClose={() => setSelectedActivity(null)} 
+                    <ActivityDetailModal
+                        activity={selectedActivity}
+                        onClose={() => setSelectedActivity(null)}
                     />
                 )}
             </AnimatePresence>

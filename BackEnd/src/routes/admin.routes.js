@@ -12,6 +12,10 @@ router.get('/dashboard', adminController.getDashboardStats);
 router.get('/analytics', adminController.getAnalyticsData);
 router.get('/activity-logs', adminController.getActivityLogs);
 router.delete('/users/:id', adminController.deleteUser);
+router.put('/teachers/:id/specialization', adminController.updateTeacherSpecialization);
+router.get('/payments', adminController.getPayments);
+
+
 
 // Detail routes
 router.get('/students/:id', adminController.getStudentDetails);

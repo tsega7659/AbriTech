@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
+
 
 const getAllUsers = async (req, res) => {
     try {
@@ -192,7 +194,7 @@ const getAnalyticsData = async (req, res) => {
             SELECT c.name as label, ROUND(((SUM(CASE WHEN e."progressPercentage" = 0 THEN 1 ELSE 0 END)::FLOAT / NULLIF(COUNT(e.id), 0)) * 100)::numeric, 1) as value 
             FROM course c JOIN enrollment e ON c.id = e."courseId" GROUP BY c.id, c.name
         `);
-        
+
         // 4. Revenue Analytics
         const [enrollmentTypes] = await pool.execute(`
             SELECT CASE WHEN "isFree" THEN 'Free' ELSE 'Paid' END as name, COUNT(*) as value 
@@ -407,11 +409,11 @@ const getParentDetails = async (req, res) => {
             WHERE ps."parentId" = ?
         `, [parentId]);
 
-        res.json({ 
-            ...parents[0], 
-            students, 
-            totalEnrollments: Number(totalEnrollments), 
-            avgProgress: Math.round(Number(avgProgress)) 
+        res.json({
+            ...parents[0],
+            students,
+            totalEnrollments: Number(totalEnrollments),
+            avgProgress: Math.round(Number(avgProgress))
         });
     } catch (error) {
         console.error('Get Parent Details Error:', error);
@@ -493,6 +495,95 @@ const assignInstructorCourses = async (req, res) => {
     }
 };
 
+const updateTeacherSpecialization = async (req, res) => {
+    try {
+        const { id } = req.params; // userId
+        const { specialization } = req.body;
+
+        if (!specialization) {
+            return res.status(400).json({ message: 'Specialization is required' });
+        }
+
+        await pool.execute(
+            'UPDATE teacher SET specialization = ? WHERE "userId" = ?',
+            [specialization, id]
+        );
+
+        res.json({ message: 'Specialization updated successfully' });
+    } catch (error) {
+        console.error('Update Specialization Error:', error);
+        res.status(500).json({ message: 'Failed to update specialization', error: error.message });
+    }
+};
+
+const getPayments = async (req, res) => {
+    try {
+        // Use LEFT JOINs to be safe with potentially null fields and join via student table
+        const [payments] = await pool.execute(`
+            SELECT 
+                p.id,
+                p.amount,
+                p.status,
+                p."createdAt",
+                p."paymentMethod" as method,
+                p."transactionReference" as txRef,
+                u."fullName" as "studentName",
+                c.name as "courseName"
+            FROM payment p
+            LEFT JOIN student s ON p."studentId" = s.id
+            LEFT JOIN "user" u ON s."userId" = u.id
+            LEFT JOIN course c ON p."courseId" = c.id
+            ORDER BY p."createdAt" DESC
+            LIMIT 200
+        `);
+
+        // Revenue summary stats
+        const [statsRows] = await pool.execute(`
+            SELECT
+                COALESCE(SUM(CASE WHEN status = 'success' THEN amount ELSE 0 END), 0) as "totalRevenue",
+                COALESCE(SUM(CASE WHEN status = 'success' AND "createdAt" >= NOW() - INTERVAL '7 days' THEN amount ELSE 0 END), 0) as "weeklyRevenue",
+                COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as "pendingAmount",
+                COUNT(CASE WHEN status = 'success' THEN 1 END) as "successCount",
+                COUNT(*) as "totalCount"
+            FROM payment
+        `);
+
+        const stats = statsRows[0] || {
+            totalRevenue: 0,
+            weeklyRevenue: 0,
+            pendingAmount: 0,
+            successCount: 0,
+            totalCount: 0
+        };
+
+        const successRate = stats.totalCount > 0
+            ? ((Number(stats.successCount) / Number(stats.totalCount)) * 100).toFixed(1)
+            : '0.0';
+
+        res.json({
+            payments,
+            stats: {
+                ...stats,
+                successRate,
+                totalRevenue: Number(stats.totalRevenue),
+                weeklyRevenue: Number(stats.weeklyRevenue),
+                pendingAmount: Number(stats.pendingAmount)
+            }
+        });
+    } catch (error) {
+        console.error('getPayments Detailed Error:', {
+            message: error.message,
+            stack: error.stack,
+            sql: error.sql
+        });
+        res.status(500).json({
+            message: 'Failed to fetch payments',
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+};
+
 module.exports = {
     getAllUsers,
     getDashboardStats,
@@ -504,5 +595,7 @@ module.exports = {
     assignInstructorCourses,
     getParentDetails,
     getAllProjects,
-    reviewProject
+    reviewProject,
+    updateTeacherSpecialization,
+    getPayments
 };

@@ -548,7 +548,7 @@ const CourseManagement = () => {
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className="flex items-center gap-2 text-xs font-black text-slate-600">
                                                     <Users className="w-4 h-4 text-slate-400" />
-                                                    <span>{course.enrollments || 0} enrolled</span>
+                                                    <span>{course.enrolledStudents || 0} enrolled</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                     <Clock className="w-3.5 h-3.5" />

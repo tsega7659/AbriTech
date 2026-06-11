@@ -29,8 +29,10 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
+        // Redirect on 401 (Unauthenticated) or 403 (Forbidden/Token Expired)
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
             if (!window.location.pathname.includes('/auth/login')) {
                 window.location.href = '/auth/login';
             }

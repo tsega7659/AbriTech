@@ -248,7 +248,18 @@ export default function LessonPlayer() {
         }
     };
 
-    // Sync active assignment when data loads
+    // Sync active data when refetched
+    useEffect(() => {
+        if (activeLesson && lessons.length > 0) {
+            const refreshed = lessons.find(l => l.id === activeLesson.id);
+            if (refreshed) {
+                setActiveLesson(refreshed);
+                // Also update canComplete if it's already completed in the fresh data
+                if (refreshed.isCompleted) setCanComplete(true);
+            }
+        }
+    }, [lessons]);
+
     useEffect(() => {
         if (activeAssignment && assignments.length > 0) {
             const refreshed = assignments.find(a => a.id === activeAssignment.id);
@@ -264,7 +275,7 @@ export default function LessonPlayer() {
                 // Find next lesson to potentially auto-advance
                 const currentOrder = activeLesson.orderNumber;
                 const nextLesson = lessons.find(l => l.orderNumber > currentOrder);
-                
+
                 // Only auto-advance if the next lesson is NOT locked after the completion
                 // Note: The 'lessons' array here is stale (from before refetch), 
                 // but since payment locks are static and progression locks are strict,

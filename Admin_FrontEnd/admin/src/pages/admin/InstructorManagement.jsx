@@ -29,7 +29,8 @@ import {
     useRegisterTeacher,
     useDeleteTeacher,
     useInstructorDetails,
-    useAssignInstructorCourses
+    useAssignInstructorCourses,
+    useUpdateTeacherSpecialization
 } from '../../hooks/useAdminQueries';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 import Loading from '../../components/Loading';
@@ -361,80 +362,80 @@ const InstructorManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredTeachers.map((inst) => (
                         <div key={inst.id || inst.userId} onClick={() => handleViewDetail(inst.id || inst.userId)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden cursor-pointer">
-                        {/* Card Background Accent */}
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:bg-primary/10" />
+                            {/* Card Background Accent */}
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:bg-primary/10" />
 
-                        <div className="flex justify-between items-start mb-6 relative">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 overflow-hidden ring-4 ring-slate-50 shrink-0">
-                                    <img
-                                        src={`https://ui-avatars.com/api/?name=${inst.fullName}&background=4dbfec&color=fff`}
-                                        alt={inst.fullName}
-                                        onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff' }}
-                                    />
+                            <div className="flex justify-between items-start mb-6 relative">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 overflow-hidden ring-4 ring-slate-50 shrink-0">
+                                        <img
+                                            src={`https://ui-avatars.com/api/?name=${inst.fullName}&background=4dbfec&color=fff`}
+                                            alt={inst.fullName}
+                                            onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff' }}
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-slate-800 truncate pr-2">{inst.fullName}</h4>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
+                                            <Mail className="w-3 h-3 shrink-0" /> {inst.email}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <h4 className="font-bold text-slate-800 truncate pr-2">{inst.fullName}</h4>
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
-                                        <Mail className="w-3 h-3 shrink-0" /> {inst.email}
+                                <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors shrink-0">
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4 relative">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <Link2 className="w-3 h-3" /> Assigned Courses
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Array.isArray(inst.assignedCourses) && inst.assignedCourses.length > 0 ? inst.assignedCourses.map((c, i) => (
+                                            <span key={i} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight ring-1 ring-blue-100">
+                                                {c}
+                                            </span>
+                                        )) : (
+                                            <span className="text-[10px] font-bold text-slate-400 italic">No courses assigned</span>
+                                        )}
+                                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(inst.id); }} className="px-3 py-1 border border-dashed border-slate-300 text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-tight hover:border-primary hover:text-primary transition-all">
+                                            + Assign
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {inst.specialization && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                            <ShieldCheck className="w-3 h-3" /> Specialization
+                                        </p>
+                                        <p className="text-xs font-bold text-slate-600 ml-4.5">{inst.specialization}</p>
+                                    </div>
+                                )}
+
+                                <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        <CheckCircle2 className="w-3 h-3" /> Active
+                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => handleDeleteClick(inst)}
+                                            className="text-[11px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                        >
+                                            Delete
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleViewDetail(inst.id)}
+                                            className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline"
+                                        >
+                                            Manage Profile
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                            <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors shrink-0">
-                                <MoreHorizontal className="w-5 h-5" />
-                            </button>
                         </div>
-
-                        <div className="space-y-4 relative">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                    <Link2 className="w-3 h-3" /> Assigned Courses
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {Array.isArray(inst.assignedCourses) && inst.assignedCourses.length > 0 ? inst.assignedCourses.map((c, i) => (
-                                        <span key={i} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight ring-1 ring-blue-100">
-                                            {c}
-                                        </span>
-                                    )) : (
-                                        <span className="text-[10px] font-bold text-slate-400 italic">No courses assigned</span>
-                                    )}
-                                    <button onClick={(e) => { e.stopPropagation(); handleViewDetail(inst.id); }} className="px-3 py-1 border border-dashed border-slate-300 text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-tight hover:border-primary hover:text-primary transition-all">
-                                        + Assign
-                                    </button>
-                                </div>
-                            </div>
-
-                            {inst.specialization && (
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                                        <ShieldCheck className="w-3 h-3" /> Specialization
-                                    </p>
-                                    <p className="text-xs font-bold text-slate-600 ml-4.5">{inst.specialization}</p>
-                                </div>
-                            )}
-
-                            <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    <CheckCircle2 className="w-3 h-3" /> Active
-                                </span>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => handleDeleteClick(inst)}
-                                        className="text-[11px] font-black text-rose-500 uppercase tracking-widest hover:underline"
-                                    >
-                                        Delete
-                                    </button>
-
-                                    <button
-                                        onClick={() => handleViewDetail(inst.id)}
-                                        className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline"
-                                    >
-                                        Manage Profile
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     ))}
                 </div>
             ) : (
@@ -486,6 +487,7 @@ const InstructorDetailModal = ({ isOpen, onClose, teacherId, allCourses }) => {
     const [isEditingCourses, setIsEditingCourses] = useState(false);
     const [tempCourseIds, setTempCourseIds] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [isProfessionModalOpen, setIsProfessionModalOpen] = useState(false);
 
     // Initialize tempCourseIds when entering edit mode
     React.useEffect(() => {
@@ -705,13 +707,103 @@ const InstructorDetailModal = ({ isOpen, onClose, teacherId, allCourses }) => {
                     <button onClick={onClose} className="px-8 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
                         Close Profile
                     </button>
-                    <button className="px-8 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98]">
-                        Edit Credentials
+                    <button
+                        onClick={() => setIsProfessionModalOpen(true)}
+                        className="px-8 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98]"
+                    >
+                        Edit Profession
                     </button>
                 </div>
             </div>
+
+            <ProfessionEditModal
+                isOpen={isProfessionModalOpen}
+                onClose={() => setIsProfessionModalOpen(false)}
+                userId={teacherId}
+                fullName={instructor?.fullName}
+                currentSpecialization={instructor?.specialization}
+            />
         </div>
     );
 };
 
 export default InstructorManagement;
+
+const ProfessionEditModal = ({ isOpen, onClose, userId, fullName, currentSpecialization }) => {
+    const updateSpecializationMutation = useUpdateTeacherSpecialization();
+    const [specialization, setSpecialization] = useState(currentSpecialization || '');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    React.useEffect(() => {
+        if (isOpen) setSpecialization(currentSpecialization || '');
+    }, [isOpen, currentSpecialization]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
+        try {
+            await updateSpecializationMutation.mutateAsync({
+                userId,
+                specialization
+            });
+            onClose();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update profession');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+            <div className="relative bg-white w-full max-w-md rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+                <div className="p-8 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="text-xl font-black text-slate-800">Edit Profession</h3>
+                    <p className="text-slate-500 text-xs font-bold mt-1">Update specialization for {fullName}</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    {error && (
+                        <div className="p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                            <XCircle className="w-4 h-4" /> {error}
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialization / Profession</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Senior Math Instructor"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
+                            value={specialization}
+                            onChange={(e) => setSpecialization(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3 border border-slate-200 text-slate-500 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting || !specialization.trim()}
+                            className="flex-1 py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Updating...' : 'Update Profession'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};

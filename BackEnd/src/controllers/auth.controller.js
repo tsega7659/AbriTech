@@ -337,10 +337,11 @@ const registerTeacher = async (req, res) => {
 
     // 7. Insert into teacher table
     console.log('Inserting into teacher table...');
-    await conn.execute(
-      'INSERT INTO teacher ("userId", specialization) VALUES (?, ?)',
+    const [teacherResult] = await conn.execute(
+      'INSERT INTO teacher ("userId", specialization) VALUES (?, ?) RETURNING id',
       [userId, specialization]
     );
+    const teacherId = teacherResult[0].id;
 
     // 8. Assign courses if provided
     if (courseIds && courseIds.length > 0) {
@@ -348,7 +349,7 @@ const registerTeacher = async (req, res) => {
       for (const courseId of courseIds) {
         await conn.execute(
           'INSERT INTO teachercourse ("teacherId", "courseId") VALUES (?, ?)',
-          [userId, courseId]
+          [teacherId, courseId]
         );
       }
     }
