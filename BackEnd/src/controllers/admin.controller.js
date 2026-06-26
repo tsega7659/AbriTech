@@ -212,8 +212,18 @@ const getAnalyticsData = async (req, res) => {
             FROM payment WHERE status = 'success' GROUP BY month ORDER BY month LIMIT 6
         `);
         const [conversionRate] = await pool.execute(`
-            SELECT ROUND(((COUNT(DISTINCT p."studentId")::FLOAT / NULLIF((SELECT COUNT(*) FROM student), 0)) * 100)::numeric, 1) as value 
-            FROM payment p WHERE p.status = 'success'
+            SELECT ROUND(
+                (COUNT(DISTINCT p."userId")::FLOAT / 
+                NULLIF((SELECT COUNT(DISTINCT e3."studentId") FROM enrollment e3 JOIN course c3 ON e3."courseId" = c3.id WHERE c3."isFree" = true), 0) 
+                * 100)::numeric, 1) as value 
+            FROM payment p
+            JOIN student s ON p."userId" = s."userId"
+            WHERE p.status = 'success'
+            AND EXISTS (
+                SELECT 1 FROM enrollment e2
+                JOIN course c2 ON e2."courseId" = c2.id
+                WHERE e2."studentId" = s.id AND c2."isFree" = true
+            )
         `);
 
         // 5. Project Analytics
@@ -329,10 +339,13 @@ const getStudentDetails = async (req, res) => {
             WHERE u.id = ?
         `, [id]);
 
-        if (student.length === 0) return res.status(404).json({ message: 'Student not found' });
+        if (student.length === 0) {
+            console.log(`[DEBUG] Student not found or missing profile for ID: ${id}`);
+            return res.status(404).json({ message: 'Student or student profile not found' });
+        }
 
         const [enrollments] = await pool.execute(`
-            SELECT c.name as "courseName", e."enrolledAt", e."progressPercentage", e.status
+            SELECT c.name as "courseName", e."enrolledAt", e."progressPercentage", e.status, c.id as "courseId"
             FROM enrollment e
             JOIN course c ON e."courseId" = c.id
             JOIN student s ON e."studentId" = s.id

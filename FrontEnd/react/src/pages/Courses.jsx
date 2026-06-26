@@ -114,16 +114,16 @@ export default function Courses() {
                     navigate('/dashboard/student');
                     return;
                 }
-                
+
                 console.error("Failed to initialize payment:", error);
                 let errMsg = 'Failed to initialize payment. Please try again.';
-                
+
                 if (error.code === 'ERR_NETWORK') {
                     errMsg = "Could not connect to the server. Please check your internet connection.";
                 } else if (error.response?.data?.message) {
                     errMsg = error.response.data.message;
                 }
-                
+
                 showFeedback("Payment Failed", errMsg, "error");
             }
         }
@@ -229,7 +229,7 @@ export default function Courses() {
                                             alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
-                                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                        <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                             <span className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-[#00B4D8] shadow-sm border border-white/50">
                                                 {course.category}
                                             </span>
@@ -237,7 +237,7 @@ export default function Courses() {
                                     </div>
 
                                     <div className="p-5 flex flex-col flex-1">
-                                        
+
                                         <div className="flex items-center gap-2 mb-3">
                                             {course.isFree ? (
                                                 <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-green-200">
@@ -253,6 +253,11 @@ export default function Courses() {
                                                 {course.level === 'advanced' ? 'All Levels' : course.level}
                                             </span>
                                         </div>
+
+                                        <h3 className="text-xl lg:text-2xl font-extrabold text-gray-900 mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                                            {course.name}
+                                        </h3>
+
                                         <p className="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-2">
                                             {course.description}
                                         </p>

@@ -126,7 +126,7 @@ const AddProjectModal = ({ isOpen, onClose, courseId }) => {
                             className="flex-[2] flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
                         >
                             {submitting ? (
-                                <Loading size="small" fullScreen={false} message="Assigning..." />
+                                <Loading size="small" variant="inline" message="Assigning..." />
                             ) : (
                                 <>
                                     <Send className="w-5 h-5" />

@@ -17,7 +17,9 @@ import {
     MapPin,
     School,
     Layers,
-    Copy
+    Copy,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import {
     useRegisterStudent,
@@ -60,6 +62,7 @@ const UserRegistration = () => {
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [successData, setSuccessData] = useState(null);
     const [copied, setCopied] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
@@ -89,7 +92,7 @@ const UserRegistration = () => {
         try {
             let data;
             let submitData = formData;
-            
+
             // Convert courseIds to numbers for teacher registration
             if (formData.role === 'teacher') {
                 submitData = {
@@ -97,7 +100,7 @@ const UserRegistration = () => {
                     courseIds: formData.courseIds.map(id => Number(id))
                 };
             }
-            
+
             if (formData.role === 'student') {
                 data = await registerStudentMutation.mutateAsync(submitData);
             } else if (formData.role === 'teacher') {
@@ -271,7 +274,7 @@ const UserRegistration = () => {
                                             />
                                         </div>
                                     </div>
-{(formData.role === 'student' || formData.role === 'admin' || formData.role === 'parent') && (
+                                    {(formData.role === 'student' || formData.role === 'admin' || formData.role === 'parent') && (
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Username {(formData.role === 'admin' || formData.role === 'parent') && <span className="text-slate-300">(Auto-generated if empty)</span>}</label>
                                             <div className="relative group">
@@ -287,7 +290,7 @@ const UserRegistration = () => {
                                         </div>
                                     )}
 
-                                    
+
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Email Address</label>
                                         <div className="relative group">
@@ -309,16 +312,24 @@ const UserRegistration = () => {
                                             <div className="relative group">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                                 <input
-                                                    type="password"
+                                                    type={showPassword ? "text" : "password"}
                                                     required
-                                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
+                                                    className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
                                                     placeholder="••••••••"
                                                     value={formData.password}
                                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                >
+                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
                                             </div>
                                         </div>
                                     )}
+
 
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Phone Number</label>
@@ -425,7 +436,7 @@ const UserRegistration = () => {
                                     className="w-full py-4 mt-4 bg-primary text-white rounded-[1.5rem] font-black shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 uppercase tracking-widest text-xs"
                                 >
                                     {isSubmitting ? (
-                                        <Loading size="small" fullScreen={false} message="Registering..." />
+                                        <Loading size="small" variant="inline" message="Registering..." />
                                     ) : (
                                         <>
                                             Register {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}

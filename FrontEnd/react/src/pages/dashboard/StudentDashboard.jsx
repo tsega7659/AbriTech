@@ -81,7 +81,7 @@ export default function StudentDashboard() {
                                 View All <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
-                        
+
                         {courses.length === 0 ? (
                             // Empty state
                             <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-8 text-center">
@@ -91,59 +91,59 @@ export default function StudentDashboard() {
                             </div>
                         ) : (
                             <div className="grid sm:grid-cols-2 gap-6">
-                        {courses.map((course, i) => (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.2 + (i * 0.1) }}
-                                key={course.id}
-                                className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl transition-all group lg:hover:-translate-y-1"
-                            >
-                                <Link to={`/dashboard/student/courses/${course.id}/learn`}>
-                                    <div className="h-48 relative overflow-hidden">
-                                        <img
-                                            src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600'}
-                                            alt={course.name}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        />
-                                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-xl text-xs font-black text-gray-900 shadow-sm uppercase tracking-wider">
-                                            {course.level}
-                                        </div>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                    </div>
-                                    <div className="p-6">
-                                        <h3 className="font-bold text-gray-900 text-lg mb-4 line-clamp-1">{course.name}</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center text-xs font-bold">
-                                                <span className="text-gray-400 uppercase tracking-tighter">Progress</span>
-                                                <span className="text-[#00B4D8]">{course.progress || 0}%</span>
+                                {courses.map((course, i) => (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.2 + (i * 0.1) }}
+                                        key={course.id}
+                                        className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl transition-all group lg:hover:-translate-y-1"
+                                    >
+                                        <Link to={`/dashboard/student/courses/${course.id}/learn`}>
+                                            <div className="h-48 relative overflow-hidden">
+                                                <img
+                                                    src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&q=80&w=600'}
+                                                    alt={course.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                />
+                                                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-xl text-xs font-black text-gray-900 shadow-sm uppercase tracking-wider">
+                                                    {course.level}
+                                                </div>
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                             </div>
-                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-1000 bg-[#00B4D8]"
-                                                    style={{ width: `${course.progress || 0}%` }}
-                                                ></div>
-                                            </div>
-                                            <div className="flex justify-between items-center pt-2">
-                                                <button
-                                                    className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
-                                                >
-                                                    Resume Lesson
-                                                </button>
+                                            <div className="p-6">
+                                                <h3 className="font-extrabold text-gray-900 text-xl lg:text-2xl mb-4 line-clamp-1">{course.name}</h3>
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center text-xs font-bold">
+                                                        <span className="text-gray-400 uppercase tracking-tighter">Progress</span>
+                                                        <span className="text-[#00B4D8]">{course.progress || 0}%</span>
+                                                    </div>
+                                                    <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full transition-all duration-1000 bg-[#00B4D8]"
+                                                            style={{ width: `${course.progress || 0}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <div className="flex justify-between items-center pt-2">
+                                                        <button
+                                                            className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
+                                                        >
+                                                            Resume Lesson
+                                                        </button>
 
-                                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
-                                                    <ArrowRight className="h-4 w-4" />
+                                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
+                                                            <ArrowRight className="h-4 w-4" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-            </section>
-                    
+                                        </Link>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
                     {/* Recommended Courses */}
                     {dashboardData?.recommendedCourses?.length > 0 && (
                         <section>
@@ -154,11 +154,11 @@ export default function StudentDashboard() {
                             <div className="grid sm:grid-cols-2 gap-4">
                                 {dashboardData.recommendedCourses.map(course => (
                                     <Link key={course.id} to="/courses" className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
-                                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
-                                            <img src={course.image ? `${API_BASE_URL}${course.image}` : 'https://placehold.co/100x100'} alt={course.name} className="w-full h-full object-cover" />
+                                        <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0">
+                                            <img src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL}${course.image}`) : 'https://placehold.co/100x100'} alt={course.name} className="w-full h-full object-cover" />
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-sm text-gray-900 line-clamp-1">{course.name}</h4>
+                                            <h4 className="font-extrabold text-base text-gray-900 line-clamp-1">{course.name}</h4>
                                             <span className="text-xs text-gray-500 uppercase font-bold">{course.level}</span>
                                         </div>
                                     </Link>
@@ -195,7 +195,7 @@ export default function StudentDashboard() {
                     {/* Pending Tasks */}
                     <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
                         <h3 className="font-bold text-lg text-gray-900 mb-6">Pending Tasks</h3>
-                        
+
                         <div className="space-y-4">
                             {dashboardData?.upcomingQuizzes?.map(quiz => (
                                 <div key={quiz.id} className="flex gap-3 items-start">

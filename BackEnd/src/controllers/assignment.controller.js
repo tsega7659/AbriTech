@@ -1,5 +1,25 @@
 const pool = require('../config/db');
 
+// ----- ADMIN: Manage Assignments (Projects) -----
+
+const getAssignmentsByCourse = async (req, res) => {
+  try {
+    const { courseId } = req.query;
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required' });
+    }
+
+    const [assignments] = await pool.execute(
+      'SELECT * FROM assignment WHERE "courseId" = ? ORDER BY "orderNumber" ASC, id ASC',
+      [courseId]
+    );
+    res.json(assignments);
+  } catch (error) {
+    console.error('Get Assignments Error:', error);
+    res.status(500).json({ message: 'Failed to fetch assignments', error: error.message });
+  }
+};
+
 const getAssignments = async (req, res) => {
   try {
     const { courseId } = req.query;
@@ -9,7 +29,7 @@ const getAssignments = async (req, res) => {
 
     const { userId, role } = req.user;
 
-    let query = 'SELECT * FROM assignment WHERE "courseId" = ? ORDER BY "createdAt" DESC';
+    let query = 'SELECT * FROM assignment WHERE "courseId" = ? ORDER BY "orderNumber" ASC, id ASC';
     let params = [courseId];
 
     // If student, join with their submissions
@@ -22,7 +42,7 @@ const getAssignments = async (req, res) => {
           FROM assignment a
           LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
           WHERE a."courseId" = ? 
-          ORDER BY a.id ASC
+          ORDER BY a."orderNumber" ASC, a.id ASC
         `;
         params = [studentId, courseId];
       }
@@ -71,17 +91,26 @@ const getAssignmentById = async (req, res) => {
   }
 };
 
+// Admin creates a project/assignment
 const createAssignment = async (req, res) => {
   try {
-    const { courseId, title, description, dueDate, requiresApproval } = req.body;
+    const { courseId, title, description, orderNumber, dueDate, requiresApproval, maxPoints } = req.body;
 
     if (!courseId || !title || !description) {
       return res.status(400).json({ message: 'Course ID, title, and description are required' });
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO assignment ("courseId", title, description, "dueDate", "requiresApproval") VALUES (?, ?, ?, ?, ?) RETURNING id',
-      [courseId, title, description, dueDate || null, requiresApproval !== undefined ? (requiresApproval ? true : false) : true]
+      'INSERT INTO assignment ("courseId", title, description, "orderNumber", "dueDate", "requiresApproval", "maxPoints") VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      [
+        courseId,
+        title,
+        description,
+        orderNumber || 1,
+        dueDate || null,
+        requiresApproval !== undefined ? (requiresApproval ? true : false) : true,
+        maxPoints || 100
+      ]
     );
 
     res.status(201).json({
@@ -93,6 +122,57 @@ const createAssignment = async (req, res) => {
     res.status(500).json({ message: 'Failed to create assignment', error: error.message });
   }
 };
+
+// Admin updates a project/assignment
+const updateAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, orderNumber, dueDate, requiresApproval, maxPoints } = req.body;
+
+    const [existing] = await pool.execute('SELECT id FROM assignment WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    await pool.execute(
+      'UPDATE assignment SET title = ?, description = ?, "orderNumber" = ?, "dueDate" = ?, "requiresApproval" = ?, "maxPoints" = ?, "updatedAt" = NOW() WHERE id = ?',
+      [
+        title,
+        description,
+        orderNumber || 1,
+        dueDate || null,
+        requiresApproval !== undefined ? (requiresApproval ? true : false) : true,
+        maxPoints || 100,
+        id
+      ]
+    );
+
+    res.json({ message: 'Assignment updated successfully' });
+  } catch (error) {
+    console.error('Update Assignment Error:', error);
+    res.status(500).json({ message: 'Failed to update assignment', error: error.message });
+  }
+};
+
+// Admin deletes a project/assignment
+const deleteAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [existing] = await pool.execute('SELECT id FROM assignment WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    await pool.execute('DELETE FROM assignment WHERE id = ?', [id]);
+    res.json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    console.error('Delete Assignment Error:', error);
+    res.status(500).json({ message: 'Failed to delete assignment', error: error.message });
+  }
+};
+
+// ----- STUDENT: Submit Assignment -----
 
 const submitAssignment = async (req, res) => {
   try {
@@ -118,14 +198,10 @@ const submitAssignment = async (req, res) => {
       return res.status(400).json({ message: 'At least one form of submission (text or file) is required' });
     }
 
-    // Check assignment deadline if submitting final
+    // Check assignment exists
     const [assignments] = await pool.execute('SELECT "dueDate" FROM assignment WHERE id = ?', [assignmentId]);
     if (assignments.length === 0) {
       return res.status(404).json({ message: 'Assignment not found' });
-    }
-    const dueDate = assignments[0].dueDate;
-    if (isFinal === 'true' && dueDate && new Date() > new Date(dueDate)) {
-      return res.status(400).json({ message: 'Cannot submit: Deadline has passed' });
     }
 
     // Check for existing submission
@@ -136,8 +212,6 @@ const submitAssignment = async (req, res) => {
 
     const newStatus = isFinal === 'true' ? 'pending' : 'draft';
 
-    // For backward compatibility, we'll still populate submissionType and submissionContent
-    // Legacy mapping: if file exists, type is 'file', otherwise 'text'
     const legacyType = fileUrl ? 'file' : 'text';
     const legacyContent = fileUrl || textContent;
 
@@ -174,6 +248,8 @@ const submitAssignment = async (req, res) => {
   }
 };
 
+// ----- INSTRUCTOR: Assess Submission -----
+
 const assessSubmission = async (req, res) => {
   try {
     const { id: submissionId } = req.params;
@@ -197,8 +273,11 @@ const assessSubmission = async (req, res) => {
 
 module.exports = {
   getAssignments,
+  getAssignmentsByCourse,
   getAssignmentById,
   createAssignment,
+  updateAssignment,
+  deleteAssignment,
   submitAssignment,
   assessSubmission
 };

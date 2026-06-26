@@ -145,13 +145,31 @@ export const adminService = {
         return response.data;
     },
 
-    // Projects
+    // Projects (student-submitted, reviewed by teacher)
     getProjects: async () => {
         const response = await apiClient.get('/admin/projects');
         return response.data;
     },
     reviewProject: async (id, assessmentData) => {
         const response = await apiClient.put(`/admin/projects/${id}/review`, assessmentData);
+        return response.data;
+    },
+
+    // Assignments / Course Projects (admin creates, students submit, instructor grades)
+    getAssignmentsByCourse: async (courseId) => {
+        const response = await apiClient.get('/assignments/by-course', { params: { courseId } });
+        return response.data;
+    },
+    createAssignment: async (data) => {
+        const response = await apiClient.post('/assignments', data);
+        return response.data;
+    },
+    updateAssignment: async (id, data) => {
+        const response = await apiClient.put(`/assignments/${id}`, data);
+        return response.data;
+    },
+    deleteAssignment: async (id) => {
+        const response = await apiClient.delete(`/assignments/${id}`);
         return response.data;
     }
 };

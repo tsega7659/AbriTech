@@ -15,6 +15,7 @@ const Analytics = lazy(() => import('./pages/admin/Analytics'));
 const StudentManagement = lazy(() => import('./pages/admin/StudentManagement'));
 const CourseManagement = lazy(() => import('./pages/admin/CourseManagement'));
 const CourseLessons = lazy(() => import('./pages/admin/CourseLessons'));
+const CourseProjects = lazy(() => import('./pages/admin/CourseProjects'));
 const InstructorManagement = lazy(() => import('./pages/admin/InstructorManagement'));
 const ParentManagement = lazy(() => import('./pages/admin/ParentManagement'));
 const UserRegistration = lazy(() => import('./pages/admin/UserRegistration'));
@@ -53,18 +54,18 @@ function App() {
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route 
-              path="/change-credentials" 
+            <Route
+              path="/change-credentials"
               element={
                 <ProtectedRoute>
                   <ChangeCredentials />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             {/* Admin Routes */}
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <DashboardLayout role="admin" />
@@ -76,6 +77,7 @@ function App() {
               <Route path="students" element={<StudentManagement />} />
               <Route path="courses" element={<CourseManagement />} />
               <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
+              <Route path="courses/:courseId/projects" element={<CourseProjects />} />
               <Route path="instructors" element={<InstructorManagement />} />
               <Route path="parents" element={<ParentManagement />} />
               <Route path="users/register" element={<UserRegistration />} />
@@ -89,8 +91,8 @@ function App() {
             </Route>
 
             {/* Instructor Routes */}
-            <Route 
-              path="/instructor" 
+            <Route
+              path="/instructor"
               element={
                 <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                   <DashboardLayout role="instructor" />

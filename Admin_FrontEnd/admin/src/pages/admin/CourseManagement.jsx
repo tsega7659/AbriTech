@@ -18,7 +18,8 @@ import {
     Video,
     ArrowRight,
     CheckCircle2,
-    Loader2
+    Loader2,
+    ClipboardList
 } from 'lucide-react';
 import {
     useAdminCourses,
@@ -56,10 +57,10 @@ const CourseManagement = () => {
         isFree: true,
         hasDiscount: false,
         discountPrice: '',
-        hasScholarship: false
     });
     const [submitting, setSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [customCategory, setCustomCategory] = useState('');
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -111,10 +112,11 @@ const CourseManagement = () => {
         setUploadProgress(0);
 
         const levelToSend = newCourse.level === 'all levels' ? 'advanced' : newCourse.level;
+        const categoryToSend = newCourse.category === 'other' ? customCategory : newCourse.category;
 
         const formData = new FormData();
         formData.append('name', newCourse.name);
-        formData.append('category', newCourse.category);
+        formData.append('category', categoryToSend);
         formData.append('level', levelToSend);
         formData.append('description', newCourse.description);
         formData.append('duration', newCourse.duration);
@@ -122,7 +124,7 @@ const CourseManagement = () => {
         formData.append('isFree', newCourse.isFree);
         formData.append('hasDiscount', newCourse.hasDiscount);
         formData.append('discountPrice', newCourse.discountPrice || 0);
-        formData.append('hasScholarship', newCourse.hasScholarship);
+
 
         if (newCourse.image) {
             formData.append('image', newCourse.image);
@@ -149,8 +151,8 @@ const CourseManagement = () => {
                         isFree: true,
                         hasDiscount: false,
                         discountPrice: '',
-                        hasScholarship: false
                     });
+                    setCustomCategory('');
                     showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
                 },
                 onError: (error) => {
@@ -180,8 +182,14 @@ const CourseManagement = () => {
             isFree: course.isFree !== undefined ? course.isFree : true,
             hasDiscount: course.hasDiscount || false,
             discountPrice: course.discountPrice || '',
-            hasScholarship: course.hasScholarship || false
         });
+
+        if (!categories.includes(course.category)) {
+            setNewCourse(prev => ({ ...prev, category: 'other' }));
+            setCustomCategory(course.category);
+        } else {
+            setCustomCategory('');
+        }
     };
 
     const handleCancel = () => {
@@ -199,8 +207,8 @@ const CourseManagement = () => {
             isFree: true,
             hasDiscount: false,
             discountPrice: '',
-            hasScholarship: false
         });
+        setCustomCategory('');
     }
 
     const filteredCourses = courses.filter(c =>
@@ -280,11 +288,26 @@ const CourseManagement = () => {
                                     required
                                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-black text-slate-700 appearance-none cursor-pointer"
                                     value={newCourse.category}
-                                    onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewCourse({ ...newCourse, category: e.target.value });
+                                        if (e.target.value !== 'other') setCustomCategory('');
+                                    }}
                                 >
                                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                 </select>
                             </div>
+                            {newCourse.category === 'other' && (
+                                <div className="mt-3 relative group animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Type custom category name..."
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700 text-sm"
+                                        value={customCategory}
+                                        onChange={(e) => setCustomCategory(e.target.value)}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2 lg:col-span-3">
@@ -405,17 +428,7 @@ const CourseManagement = () => {
                                     </div>
                                 )}
 
-                                <div className="flex flex-col justify-end space-y-2 lg:col-start-1">
-                                    <label className="flex items-center gap-3 cursor-pointer group w-fit">
-                                        <div
-                                            onClick={() => setNewCourse({ ...newCourse, hasScholarship: !newCourse.hasScholarship })}
-                                            className={`w-10 h-6 rounded-full transition-all relative ${newCourse.hasScholarship ? 'bg-blue-500' : 'bg-slate-200'}`}
-                                        >
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newCourse.hasScholarship ? 'left-5' : 'left-1'}`} />
-                                        </div>
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">Scholarship Option</span>
-                                    </label>
-                                </div>
+
                             </div>
                         </div>
 
@@ -578,16 +591,22 @@ const CourseManagement = () => {
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-green-600/10">
                                                         <CheckCircle2 className="w-3 h-3" /> Live
                                                     </span>
-                                                    {course.hasScholarship && (
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-blue-600/10">
-                                                            Scholarship
-                                                        </span>
-                                                    )}
+
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/admin/courses/${course.id}/projects`);
+                                                    }}
+                                                    className="px-4 py-2 text-violet-500 hover:bg-violet-50 rounded-xl transition-all font-bold text-sm flex items-center gap-1.5"
+                                                    title="Manage Projects"
+                                                >
+                                                    <ClipboardList className="w-4 h-4" /> Projects
+                                                </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -647,7 +666,7 @@ const CourseManagement = () => {
                 title={feedbackModal.title}
                 message={feedbackModal.message}
             />
-        </div>
+        </div >
     );
 };
 

@@ -370,6 +370,7 @@ const schema = [
       { name: 'courseId', type: 'BIGINT NOT NULL' },
       { name: 'title', type: 'VARCHAR(255) NOT NULL' },
       { name: 'description', type: 'TEXT NOT NULL' },
+      { name: 'orderNumber', type: 'INT DEFAULT 1' },
       { name: 'dueDate', type: 'TIMESTAMP' },
       { name: 'requiresApproval', type: 'BOOLEAN DEFAULT TRUE' },
       { name: 'maxPoints', type: 'INT DEFAULT 100' },
@@ -381,15 +382,16 @@ const schema = [
     ],
     sql: `CREATE TABLE IF NOT EXISTS assignment (
       id BIGSERIAL PRIMARY KEY,
-      courseId BIGINT NOT NULL,
+      "courseId" BIGINT NOT NULL,
       title VARCHAR(255) NOT NULL,
       description TEXT NOT NULL,
-      dueDate TIMESTAMP,
-      requiresApproval BOOLEAN DEFAULT TRUE,
-      maxPoints INT DEFAULT 100,
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (courseId) REFERENCES course(id) ON DELETE CASCADE
+      "orderNumber" INT DEFAULT 1,
+      "dueDate" TIMESTAMP,
+      "requiresApproval" BOOLEAN DEFAULT TRUE,
+      "maxPoints" INT DEFAULT 100,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE
     )`
   },
   {

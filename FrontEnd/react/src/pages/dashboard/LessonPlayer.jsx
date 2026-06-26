@@ -342,7 +342,7 @@ export default function LessonPlayer() {
                             </div>
                         </div>
                         {quizResult?.passed && (
-                            <div className="bg-[#FDB813]/10 text-[#FDB813] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                            <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 border border-emerald-100">
                                 <Check className="w-4 h-4" /> Passed
                             </div>
                         )}
@@ -365,7 +365,7 @@ export default function LessonPlayer() {
                                         className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnswers[q.id] === opt
                                             ? 'bg-primary/5 border-primary text-primary shadow-sm'
                                             : 'bg-white border-gray-100 text-gray-600 hover:border-primary/30 hover:bg-slate-50'
-                                            } ${quizResult && q.correctOption === opt ? 'bg-[#FDB813]/10 border-[#FDB813] text-[#FDB813]' : ''}
+                                            } ${quizResult && q.correctOption === opt ? 'bg-emerald-50 border-emerald-500 text-emerald-600' : ''}
                                                ${quizResult && quizAnswers[q.id] === opt && q.correctOption !== opt ? 'bg-rose-50 border-rose-500 text-rose-700' : ''}
                                             `}
                                     >
@@ -558,10 +558,6 @@ export default function LessonPlayer() {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (activeAssignment.dueDate && new Date() > new Date(activeAssignment.dueDate)) {
-                                                showFeedback("Deadline Passed", "Cannot submit final work: The submission window has closed.", "warning");
-                                                return;
-                                            }
                                             setShowConfirmModal(true);
                                         }}
                                         disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft') || (!submissionText && !submissionFile && !activeAssignment.fileUrl && !activeAssignment.textContent)}

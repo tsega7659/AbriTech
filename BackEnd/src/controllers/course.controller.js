@@ -18,9 +18,9 @@ const getAllCourses = async (req, res) => {
 
 const createCourse = async (req, res) => {
   try {
-    const { 
-      name, category, level, description, duration, 
-      price, isFree, hasDiscount, discountPrice, hasScholarship 
+    const {
+      name, category, level, description, duration,
+      price, isFree, hasDiscount, discountPrice
     } = req.body;
 
     // Handle Image Upload
@@ -38,23 +38,22 @@ const createCourse = async (req, res) => {
     const youtubeLink = '#lesson-video-links';
 
     const [result] = await pool.execute(
-      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice", "hasScholarship") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id',
+      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
-        name, category, level, youtubeLink, imageUrl || null, description || null, 
-        duration || null, price || 0, 
-        isFree === 'true' || isFree === true, 
-        hasDiscount === 'true' || hasDiscount === true, 
-        discountPrice || null, 
-        hasScholarship === 'true' || hasScholarship === true
+        name, category, level, youtubeLink, imageUrl || null, description || null,
+        duration || null, price || 0,
+        isFree === 'true' || isFree === true,
+        hasDiscount === 'true' || hasDiscount === true,
+        discountPrice || null
       ]
     );
 
     res.status(201).json({
       message: 'Course created successfully',
       courseId: result[0].id,
-      course: { 
+      course: {
         id: result[0].id, name, category, level, youtubeLink, image: imageUrl, description,
-        duration, price, isFree, hasDiscount, discountPrice, hasScholarship
+        duration, price, isFree, hasDiscount, discountPrice
       }
     });
 
@@ -95,7 +94,7 @@ const enrollCourse = async (req, res) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    
+
     const isFree = course.isFree;
     const initialStatus = isFree ? 'active' : 'pending';
 
@@ -105,7 +104,7 @@ const enrollCourse = async (req, res) => {
       [studentId, courseId, initialStatus]
     );
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: isFree ? 'Successfully enrolled in course' : 'Enrolled in Free Preview. Payment required for full access.',
       status: initialStatus
     });
@@ -119,9 +118,9 @@ const enrollCourse = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, category, level, description, duration, 
-      price, isFree, hasDiscount, discountPrice, hasScholarship 
+    const {
+      name, category, level, description, duration,
+      price, isFree, hasDiscount, discountPrice
     } = req.body;
     let imageUrl = req.file ? req.file.path : undefined;
 
@@ -175,10 +174,7 @@ const updateCourse = async (req, res) => {
       query += '"discountPrice" = ?, ';
       params.push(discountPrice);
     }
-    if (hasScholarship !== undefined) {
-      query += '"hasScholarship" = ?, ';
-      params.push(hasScholarship === 'true' || hasScholarship === true);
-    }
+
 
     // If no fields to update
     if (params.length === 0) {

@@ -53,9 +53,20 @@ export default function CourseDetail() {
 
     if (loading || contextLoading) return <Loading fullScreen={false} message="Loading course details..." />;
     if (!course) return (
-        <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-gray-900">Course not found</h2>
-            <Link to="/dashboard/student/courses" className="text-[#00B4D8] font-bold mt-4 inline-block underline">Back to My Courses</Link>
+        <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
+            <BookOpen className="h-16 w-16 text-gray-300 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Course Not Found</h2>
+            <p className="text-gray-500 mb-8 max-w-md text-center font-medium">
+                We couldn't find the course you're looking for. It might have been removed or you may need to enroll first.
+            </p>
+            <div className="flex gap-4">
+                <Link to="/courses" className="bg-[#00B4D8] text-white px-8 py-3 rounded-xl font-bold hover:shadow-lg transition-all">
+                    Browse Courses
+                </Link>
+                <Link to="/dashboard/student/courses" className="bg-white border border-gray-200 text-gray-700 px-8 py-3 rounded-xl font-bold hover:bg-gray-50 transition-all text-center">
+                    My Courses
+                </Link>
+            </div>
         </div>
     );
 

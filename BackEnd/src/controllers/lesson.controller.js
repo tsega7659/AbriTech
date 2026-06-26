@@ -139,7 +139,7 @@ const getLessons = async (req, res) => {
       const [enrollments] = await pool.execute('SELECT status FROM enrollment WHERE "studentId" = ? AND "courseId" = ?', [studentId, courseId]);
       if (enrollments.length > 0) {
         // active means fully paid/enrolled. pending means awaiting payment
-        isPaid = enrollments[0].status === 'active'; 
+        isPaid = enrollments[0].status === 'active';
       }
     }
 
@@ -227,11 +227,12 @@ const getLessons = async (req, res) => {
       // Payment Tier Logic
       let isPaymentLocked = false;
       if (!isPaid && !canBypassLocks) {
-        if (isAdvanced) {
+        const level = (courseInfo.level || '').toLowerCase();
+        if (level === 'intermediate' || level === 'advanced' || level === 'all levels') {
           // Fully Paid Model: Everything locked
           isPaymentLocked = true;
         } else {
-          // Free Preview Model: Lessons 1-3 (indexes 0,1,2) are free
+          // Beginner or other: Free Preview Model: Lessons 1-3 (indexes 0,1,2) are free
           isPaymentLocked = i >= 3;
         }
       }
@@ -240,9 +241,9 @@ const getLessons = async (req, res) => {
       // Progression locks do not apply to Admins/Teachers or to lessons that already require payment (let payment lock take precedence)
       let isProgressionLocked = false;
       if (!canBypassLocks && studentId) {
-          isProgressionLocked = !previousCompleted;
+        isProgressionLocked = !previousCompleted;
       }
-      
+
       const isLocked = isPaymentLocked || isProgressionLocked;
       const requiresPayment = isPaymentLocked;
 
@@ -256,7 +257,7 @@ const getLessons = async (req, res) => {
 
       // Update previous info for progression lock check
       // Only an actual completion in the DB should unlock the next lesson
-      previousCompleted = isCompleted || canBypassLocks; 
+      previousCompleted = isCompleted || canBypassLocks;
     }
 
     res.json({ lessons: processedLessons });

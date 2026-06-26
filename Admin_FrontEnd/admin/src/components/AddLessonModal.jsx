@@ -28,7 +28,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                     ? lessonToEdit.resources.map(r => ({ ...r, file: null }))
                     : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
                 quiz: lessonToEdit.quiz || [],
-                accessType: lessonToEdit.accessType || 'free'
+                accessType: lessonToEdit.accessType || 'paid'
             });
         } else if (isOpen) {
             setUploadProgress(0);
@@ -39,7 +39,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                 contentType: 'lesson',
                 resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
                 quiz: [],
-                accessType: 'free'
+                accessType: 'paid'
             });
         }
     }, [lessonToEdit, isOpen]);
@@ -235,27 +235,6 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                             />
                         </div>
 
-                        <div className="md:col-span-3 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h4 className="text-sm font-black text-slate-800">Lesson Access Control</h4>
-                                <p className="text-[10px] font-bold text-slate-500">Determine who can view this lesson's content.</p>
-                            </div>
-                            <div className="flex bg-white p-1 rounded-xl border border-slate-100 shadow-sm shrink-0">
-                                {[
-                                    { id: 'free', label: 'Free' },
-                                    { id: 'paid', label: 'Paid' },
-                                ].map((type) => (
-                                    <button
-                                        key={type.id}
-                                        type="button"
-                                        onClick={() => setLessonData({ ...lessonData, accessType: type.id })}
-                                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lessonData.accessType === type.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
-                                    >
-                                        {type.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
                     </div>
 
                     {/* Resources Section */}

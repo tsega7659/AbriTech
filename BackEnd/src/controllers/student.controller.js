@@ -31,7 +31,7 @@ const getDashboard = async (req, res) => {
   try {
     const { userId } = req.user;
 
-    const [students] = await pool.execute('SELECT id, "courseLevel" FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id, "courseLevel" FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
     const studentId = students[0].id;
     const studentCourseLevel = students[0].courseLevel;
@@ -344,38 +344,41 @@ const updateStudentProfile = async (req, res) => {
 const getStudentAnalytics = async (req, res) => {
   try {
     const { userId } = req.user;
-    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
     const studentId = students[0].id;
 
     // Student Stats
     const [studentStats] = await pool.execute(`
       SELECT 
-        SUM("timeSpentSeconds") as totalTime,
-        AVG("progressPercentage") as avgProgress,
-        (SELECT AVG(CASE WHEN "isCorrect" THEN 100 ELSE 0 END) FROM quizattempt WHERE "studentId" = ?) as avgQuiz
+        COALESCE(SUM("timeSpentSeconds"), 0) as "totalTime",
+        COALESCE(AVG("progressPercentage"), 0) as "avgProgress",
+        (SELECT COALESCE(AVG(CASE WHEN "isCorrect" THEN 100 ELSE 0 END), 0) FROM quizattempt WHERE "studentId" = ?) as "avgQuiz"
       FROM enrollment WHERE "studentId" = ?
     `, [studentId, studentId]);
 
     // Average Stats
     const [avgStats] = await pool.execute(`
       SELECT 
-        AVG("timeSpentSeconds") as totalTime,
-        AVG("progressPercentage") as avgProgress,
-        (SELECT AVG(CASE WHEN "isCorrect" THEN 100 ELSE 0 END) FROM quizattempt) as avgQuiz
+        COALESCE(AVG("timeSpentSeconds"), 0) as "totalTime",
+        COALESCE(AVG("progressPercentage"), 0) as "avgProgress",
+        (SELECT COALESCE(AVG(CASE WHEN "isCorrect" THEN 100 ELSE 0 END), 0) FROM quizattempt) as "avgQuiz"
       FROM enrollment
     `);
 
+    const stats = studentStats[0];
+    const globalAvg = avgStats[0];
+
     res.json({
       student: {
-        timeSpent: Math.round((studentStats[0].totalTime || 0) / 3600),
-        quizScore: Math.round(studentStats[0].avgQuiz || 0),
-        progress: Math.round(studentStats[0].avgProgress || 0)
+        timeSpent: Math.round(Number(stats.totalTime || 0) / 3600),
+        quizScore: Math.round(Number(stats.avgQuiz || 0)),
+        progress: Math.round(Number(stats.avgProgress || 0))
       },
       average: {
-        timeSpent: Math.round((avgStats[0].totalTime || 0) / 3600),
-        quizScore: Math.round(avgStats[0].avgQuiz || 0),
-        progress: Math.round(avgStats[0].avgProgress || 0)
+        timeSpent: Math.round(Number(globalAvg.totalTime || 0) / 3600),
+        quizScore: Math.round(Number(globalAvg.avgQuiz || 0)),
+        progress: Math.round(Number(globalAvg.avgProgress || 0))
       }
     });
   } catch (error) {
@@ -396,7 +399,8 @@ const getPortfolioData = async (req, res) => {
 
     if (profile.length === 0) return res.status(404).json({ message: 'Student not found' });
 
-    const studentId = (await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]))[0][0].id;
+    const studentIdResult = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
+    const studentId = studentIdResult[0][0].id;
 
     const [completedCourses] = await pool.execute(`
       SELECT c.name, c.category, e."progressPercentage", e."enrolledAt"
@@ -447,7 +451,7 @@ const getCourseAnalytics = async (req, res) => {
     const { courseId } = req.params;
 
     // Get student ID
-    const [students] = await pool.execute('SELECT id FROM student WHERE userId = ?', [userId]);
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
     const studentId = students[0].id;
 
@@ -489,7 +493,7 @@ const getCourseAnalytics = async (req, res) => {
     const [lessons] = await pool.execute(`
       SELECT COUNT(*) as "total" FROM lesson WHERE "courseId" = ?
     `, [courseId]);
-    
+
     const [completedLessons] = await pool.execute(`
       SELECT COUNT(*) as "completed" 
       FROM lessonprogress lp

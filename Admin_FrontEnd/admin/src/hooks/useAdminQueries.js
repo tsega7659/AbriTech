@@ -276,4 +276,41 @@ export const useUpdateTeacherSpecialization = () => {
     });
 };
 
+// Assignments (Admin-created projects)
+export const useAssignments = (courseId) => {
+    return useQuery({
+        queryKey: ['admin', 'assignments', courseId],
+        queryFn: () => adminService.getAssignmentsByCourse(courseId),
+        enabled: !!courseId
+    });
+};
 
+export const useCreateAssignment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data) => adminService.createAssignment(data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'assignments', String(variables.courseId)] });
+        }
+    });
+};
+
+export const useUpdateAssignment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }) => adminService.updateAssignment(id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'assignments', String(variables.data.courseId)] });
+        }
+    });
+};
+
+export const useDeleteAssignment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id }) => adminService.deleteAssignment(id),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'assignments', String(variables.courseId)] });
+        }
+    });
+};

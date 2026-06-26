@@ -263,8 +263,10 @@ const getStudentCourseDetail = async (req, res) => {
         `, [studentId, courseId]);
 
         if (studentInfo.length === 0) {
-            console.log(`[DEBUG] Enrollment not found for studentId: ${studentId}, courseId: ${courseId}`);
-            return res.status(404).json({ message: 'Student enrollment not found' });
+            console.log(`[DEBUG] No enrollment or student profile found for studentId: ${studentId} in courseId: ${courseId}`);
+            return res.status(404).json({
+                message: 'Student enrollment details not found. Please ensure the student is enrolled in this course.'
+            });
         }
 
         // Get project submissions for this student and course
