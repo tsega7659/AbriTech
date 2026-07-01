@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Plus, Video, Image as ImageIcon, FileText, Link as LinkIcon,
-    MoreHorizontal, Trash2, Edit, CheckCircle2, GripVertical, File
+    MoreHorizontal, Trash2, Edit, CheckCircle2, GripVertical, File, Lock, Sparkles
 } from 'lucide-react';
 import {
     useAdminCourses,
@@ -173,11 +173,21 @@ const CourseLessons = () => {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 flex-wrap">
                                             <span className="text-xs font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">
                                                 #{lesson.orderNumber}
                                             </span>
                                             <h3 className="font-black text-slate-800 truncate">{lesson.title}</h3>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${lesson.accessType === 'preview'
+                                                ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                                : 'bg-slate-100 text-slate-500 border-slate-200'
+                                                }`}>
+                                                {lesson.accessType === 'preview' ? (
+                                                    <><Sparkles className="w-2.5 h-2.5" /> Preview</>
+                                                ) : (
+                                                    <><Lock className="w-2.5 h-2.5" /> Locked</>
+                                                )}
+                                            </span>
                                         </div>
                                         <p className="text-sm text-slate-400 font-medium truncate mt-1">
                                             {lesson.description}

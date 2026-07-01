@@ -125,13 +125,12 @@ const getLessons = async (req, res) => {
       if (students.length > 0) studentId = students[0].id;
     }
 
-    const [courses] = await pool.execute('SELECT "isFree", level FROM course WHERE id = ?', [courseId]);
+    const [courses] = await pool.execute('SELECT "isFree", level, "accessModel" FROM course WHERE id = ?', [courseId]);
     if (courses.length === 0) {
       return res.status(404).json({ message: 'Course not found' });
     }
     const courseInfo = courses[0];
     const isFreeCourse = courseInfo.isFree;
-    const isAdvanced = courseInfo.level.toLowerCase() === 'advanced';
 
     // Check enrollment and payment status
     let isPaid = false;
@@ -224,17 +223,19 @@ const getLessons = async (req, res) => {
       l.resources = resourcesMap[l.id] || [];
       l.quiz = quizMap[l.id] || [];
 
-      // Payment Tier Logic
+      // Payment Tier Logic — driven by course accessModel and lesson accessType
       let isPaymentLocked = false;
       if (!isPaid && !canBypassLocks) {
-        const level = (courseInfo.level || '').toLowerCase();
-        if (level === 'intermediate' || level === 'advanced' || level === 'all levels') {
-          // Fully Paid Model: Everything locked
+        const model = (courseInfo.accessModel || 'free').toLowerCase();
+        if (model === 'fully_paid') {
+          // Every lesson is locked until enrolled & paid
           isPaymentLocked = true;
-        } else {
-          // Beginner or other: Free Preview Model: Lessons 1-3 (indexes 0,1,2) are free
-          isPaymentLocked = i >= 3;
+        } else if (model === 'with_preview') {
+          // Only 'preview' lessons are free; anything else is locked
+          const lessonAccess = (l.accessType || 'locked').toLowerCase();
+          isPaymentLocked = lessonAccess !== 'preview';
         }
+        // model === 'free' → isPaymentLocked stays false
       }
 
       const isCompleted = !!progressMap[l.id];

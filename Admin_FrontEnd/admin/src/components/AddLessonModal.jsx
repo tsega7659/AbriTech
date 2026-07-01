@@ -224,6 +224,33 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                         </div>
 
                         <div className="md:col-span-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Access Type</label>
+                            <div className="flex items-center gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit mb-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setLessonData({ ...lessonData, accessType: 'preview' })}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lessonData.accessType === 'preview' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    Preview (Free)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setLessonData({ ...lessonData, accessType: 'locked' })}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lessonData.accessType !== 'preview' ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    Locked (Paid)
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold ml-2">
+                                {lessonData.accessType === 'preview'
+                                    ? 'This lesson is visible to all students as a free preview.'
+                                    : 'Students must enroll & pay before accessing this lesson.'}
+                            </p>
+                        </div>
+
+                        <div className="md:col-span-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Description</label>
                             <textarea
                                 required

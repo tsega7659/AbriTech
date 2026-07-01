@@ -57,6 +57,7 @@ const CourseManagement = () => {
         isFree: true,
         hasDiscount: false,
         discountPrice: '',
+        accessModel: 'with_preview',
     });
     const [submitting, setSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -124,6 +125,7 @@ const CourseManagement = () => {
         formData.append('isFree', newCourse.isFree);
         formData.append('hasDiscount', newCourse.hasDiscount);
         formData.append('discountPrice', newCourse.discountPrice || 0);
+        formData.append('accessModel', newCourse.isFree ? 'free' : newCourse.accessModel);
 
 
         if (newCourse.image) {
@@ -151,6 +153,7 @@ const CourseManagement = () => {
                         isFree: true,
                         hasDiscount: false,
                         discountPrice: '',
+                        accessModel: 'with_preview',
                     });
                     setCustomCategory('');
                     showFeedback("Success", `Course ${isEditing ? 'updated' : 'published'} successfully!`, "success");
@@ -182,6 +185,7 @@ const CourseManagement = () => {
             isFree: course.isFree !== undefined ? course.isFree : true,
             hasDiscount: course.hasDiscount || false,
             discountPrice: course.discountPrice || '',
+            accessModel: course.accessModel || (course.isFree ? 'free' : 'with_preview'),
         });
 
         if (!categories.includes(course.category)) {
@@ -207,6 +211,7 @@ const CourseManagement = () => {
             isFree: true,
             hasDiscount: false,
             discountPrice: '',
+            accessModel: 'with_preview',
         });
         setCustomCategory('');
     }
@@ -425,6 +430,33 @@ const CourseManagement = () => {
                                                 onChange={(e) => setNewCourse({ ...newCourse, discountPrice: e.target.value })}
                                             />
                                         </div>
+                                    </div>
+                                )}
+
+                                {!newCourse.isFree && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300 lg:col-span-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Access Model</label>
+                                        <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-slate-100 w-fit">
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewCourse({ ...newCourse, accessModel: 'with_preview' })}
+                                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.accessModel === 'with_preview' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                With Preview
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewCourse({ ...newCourse, accessModel: 'fully_paid' })}
+                                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.accessModel === 'fully_paid' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                Fully Paid
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-bold ml-2">
+                                            {newCourse.accessModel === 'with_preview'
+                                                ? 'Preview-marked lessons are free; all others require payment.'
+                                                : 'All lessons require payment before access.'}
+                                        </p>
                                     </div>
                                 )}
 

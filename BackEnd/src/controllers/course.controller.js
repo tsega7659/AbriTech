@@ -20,7 +20,7 @@ const createCourse = async (req, res) => {
   try {
     const {
       name, category, level, description, duration,
-      price, isFree, hasDiscount, discountPrice
+      price, isFree, hasDiscount, discountPrice, accessModel
     } = req.body;
 
     // Handle Image Upload
@@ -34,17 +34,29 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ message: 'Name, Category, and Level are required.' });
     }
 
+    const isFreeVal = isFree === 'true' || isFree === true;
+
+    // Derive accessModel: free courses always use 'free'; paid courses default to 'with_preview'
+    const validModels = ['free', 'with_preview', 'fully_paid'];
+    let resolvedAccessModel;
+    if (isFreeVal) {
+      resolvedAccessModel = 'free';
+    } else {
+      resolvedAccessModel = validModels.includes(accessModel) ? accessModel : 'with_preview';
+    }
+
     // Placeholder for youtubeLink as per instruction
     const youtubeLink = '#lesson-video-links';
 
     const [result] = await pool.execute(
-      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice", "accessModel") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name, category, level, youtubeLink, imageUrl || null, description || null,
         duration || null, price || 0,
-        isFree === 'true' || isFree === true,
+        isFreeVal,
         hasDiscount === 'true' || hasDiscount === true,
-        discountPrice || null
+        discountPrice || null,
+        resolvedAccessModel
       ]
     );
 
@@ -53,7 +65,7 @@ const createCourse = async (req, res) => {
       courseId: result[0].id,
       course: {
         id: result[0].id, name, category, level, youtubeLink, image: imageUrl, description,
-        duration, price, isFree, hasDiscount, discountPrice
+        duration, price, isFree: isFreeVal, hasDiscount, discountPrice, accessModel: resolvedAccessModel
       }
     });
 
@@ -62,6 +74,7 @@ const createCourse = async (req, res) => {
     res.status(500).json({ message: 'Failed to create course', error: error.message });
   }
 };
+
 
 const enrollCourse = async (req, res) => {
   try {
@@ -120,7 +133,7 @@ const updateCourse = async (req, res) => {
     const { id } = req.params;
     const {
       name, category, level, description, duration,
-      price, isFree, hasDiscount, discountPrice
+      price, isFree, hasDiscount, discountPrice, accessModel
     } = req.body;
     let imageUrl = req.file ? req.file.path : undefined;
 
@@ -163,8 +176,27 @@ const updateCourse = async (req, res) => {
       params.push(price);
     }
     if (isFree !== undefined) {
+      const isFreeVal = isFree === 'true' || isFree === true;
       query += '"isFree" = ?, ';
-      params.push(isFree === 'true' || isFree === true);
+      params.push(isFreeVal);
+
+      // Also compute accessModel when isFree is being updated
+      const validModels = ['free', 'with_preview', 'fully_paid'];
+      let resolvedAccessModel;
+      if (isFreeVal) {
+        resolvedAccessModel = 'free';
+      } else {
+        resolvedAccessModel = validModels.includes(accessModel) ? accessModel : 'with_preview';
+      }
+      query += '"accessModel" = ?, ';
+      params.push(resolvedAccessModel);
+    } else if (accessModel !== undefined) {
+      // isFree not being updated but accessModel is
+      const validModels = ['free', 'with_preview', 'fully_paid'];
+      if (validModels.includes(accessModel)) {
+        query += '"accessModel" = ?, ';
+        params.push(accessModel);
+      }
     }
     if (hasDiscount !== undefined) {
       query += '"hasDiscount" = ?, ';
@@ -195,6 +227,7 @@ const updateCourse = async (req, res) => {
     res.status(500).json({ message: 'Failed to update course', error: error.message });
   }
 };
+
 
 const deleteCourse = async (req, res) => {
   try {

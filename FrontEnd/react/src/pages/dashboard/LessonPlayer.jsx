@@ -20,6 +20,8 @@ import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmit
 import Loading from "../../components/Loading";
 import FeedbackModal from "../../components/FeedbackModal";
 import TelebirrPaymentModal from "../../components/TelebirrPaymentModal";
+import apiClient from "../../lib/apiClient";
+
 
 export default function LessonPlayer() {
     const { courseId, lessonId: urlLessonId } = useParams();
@@ -823,8 +825,20 @@ export default function LessonPlayer() {
                                         onClick={() => {
                                             if (lesson.isLocked) {
                                                 if (lesson.requiresPayment) {
-                                                    setPaymentCourseId(courseId);
-                                                    setShowPaymentModal(true);
+                                                    (async () => {
+                                                        try {
+                                                            showFeedback("Opening checkout...", "Redirecting to payment portal...", "success");
+                                                            const response = await apiClient.post('/payments/chapa/initialize', { courseId });
+                                                            if (response.data.success && response.data.checkoutUrl) {
+                                                                window.location.href = response.data.checkoutUrl;
+                                                            } else {
+                                                                showFeedback("Payment Failed", "Could not get checkout URL from Chapa", "error");
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("Failed to initialize payment:", err);
+                                                            showFeedback("Payment Failed", err.response?.data?.message || "Failed to initialize payment.", "error");
+                                                        }
+                                                    })();
                                                 } else {
                                                     showFeedback("Locked", "Please complete previous lessons first.", "warning");
                                                 }

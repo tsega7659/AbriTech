@@ -77,10 +77,13 @@ export default function Courses() {
         setEnrolling(course.id);
 
         const isFree = course.isFree || (!course.price && !course.discountPrice);
-        setEnrollOverlayMessage(isFree ? 'Enrolling…' : 'Opening checkout…');
+        const isWithPreview = !course.isFree && course.accessModel === 'with_preview';
+        const enrollForFree = isFree || isWithPreview;
 
-        // If course is free, use regular enrollment
-        if (isFree) {
+        setEnrollOverlayMessage(enrollForFree ? 'Enrolling…' : 'Opening checkout…');
+
+        // If course is free or with_preview, use regular enrollment
+        if (enrollForFree) {
             try {
                 await apiClient.post('/courses/enroll', { courseId: course.id });
                 setEnrollOverlayMessage('Enrolled. Redirecting…');
@@ -337,7 +340,7 @@ export default function Courses() {
                                                                 )}
                                                             </div>
                                                             <div className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest w-fit border border-amber-100">
-                                                                {course.level?.toLowerCase() === 'advanced' ? 'Full Access' : 'Free Preview Included'}
+                                                                {course.accessModel === 'fully_paid' ? 'Full Access Required' : 'Free Preview Included'}
                                                             </div>
                                                         </div>
                                                     )}
@@ -350,7 +353,11 @@ export default function Courses() {
                                                     disabled={enrolling === course.id}
                                                     className="w-full py-3.5 bg-[#00B4D8] text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-blue-500/20 hover:bg-[#0096B4] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                                                 >
-                                                    {enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
+                                                    {enrolling === course.id
+                                                        ? 'Enrolling...'
+                                                        : course.accessModel === 'with_preview'
+                                                            ? 'Start Free Preview'
+                                                            : 'Enroll Now'}
                                                 </button>
                                             ) : (
                                                 <Link to="/auth/get-started" className="block w-full text-center bg-[#00B4D8] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[#0096B4] transition-all shadow-lg shadow-blue-500/20">
