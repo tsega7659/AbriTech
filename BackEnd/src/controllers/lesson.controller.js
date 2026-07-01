@@ -390,27 +390,54 @@ const updateLesson = async (req, res) => {
 };
 
 const deleteLesson = async (req, res) => {
+  const connection = await pool.getConnection();
   try {
     const { id } = req.params;
 
     // Get courseId before deleting
-    const [lesson] = await pool.execute('SELECT "courseId" FROM lesson WHERE id = ?', [id]);
+    const [lesson] = await connection.execute('SELECT "courseId" FROM lesson WHERE id = ?', [id]);
     if (lesson.length === 0) {
+      connection.release();
       return res.status(404).json({ message: 'Lesson not found' });
     }
     const courseId = lesson[0].courseId;
 
-    await pool.execute('DELETE FROM lesson WHERE id = ?', [id]);
+    await connection.beginTransaction();
+
+    // Delete child records that may not cascade in older DB instances
+    await connection.execute('DELETE FROM lessonprogress WHERE "lessonId" = ?', [id]);
+    await connection.execute('DELETE FROM lessonaisummary WHERE "lessonId" = ?', [id]);
+    await connection.execute('DELETE FROM aichatlog WHERE "lessonId" = ?', [id]);
+
+    // Delete quiz attempts for quizzes belonging to this lesson, then the quizzes
+    const [quizIds] = await connection.execute('SELECT id FROM lessonquiz WHERE "lessonId" = ?', [id]);
+    if (quizIds.length > 0) {
+      const ids = quizIds.map(q => q.id);
+      await connection.execute(`DELETE FROM quizattempt WHERE "quizId" = ANY(ARRAY[${ids.join(',')}]::bigint[])`);
+      await connection.execute('DELETE FROM lessonquiz WHERE "lessonId" = ?', [id]);
+    }
+
+    // Delete lesson resources
+    await connection.execute('DELETE FROM lesson_resource WHERE lessonid = ?', [id]);
+
+    // Finally delete the lesson itself
+    await connection.execute('DELETE FROM lesson WHERE id = ?', [id]);
+
+    await connection.commit();
 
     // Update progress for all enrolled students since a lesson was removed
     await updateCourseProgressForAllStudents(courseId);
 
     res.json({ message: 'Lesson deleted successfully' });
   } catch (error) {
+    await connection.rollback();
     console.error('Delete Lesson Error:', error);
     res.status(500).json({ message: 'Failed to delete lesson', error: error.message });
+  } finally {
+    connection.release();
   }
 };
+
 
 const markLessonComplete = async (req, res) => {
   try {

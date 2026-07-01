@@ -131,7 +131,7 @@ const getLinkedStudents = async (req, res) => {
     // Get linked students with their data
     const [students] = await pool.execute(`
       SELECT 
-        u.id,
+        s.id,
         u."fullName",
         u.email,
         s."classLevel",
@@ -143,7 +143,7 @@ const getLinkedStudents = async (req, res) => {
             json_build_object(
               'id', c.id,
               'name', c.name,
-              'progress', e."progressPercentage",
+              'progressPercentage', e."progressPercentage",
               'timeSpentSeconds', e."timeSpentSeconds",
               'thumbnail', c.image
             )
