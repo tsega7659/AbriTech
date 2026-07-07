@@ -89,12 +89,12 @@ export default function Courses() {
                 setEnrollOverlayMessage('Enrolled. Redirecting…');
                 setEnrollSuccess(true);
                 setTimeout(() => {
-                    navigate('/dashboard/student');
+                    navigate(`/dashboard/student/courses/${course.id}/learn`);
                 }, 1500);
             } catch (error) {
                 // Already enrolled
                 if (error.response?.status === 400 && typeof error.response.data.message === 'string' && error.response.data.message.includes('already enrolled')) {
-                    navigate('/dashboard/student');
+                    navigate(`/dashboard/student/courses/${course.id}/learn`);
                     return;
                 }
                 console.error("Failed to enroll:", error);
@@ -114,7 +114,7 @@ export default function Courses() {
             } catch (error) {
                 setEnrolling(null);
                 if (error.response?.status === 400 && typeof error.response.data.message === 'string' && error.response.data.message.includes('already enrolled')) {
-                    navigate('/dashboard/student');
+                    navigate(`/dashboard/student/courses/${course.id}/learn`);
                     return;
                 }
 
@@ -403,9 +403,10 @@ export default function Courses() {
                 onClose={() => setPaymentModal({ isOpen: false, courseId: null })}
                 courseId={paymentModal.courseId}
                 onSuccess={() => {
+                    const cid = paymentModal.courseId;
                     setPaymentModal({ isOpen: false, courseId: null });
                     setEnrollSuccess(true);
-                    setTimeout(() => navigate('/dashboard/student'), 2000);
+                    setTimeout(() => navigate(`/dashboard/student/courses/${cid}/learn`), 2000);
                 }}
             />
 

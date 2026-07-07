@@ -9,7 +9,8 @@ import {
     Filter,
     Eye,
     MessageCircle,
-    Loader2
+    Loader2,
+    RefreshCw
 } from 'lucide-react';
 import { useProjects, useReviewProject } from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
@@ -18,7 +19,7 @@ import FeedbackModal from '../../components/FeedbackModal';
 const ProjectReview = () => {
     const { data: projects = [], isLoading: loading, error } = useProjects();
     const reviewMutation = useReviewProject();
-    
+
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [reviewingProject, setReviewingProject] = useState(null);
@@ -28,6 +29,7 @@ const ProjectReview = () => {
     const stats = [
         { label: 'Total Pending', count: projects.filter(p => p.status === 'pending').length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
         { label: 'Approved', count: projects.filter(p => p.status === 'approved').length, icon: CheckCircle2, color: 'text-primary', bg: 'bg-primary/5' },
+        { label: 'Redo Requested', count: projects.filter(p => p.status === 'redo').length, icon: RefreshCw, color: 'text-orange-600', bg: 'bg-orange-50' },
         { label: 'Rejected', count: projects.filter(p => p.status === 'rejected').length, icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
     ];
 
@@ -60,8 +62,8 @@ const ProjectReview = () => {
     };
 
     const filteredProjects = projects.filter(p => {
-        const matchesSearch = p.projectTitle?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             p.studentName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = p.projectTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.studentName?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "all" || p.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -85,7 +87,7 @@ const ProjectReview = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
                     <div key={i} className="bg-white px-6 py-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-5">
                         <div className={`w-14 h-14 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`}>
@@ -112,16 +114,15 @@ const ProjectReview = () => {
                             className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-50 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all text-sm font-medium"
                         />
                     </div>
-                    <div className="flex gap-2">
-                        {['all', 'pending', 'approved', 'rejected'].map(s => (
+                    <div className="flex gap-2 flex-wrap">
+                        {['all', 'pending', 'approved', 'redo', 'rejected'].map(s => (
                             <button
                                 key={s}
                                 onClick={() => setStatusFilter(s)}
-                                className={`px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all border ${
-                                    statusFilter === s 
-                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
-                                    : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'
-                                }`}
+                                className={`px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all border ${statusFilter === s
+                                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'
+                                    }`}
                             >
                                 {s}
                             </button>
@@ -165,28 +166,28 @@ const ProjectReview = () => {
                                             {new Date(proj.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </td>
                                         <td className="px-8 py-6">
-                                            <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
-                                                proj.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                proj.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100' : 
-                                                'bg-red-50 text-red-600 border-red-100'
-                                            }`}>
-                                                {proj.status}
+                                            <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${proj.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                    proj.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100' :
+                                                        proj.status === 'redo' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                            'bg-red-50 text-red-600 border-red-100'
+                                                }`}>
+                                                {proj.status === 'redo' ? 'Redo' : proj.status}
                                             </span>
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {(proj.image || proj.githubLink) && (
-                                                    <a 
-                                                        href={proj.githubLink || proj.image} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
-                                                        className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" 
+                                                    <a
+                                                        href={proj.githubLink || proj.image}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
                                                         title="View Source"
                                                     >
                                                         <ExternalLink className="w-5 h-5" />
                                                     </a>
                                                 )}
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         setReviewingProject(proj);
                                                         setReviewForm({
@@ -195,7 +196,7 @@ const ProjectReview = () => {
                                                             feedback: proj.feedback || ''
                                                         });
                                                     }}
-                                                    className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" 
+                                                    className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
                                                     title="Review"
                                                 >
                                                     <CheckSquare className="w-5 h-5" />
@@ -229,22 +230,23 @@ const ProjectReview = () => {
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Status</label>
-                                        <select 
+                                        <select
                                             value={reviewForm.status}
-                                            onChange={(e) => setReviewForm({...reviewForm, status: e.target.value})}
+                                            onChange={(e) => setReviewForm({ ...reviewForm, status: e.target.value })}
                                             className="w-full px-5 py-4 bg-slate-50 border border-slate-50 rounded-2xl font-bold text-sm focus:bg-white focus:border-primary focus:outline-none transition-all"
                                         >
                                             <option value="approved">Approve</option>
+                                            <option value="redo">Request Redo</option>
                                             <option value="rejected">Reject</option>
                                             <option value="pending">Keep Pending</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Score (0-100)</label>
-                                        <input 
+                                        <input
                                             type="number"
                                             value={reviewForm.score}
-                                            onChange={(e) => setReviewForm({...reviewForm, score: e.target.value})}
+                                            onChange={(e) => setReviewForm({ ...reviewForm, score: e.target.value })}
                                             placeholder="85"
                                             className="w-full px-5 py-4 bg-slate-50 border border-slate-50 rounded-2xl font-bold text-sm focus:bg-white focus:border-primary focus:outline-none transition-all"
                                         />
@@ -253,9 +255,9 @@ const ProjectReview = () => {
 
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Feedback</label>
-                                    <textarea 
+                                    <textarea
                                         value={reviewForm.feedback}
-                                        onChange={(e) => setReviewForm({...reviewForm, feedback: e.target.value})}
+                                        onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
                                         rows="4"
                                         placeholder="Provide detailed feedback for the student..."
                                         className="w-full px-6 py-5 bg-slate-50 border border-slate-50 rounded-[2rem] font-medium text-sm focus:bg-white focus:border-primary focus:outline-none transition-all resize-none"
@@ -263,8 +265,8 @@ const ProjectReview = () => {
                                 </div>
 
                                 <div className="flex gap-4 pt-4">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         disabled={reviewMutation.isPending}
                                         className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
@@ -278,9 +280,9 @@ const ProjectReview = () => {
                 </div>
             )}
 
-            <FeedbackModal 
+            <FeedbackModal
                 isOpen={feedbackModal.isOpen}
-                onClose={() => setFeedbackModal({...feedbackModal, isOpen: false})}
+                onClose={() => setFeedbackModal({ ...feedbackModal, isOpen: false })}
                 type={feedbackModal.type}
                 title={feedbackModal.title}
                 message={feedbackModal.message}

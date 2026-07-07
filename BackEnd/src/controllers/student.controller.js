@@ -57,7 +57,7 @@ const getDashboard = async (req, res) => {
       [studentId]
     );
     const weeklySeconds = weeklyTime[0].totalSeconds || 0;
-    const weeklyHours = (weeklySeconds / 3600).toFixed(1);
+    const weeklyMinutes = Math.round(weeklySeconds / 60);
 
     // 4. Upcoming Quizzes
     const [upcomingQuizzes] = await pool.execute(`
@@ -103,7 +103,7 @@ const getDashboard = async (req, res) => {
         activeCourses: counts[0].activeCount,
         completedCourses: counts[0].completedCount,
         averageScore,
-        weeklyLearningTime: `${weeklyHours}h`
+        weeklyLearningTime: `${weeklyMinutes}m`
       },
       upcomingQuizzes,
       pendingProjects,
@@ -371,12 +371,12 @@ const getStudentAnalytics = async (req, res) => {
 
     res.json({
       student: {
-        timeSpent: Math.round(Number(stats.totalTime || 0) / 3600),
+        timeSpent: Math.round(Number(stats.totalTime || 0) / 60),
         quizScore: Math.round(Number(stats.avgQuiz || 0)),
         progress: Math.round(Number(stats.avgProgress || 0))
       },
       average: {
-        timeSpent: Math.round(Number(globalAvg.totalTime || 0) / 3600),
+        timeSpent: Math.round(Number(globalAvg.totalTime || 0) / 60),
         quizScore: Math.round(Number(globalAvg.avgQuiz || 0)),
         progress: Math.round(Number(globalAvg.avgProgress || 0))
       }
@@ -504,7 +504,7 @@ const getCourseAnalytics = async (req, res) => {
     res.json({
       overview: {
         progress: Math.round(enrollment[0].progressPercentage),
-        hoursSpent: (enrollment[0].timeSpentSeconds / 3600).toFixed(1),
+        minutesSpent: Math.round(enrollment[0].timeSpentSeconds / 60),
         enrolledAt: enrollment[0].enrolledAt
       },
       quizzes: {

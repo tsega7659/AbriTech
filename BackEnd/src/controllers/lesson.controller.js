@@ -152,23 +152,82 @@ const getLessons = async (req, res) => {
       [courseId]
     );
 
-    if (lessons.length === 0) {
-      return res.json({ lessons: [] });
+    // Fetch assignments/projects
+    let assignments = [];
+    if (studentId) {
+      [assignments] = await pool.execute(
+        `SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."textContent", s.score, s.feedback, s.result, s."submittedAt" 
+         FROM assignment a
+         LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
+         WHERE a."courseId" = ?`,
+        [studentId, courseId]
+      );
+    } else {
+      [assignments] = await pool.execute(
+        'SELECT * FROM assignment WHERE "courseId" = ?',
+        [courseId]
+      );
     }
 
     const lessonIds = lessons.map(l => l.id);
-    const [resources] = await pool.execute(
-      `SELECT * FROM lesson_resource WHERE lessonid IN (${lessonIds.join(',')}) ORDER BY lessonid, ordernumber ASC`
-    );
+    let resourcesMap = {};
+    let quizMap = {};
+    let quizResultsMap = {};
 
-    const resourcesMap = {};
-    resources.forEach(r => {
-      if (!resourcesMap[r.lessonId]) resourcesMap[r.lessonId] = [];
-      resourcesMap[r.lessonId].push(r);
-    });
+    if (lessons.length > 0) {
+      const [resources] = await pool.execute(
+        `SELECT * FROM lesson_resource WHERE lessonid IN (${lessonIds.join(',')}) ORDER BY lessonid, ordernumber ASC`
+      );
+      resources.forEach(r => {
+        if (!resourcesMap[r.lessonId]) resourcesMap[r.lessonId] = [];
+        resourcesMap[r.lessonId].push(r);
+      });
 
+      const [quizzes] = await pool.execute(
+        `SELECT * FROM lessonquiz WHERE "lessonId" IN (${lessonIds.join(',')})`
+      );
+      quizzes.forEach(q => {
+        if (!quizMap[q.lessonId]) quizMap[q.lessonId] = [];
+        quizMap[q.lessonId].push(q);
+      });
+
+      // Fetch Quiz Results for the student
+      if (studentId) {
+        const [results] = await pool.execute(`
+            SELECT 
+              lq."lessonId",
+              SUM(CASE WHEN qa."isCorrect" THEN 1 ELSE 0 END) as "correctCount",
+              COUNT(qa.id) as "totalQuestions"
+            FROM quizattempt qa
+            JOIN lessonquiz lq ON qa."quizId" = lq.id
+            WHERE qa."studentId" = ? AND lq."lessonId" IN (${lessonIds.join(',')})
+            GROUP BY lq."lessonId"
+        `, [studentId]);
+
+        results.forEach(r => {
+          quizResultsMap[r.lessonId] = {
+            correctCount: r.correctCount,
+            totalQuestions: r.totalQuestions,
+            passed: r.totalQuestions > 0 ? (r.correctCount / r.totalQuestions) >= 0.8 : false
+          };
+        });
+      }
+    }
+
+    // User Role Bypass (Admins and Teachers can see everything)
+    const canBypassLocks = role === 'admin' || role === 'teacher';
+
+    const processedLessons = lessons.map(l => ({
+      ...l,
+      isCompleted: studentId ? !!quizResultsMap[l.id]?.passed || (quizMap[l.id]?.length === 0 && !!quizResultsMap[l.id]) || (l.contentType !== 'quiz' && quizMap[l.id]?.length === 0 && !!quizResultsMap[l.id]) || false : false, // wait, let's keep the existing completion logic if possible, or fall back to progressMap
+      resources: resourcesMap[l.id] || [],
+      quiz: quizMap[l.id] || [],
+      quizResult: quizResultsMap[l.id] || null
+    }));
+
+    // Fetch progress map for lessons from lessonprogress table
     let progressMap = {};
-    if (studentId) {
+    if (studentId && lessonIds.length > 0) {
       const [progress] = await pool.execute(
         `SELECT "lessonId", completed FROM lessonprogress 
          WHERE "studentId" = ? AND "lessonId" IN (${lessonIds.join(',')})`,
@@ -179,90 +238,56 @@ const getLessons = async (req, res) => {
       });
     }
 
-    const [quizzes] = await pool.execute(
-      `SELECT * FROM lessonquiz WHERE "lessonId" IN (${lessonIds.join(',')})`
-    );
-
-    // Fetch Quiz Results for the student
-    let quizResultsMap = {};
-    if (studentId) {
-      const [results] = await pool.execute(`
-          SELECT 
-            lq."lessonId",
-            SUM(CASE WHEN qa."isCorrect" THEN 1 ELSE 0 END) as "correctCount",
-            COUNT(qa.id) as "totalQuestions"
-          FROM quizattempt qa
-          JOIN lessonquiz lq ON qa."quizId" = lq.id
-          WHERE qa."studentId" = ? AND lq."lessonId" IN (${lessonIds.join(',')})
-          GROUP BY lq."lessonId"
-      `, [studentId]);
-
-      results.forEach(r => {
-        quizResultsMap[r.lessonId] = {
-          correctCount: r.correctCount,
-          totalQuestions: r.totalQuestions,
-          passed: r.correctCount === r.totalQuestions // Or whatever pass criteria
-        };
-      });
-    }
-
-    const quizMap = {};
-    quizzes.forEach(q => {
-      if (!quizMap[q.lessonId]) quizMap[q.lessonId] = [];
-      quizMap[q.lessonId].push(q);
+    processedLessons.forEach(l => {
+      l.isCompleted = !!progressMap[l.id];
     });
 
-    // User Role Bypass (Admins and Teachers can see everything)
-    const canBypassLocks = role === 'admin' || role === 'teacher';
+    const processedAssignments = assignments.map(a => ({
+      ...a,
+      contentType: 'project',
+      isCompleted: a.status === 'approved' || a.status === 'pending',
+      resources: [],
+      quiz: []
+    }));
 
-    const processedLessons = [];
+    const unifiedCurriculum = [...processedLessons, ...processedAssignments];
+    unifiedCurriculum.sort((a, b) => {
+      if (a.orderNumber !== b.orderNumber) {
+        return a.orderNumber - b.orderNumber;
+      }
+      return a.id - b.id;
+    });
+
     let previousCompleted = true; // For progression locks
 
-    for (let i = 0; i < lessons.length; i++) {
-      const l = lessons[i];
-      l.resources = resourcesMap[l.id] || [];
-      l.quiz = quizMap[l.id] || [];
+    for (let i = 0; i < unifiedCurriculum.length; i++) {
+      const item = unifiedCurriculum[i];
 
-      // Payment Tier Logic — driven by course accessModel and lesson accessType
+      // Payment Tier Logic
       let isPaymentLocked = false;
       if (!isPaid && !canBypassLocks) {
         const model = (courseInfo.accessModel || 'free').toLowerCase();
         if (model === 'fully_paid') {
-          // Every lesson is locked until enrolled & paid
           isPaymentLocked = true;
         } else if (model === 'with_preview') {
-          // Only 'preview' lessons are free; anything else is locked
-          const lessonAccess = (l.accessType || 'locked').toLowerCase();
-          isPaymentLocked = lessonAccess !== 'preview';
+          const access = (item.accessType || 'locked').toLowerCase();
+          isPaymentLocked = access !== 'preview';
         }
-        // model === 'free' → isPaymentLocked stays false
       }
 
-      const isCompleted = !!progressMap[l.id];
-      // Progression locks do not apply to Admins/Teachers or to lessons that already require payment (let payment lock take precedence)
       let isProgressionLocked = false;
       if (!canBypassLocks && studentId) {
         isProgressionLocked = !previousCompleted;
       }
 
-      const isLocked = isPaymentLocked || isProgressionLocked;
-      const requiresPayment = isPaymentLocked;
+      item.isLocked = isPaymentLocked || isProgressionLocked;
+      item.requiresPayment = isPaymentLocked;
 
-      processedLessons.push({
-        ...l,
-        isCompleted,
-        isLocked,
-        requiresPayment,
-        quizResult: quizResultsMap[l.id] || null
-      });
-
-      // Update previous info for progression lock check
-      // Only an actual completion in the DB should unlock the next lesson
-      previousCompleted = isCompleted || canBypassLocks;
+      // Update previous completed state for the next item
+      previousCompleted = item.isCompleted || canBypassLocks;
     }
 
-    res.json({ lessons: processedLessons });
-
+    res.json({ lessons: unifiedCurriculum });
   } catch (error) {
     console.error('Get Lessons Error:', error);
     res.status(500).json({ message: 'Failed to fetch lessons', error: error.message });
@@ -592,7 +617,25 @@ const updateStudentCourseProgress = async (studentId, courseId) => {
     );
     const completedLessons = Number(completedLessonsResult[0].completed);
 
-    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const [totalAssignmentsResult] = await pool.execute(
+      'SELECT COUNT(*) as total FROM assignment WHERE "courseId" = ?',
+      [courseId]
+    );
+    const totalAssignments = Number(totalAssignmentsResult[0].total);
+
+    const [completedAssignmentsResult] = await pool.execute(
+      `SELECT COUNT(*) as completed 
+       FROM assignmentsubmission s
+       JOIN assignment a ON s."assignmentId" = a.id
+       WHERE s."studentId" = ? AND a."courseId" = ? AND s.status = 'approved'`,
+      [studentId, courseId]
+    );
+    const completedAssignments = Number(completedAssignmentsResult[0].completed);
+
+    const totalItems = totalLessons + totalAssignments;
+    const completedItems = completedLessons + completedAssignments;
+
+    const progressPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
     await pool.execute(
       `UPDATE enrollment 
@@ -603,7 +646,7 @@ const updateStudentCourseProgress = async (studentId, courseId) => {
                       ELSE status 
                     END 
        WHERE "studentId" = ? AND "courseId" = ?`,
-      [progressPercentage, progressPercentage, totalLessons, progressPercentage, studentId, courseId]
+      [progressPercentage, progressPercentage, totalItems, progressPercentage, studentId, courseId]
     );
   } catch (error) {
     console.error('Update Student Progress Error:', error);

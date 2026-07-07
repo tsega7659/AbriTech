@@ -24,7 +24,7 @@ export default function StudentDashboard() {
         { label: "Enrolled Courses", value: stats?.enrolledCourses || "0", icon: BookOpen, color: "text-[#00B4D8]", bg: "bg-blue-50" },
         { label: "Active Courses", value: stats?.activeCourses || "0", icon: BookOpen, color: "text-[#FDB813]", bg: "bg-yellow-50" },
         { label: "Completed Courses", value: stats?.completedCourses || "0", icon: Trophy, color: "text-green-500", bg: "bg-green-50" },
-        { label: "Average Score", value: (stats?.averageScore !== null && stats?.averageScore !== undefined) ? `${stats.averageScore}%` : "0%", icon: TrendingUp, color: "text-indigo-500", bg: "bg-indigo-50" },
+        { label: "Average Score", value: (stats?.averageScore !== null && stats?.averageScore !== undefined) ? `${stats.averageScore}%` : "0%", icon: TrendingUp, color: "text-[#FDB813]", bg: "bg-yellow-50" },
         { label: "Weekly Learning", value: stats?.weeklyLearningTime || "0h", icon: Clock, color: "text-purple-500", bg: "bg-purple-50" },
         { label: "Upcoming Quizzes", value: dashboardData?.upcomingQuizzes?.length || "0", icon: BookOpen, color: "text-red-500", bg: "bg-red-50" },
         { label: "Pending Projects", value: dashboardData?.pendingProjects?.length || "0", icon: BookOpen, color: "text-orange-500", bg: "bg-orange-50" },

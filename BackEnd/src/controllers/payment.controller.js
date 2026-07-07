@@ -252,7 +252,7 @@ const verifyChapaTransaction = async (req, res) => {
     payment = payments[0];
 
     if (payment.status === 'success') {
-      return res.status(200).json({ success: true, message: 'Payment already verified and successful' });
+      return res.status(200).json({ success: true, message: 'Payment already verified and successful', courseId: payment.courseId });
     }
   } catch (error) {
     console.error('Chapa Verification Error:', error);
@@ -269,7 +269,7 @@ const verifyChapaTransaction = async (req, res) => {
       await processSuccessfulPayment(connection, tx_ref, payment.studentId, payment.courseId);
 
       console.log(`[Payment] Manually verified success for ref: ${tx_ref}`);
-      return res.status(200).json({ success: true, message: 'Payment verified and course unlocked' });
+      return res.status(200).json({ success: true, message: 'Payment verified and course unlocked', courseId: payment.courseId });
     } catch (error) {
       console.error('Chapa Verification Error:', error);
       return res.status(500).json({ message: 'An error occurred during verification', error: error.message });
@@ -296,7 +296,7 @@ const chapaWebhook = async (req, res) => {
   try {
     const payload = req.body;
     const signature = req.headers['x-chapa-signature'];
-    
+
     // Log the webhook call
     console.log('[Chapa Webhook] Received event:', payload.event, 'for ref:', payload.tx_ref || payload.data?.tx_ref);
 
@@ -312,7 +312,7 @@ const chapaWebhook = async (req, res) => {
     }
 
     const tx_ref = payload.tx_ref || payload.data?.tx_ref;
-    
+
     if (!tx_ref) {
       return res.status(400).send('Missing transaction reference');
     }

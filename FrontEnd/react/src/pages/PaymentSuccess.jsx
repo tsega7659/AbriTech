@@ -10,6 +10,7 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
+  const [courseId, setCourseId] = useState(null);
 
   useEffect(() => {
     if (!txRef) {
@@ -22,8 +23,10 @@ export default function PaymentSuccess() {
       try {
         const response = await apiClient.get(`/payments/chapa/verify/${txRef}`);
         if (response.data.success) {
+          const cid = response.data.courseId;
+          setCourseId(cid);
           setStatus('success');
-          setTimeout(() => navigate('/dashboard/student'), 3000);
+          setTimeout(() => navigate(cid ? `/dashboard/student/courses/${cid}/learn` : '/dashboard/student'), 3000);
         } else {
           setStatus('error');
           setMessage(response.data.message || 'Payment verification failed.');
@@ -52,7 +55,7 @@ export default function PaymentSuccess() {
             exit={{ opacity: 0, scale: 0.9 }}
             className="flex flex-col items-center"
           >
-             {/* Standard Dual-Ring Spinner */}
+            {/* Standard Dual-Ring Spinner */}
             <div className="relative h-24 w-24 mb-8">
               <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-[#00B4D8] border-r-[#00B4D8]/30" style={{ animationDuration: '1.5s' }}></div>
               <div className="absolute inset-1 animate-spin rounded-full border-2 border-transparent border-b-[#FDB813] border-l-[#FDB813]/30" style={{ animationDuration: '1s', animationDirection: 'reverse' }}></div>
@@ -85,9 +88,11 @@ export default function PaymentSuccess() {
               status={status}
               message={message}
               onPrimary={() =>
-                navigate(status === 'success' ? '/dashboard/student' : '/courses')
+                navigate(status === 'success' && courseId
+                  ? `/dashboard/student/courses/${courseId}/learn`
+                  : status === 'success' ? '/dashboard/student' : '/courses')
               }
-              primaryLabel={status === 'success' ? 'Go to dashboard' : 'Back to courses'}
+              primaryLabel={status === 'success' ? 'Start Learning' : 'Back to courses'}
             />
           </motion.div>
         )}

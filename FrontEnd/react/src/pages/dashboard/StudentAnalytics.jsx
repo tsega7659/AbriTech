@@ -40,14 +40,14 @@ export default function StudentAnalytics() {
                     </div>
                     <h3 className="font-bold text-gray-900 mb-2">Time Spent</h3>
                     <div className="flex items-end gap-3 mb-4">
-                        <span className="text-4xl font-black text-[#00B4D8]">{student.timeSpent}h</span>
-                        <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {average.timeSpent}h avg</span>
+                        <span className="text-4xl font-black text-[#00B4D8]">{student.timeSpent}m</span>
+                        <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {average.timeSpent}m avg</span>
                     </div>
-                    
+
                     <div className="space-y-2 mt-6">
                         <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                             <span>You</span>
-                            <span>{student.timeSpent}h</span>
+                            <span>{student.timeSpent}m</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full bg-[#00B4D8] rounded-full" style={{ width: `${Math.min((student.timeSpent / Math.max(average.timeSpent * 2, 1)) * 100, 100)}%` }}></div>
@@ -55,7 +55,7 @@ export default function StudentAnalytics() {
 
                         <div className="flex justify-between text-xs font-bold text-gray-500 mt-3 uppercase tracking-wider">
                             <span>Average</span>
-                            <span>{average.timeSpent}h</span>
+                            <span>{average.timeSpent}m</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full bg-gray-200 rounded-full" style={{ width: '50%' }}></div>
@@ -73,7 +73,7 @@ export default function StudentAnalytics() {
                         <span className="text-4xl font-black text-[#FDB813]">{student.quizScore}%</span>
                         <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {average.quizScore}% avg</span>
                     </div>
-                    
+
                     <div className="space-y-2 mt-6">
                         <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                             <span>You</span>
@@ -103,7 +103,7 @@ export default function StudentAnalytics() {
                         <span className="text-4xl font-black text-green-500">{student.progress}%</span>
                         <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {average.progress}% avg</span>
                     </div>
-                    
+
                     <div className="space-y-2 mt-6">
                         <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                             <span>You</span>
@@ -139,8 +139,8 @@ export default function StudentAnalytics() {
                                 onClick={() => setSelectedCourseId(course.id)}
                                 className={cn(
                                     "w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group",
-                                    selectedCourseId === course.id 
-                                        ? "bg-[#00B4D8] border-transparent shadow-lg shadow-blue-100 transform -translate-y-1" 
+                                    selectedCourseId === course.id
+                                        ? "bg-[#00B4D8] border-transparent shadow-lg shadow-blue-100 transform -translate-y-1"
                                         : "bg-white border-gray-100 hover:border-blue-200 hover:bg-blue-50/30"
                                 )}
                             >
@@ -245,7 +245,7 @@ export default function StudentAnalytics() {
                     <Activity className="h-6 w-6 text-[#FDB813]" />
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">Performance Summary</h3>
                 </div>
-                
+
                 <div className="grid sm:grid-cols-3 gap-6">
                     {(() => {
                         const timePerf = calculatePerformance(student.timeSpent, average.timeSpent);

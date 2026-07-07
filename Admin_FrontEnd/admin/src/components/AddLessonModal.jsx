@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Link as LinkIcon, FileText, CheckCircle2, Video, Image as ImageIcon, Plus, Trash2, File, GripVertical } from 'lucide-react';
 
-const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
+const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentType = 'lesson' }) => {
     const [lessonData, setLessonData] = useState({
         title: '',
         description: '',
         orderNumber: '',
-        contentType: 'lesson',
+        contentType: initialContentType,
         resources: [
             { type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }
         ],
@@ -36,13 +36,13 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit }) => {
                 title: '',
                 description: '',
                 orderNumber: '',
-                contentType: 'lesson',
+                contentType: initialContentType,
                 resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
                 quiz: [],
                 accessType: 'paid'
             });
         }
-    }, [lessonToEdit, isOpen]);
+    }, [lessonToEdit, isOpen, initialContentType]);
 
     const handleAddResource = () => {
         setLessonData(prev => ({

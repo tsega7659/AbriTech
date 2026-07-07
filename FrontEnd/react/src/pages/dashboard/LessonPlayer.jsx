@@ -41,9 +41,13 @@ export default function LessonPlayer() {
     }, []);
 
     // TanStack Queries
+    // `lessons` now contains both lessons, quizzes AND projects (unified curriculum from backend)
     const { data: lessons = [], isLoading: lessonsLoading } = useLessons(courseId);
-    const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments(courseId);
     const { data: dashboardData } = useStudentDashboard();
+
+    // Separate views from the unified list
+    const lessonItems = lessons.filter(l => l.contentType !== 'project');
+    const projectItems = lessons.filter(l => l.contentType === 'project');
 
     // Mutations
     const completeLessonMutation = useCompleteLesson();
@@ -51,10 +55,9 @@ export default function LessonPlayer() {
     const submitAssignmentMutation = useSubmitAssignment();
     const updateTimeSpentMutation = useUpdateTimeSpent();
 
-    const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'assignments'
     const [activeLesson, setActiveLesson] = useState(null);
     const [activeAssignment, setActiveAssignment] = useState(null);
-    const loading = lessonsLoading || assignmentsLoading;
+    const loading = lessonsLoading;
     const completing = completeLessonMutation.isPending;
 
     // Quiz states
@@ -100,7 +103,16 @@ export default function LessonPlayer() {
 
         const syncTime = (secondsToSync) => {
             if (secondsToSync <= 0) return;
-            updateTimeSpentMutation.mutate({ courseId, seconds: secondsToSync });
+
+            const now = Date.now();
+            const lastGlobalSync = parseInt(localStorage.getItem('lastAbriTechTimeSync') || '0', 10);
+
+            // Allow ping if at least 50 seconds have passed globally
+            // (yields to other active tabs to prevent 2x tracking inflation)
+            if (now - lastGlobalSync >= 50000) {
+                localStorage.setItem('lastAbriTechTimeSync', now.toString());
+                updateTimeSpentMutation.mutate({ courseId, seconds: secondsToSync });
+            }
         };
 
         const handleVisibilityChange = () => {
@@ -149,11 +161,12 @@ export default function LessonPlayer() {
 
     useEffect(() => {
         if (lessons.length > 0) {
-            // Priority 1: Lesson from URL ID
+            // Priority 1: Item from URL ID (lessons/quizzes only — projects don't use URL IDs)
             if (urlLessonId && (!activeLesson || activeLesson.id !== parseInt(urlLessonId))) {
-                const target = lessons.find(l => l.id === parseInt(urlLessonId));
+                const target = lessons.find(l => l.id === parseInt(urlLessonId) && l.contentType !== 'project');
                 if (target && !target.isLocked) {
                     setActiveLesson(target);
+                    setActiveAssignment(null);
                     setQuizResult(target.quizResult || null);
                     if (target.isCompleted) setCanComplete(true);
                     manualDismissRef.current = false;
@@ -161,19 +174,24 @@ export default function LessonPlayer() {
                 }
             }
 
-            // Priority 2: Auto-select first available if no active lesson and NOT manually dismissed
+            // Priority 2: Auto-select first available if no active item and NOT manually dismissed
             if (!activeLesson && !activeAssignment && !manualDismissRef.current) {
                 // On mobile, don't auto-select if no specific lesson ID in URL to allow seeing playlist first
                 if (isMobile && !urlLessonId) return;
 
+                // Find first unlocked item in the unified list
                 const firstActive = lessons.find(l => !l.isLocked && !l.isCompleted)
                     || lessons.find(l => !l.isLocked)
                     || lessons[0];
 
                 if (firstActive) {
-                    setActiveLesson(firstActive);
-                    setQuizResult(firstActive.quizResult || null);
-                    if (firstActive.isCompleted) setCanComplete(true);
+                    if (firstActive.contentType === 'project') {
+                        setActiveAssignment(firstActive);
+                    } else {
+                        setActiveLesson(firstActive);
+                        setQuizResult(firstActive.quizResult || null);
+                        if (firstActive.isCompleted) setCanComplete(true);
+                    }
                 }
             }
         }
@@ -263,11 +281,11 @@ export default function LessonPlayer() {
     }, [lessons]);
 
     useEffect(() => {
-        if (activeAssignment && assignments.length > 0) {
-            const refreshed = assignments.find(a => a.id === activeAssignment.id);
+        if (activeAssignment && lessons.length > 0) {
+            const refreshed = lessons.find(a => a.id === activeAssignment.id && a.contentType === 'project');
             if (refreshed) setActiveAssignment(refreshed);
         }
-    }, [assignments]);
+    }, [lessons]);
 
     const handleMarkComplete = async () => {
         if (!activeLesson || !canComplete) return;
@@ -552,7 +570,7 @@ export default function LessonPlayer() {
                                     <button
                                         type="button"
                                         onClick={(e) => handleSubmitAssignment(e, false)}
-                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft')}
+                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft' && activeAssignment.status !== 'redo')}
                                         className="flex-1 py-4 px-3 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Save Draft
@@ -562,13 +580,26 @@ export default function LessonPlayer() {
                                         onClick={() => {
                                             setShowConfirmModal(true);
                                         }}
-                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft') || (!submissionText && !submissionFile && !activeAssignment.fileUrl && !activeAssignment.textContent)}
+                                        disabled={submitAssignmentMutation.isPending || (activeAssignment.status && activeAssignment.status !== 'draft' && activeAssignment.status !== 'redo') || (!submissionText && !submissionFile && !activeAssignment.fileUrl && !activeAssignment.textContent)}
                                         className="flex-1 py-4 px-3 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
                                     >
-                                        {submitAssignmentMutation.isPending ? 'Uploading...' : 'Submit Final Work'}
+                                        {submitAssignmentMutation.isPending ? 'Uploading...' : activeAssignment.status === 'redo' ? 'Resubmit Work' : 'Submit Final Work'}
                                     </button>
                                 </div>
-                                {activeAssignment.status && activeAssignment.status !== 'draft' ? (
+                                {activeAssignment.status === 'redo' ? (
+                                    <div className="mt-8 p-6 bg-orange-50 rounded-3xl border border-orange-100">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                                            <h4 className="text-sm font-black text-orange-700 uppercase tracking-widest">Redo Requested</h4>
+                                        </div>
+                                        {activeAssignment.feedback ? (
+                                            <p className="text-sm font-medium text-orange-600 leading-relaxed italic">"{activeAssignment.feedback}"</p>
+                                        ) : (
+                                            <p className="text-sm font-bold text-orange-500">Your instructor has requested changes. Please revise and resubmit.</p>
+                                        )}
+                                        <p className="mt-4 text-[10px] text-orange-400 font-bold uppercase tracking-widest">You may revise and resubmit your work above.</p>
+                                    </div>
+                                ) : activeAssignment.status && activeAssignment.status !== 'draft' ? (
                                     <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                                         <div className="flex items-center justify-between mb-4">
                                             <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Teacher's Assessment</h4>
@@ -584,7 +615,7 @@ export default function LessonPlayer() {
                                     </div>
                                 ) : (
                                     <p className="mt-6 text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
-                                        Note: Resubmission is not allowed after final submission.
+                                        Note: Resubmission is allowed only if instructor requests a redo.
                                     </p>
                                 )}
                             </form>
@@ -789,44 +820,49 @@ export default function LessonPlayer() {
                             <ChevronLeft className="w-4 h-4" /> Back to Course
                         </button>
 
-                        <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
-                            <button
-                                onClick={() => setActiveTab('lessons')}
-                                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'lessons' ? 'bg-white text-[#00B4D8] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                Lessons
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('assignments')}
-                                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'assignments' ? 'bg-white text-[#00B4D8] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                Projects
-                            </button>
-                        </div>
-
-                        <h2 className="text-xl font-black text-gray-900">{activeTab === 'lessons' ? 'Course Content' : 'Course Projects'}</h2>
+                        <h2 className="text-xl font-black text-gray-900">Course Curriculum</h2>
                         <div className="flex items-center gap-2 mt-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            {activeTab === 'lessons' ? (
-                                <><Clock className="w-4 h-4" /> {lessons.filter(l => l.isCompleted).length} / {lessons.length} Completed</>
-                            ) : (
-                                <><File className="w-4 h-4" /> {assignments.length} Total Projects</>
-                            )}
+                            <Clock className="w-4 h-4" /> {lessons.filter(l => l.isCompleted || l.status === 'approved').length} / {lessons.length} Completed
                         </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                        {activeTab === 'lessons' ? (
-                            lessons.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 font-bold">No lessons yet</div>
-                            ) : (
-                                lessons.map((lesson, idx) => (
+                        {lessons.length === 0 ? (
+                            <div className="text-center py-10 text-gray-400 font-bold">No content yet</div>
+                        ) : (
+                            lessons.map((item, idx) => {
+                                const isProject = item.contentType === 'project';
+                                const isActiveLesson = !isProject && activeLesson?.id === item.id;
+                                const isActiveProject = isProject && activeAssignment?.id === item.id;
+                                const isActive = isActiveLesson || isActiveProject;
+                                const isCompleted = isProject
+                                    ? (item.status === 'approved')
+                                    : item.isCompleted;
+
+                                return (
                                     <button
-                                        key={lesson.id}
+                                        key={`${item.contentType}-${item.id}`}
                                         onClick={() => {
-                                            if (lesson.isLocked) {
-                                                if (lesson.requiresPayment) {
+                                            if (item.isLocked) {
+                                                if (item.requiresPayment) {
                                                     (async () => {
                                                         try {
+                                                            showFeedback("Checking access...", "Verifying your enrollment status...", "success");
+                                                            const { data } = await apiClient.get(`/lessons/course/${courseId}`);
+                                                            const freshItems = Array.isArray(data?.lessons) ? data.lessons : [];
+                                                            const refreshed = freshItems.find(l => l.id === item.id);
+                                                            if (refreshed && !refreshed.requiresPayment && !refreshed.isLocked) {
+                                                                manualDismissRef.current = false;
+                                                                if (refreshed.contentType === 'project') {
+                                                                    setActiveAssignment(refreshed);
+                                                                    setActiveLesson(null);
+                                                                } else {
+                                                                    setActiveLesson(refreshed);
+                                                                    setActiveAssignment(null);
+                                                                    navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
+                                                                }
+                                                                return;
+                                                            }
                                                             showFeedback("Opening checkout...", "Redirecting to payment portal...", "success");
                                                             const response = await apiClient.post('/payments/chapa/initialize', { courseId });
                                                             if (response.data.success && response.data.checkoutUrl) {
@@ -840,77 +876,59 @@ export default function LessonPlayer() {
                                                         }
                                                     })();
                                                 } else {
-                                                    showFeedback("Locked", "Please complete previous lessons first.", "warning");
+                                                    showFeedback("Locked", "Please complete the previous item first.", "warning");
                                                 }
                                                 return;
                                             }
+
                                             manualDismissRef.current = false;
-                                            setActiveLesson(lesson);
-                                            setActiveAssignment(null);
-                                            navigate(`/dashboard/student/courses/${courseId}/learn/${lesson.id}`);
+                                            if (isProject) {
+                                                setActiveAssignment(item);
+                                                setActiveLesson(null);
+                                            } else {
+                                                setActiveLesson(item);
+                                                setActiveAssignment(null);
+                                                navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
+                                            }
                                         }}
-                                        className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-4 group ${activeLesson?.id === lesson.id
+                                        className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-4 group ${isActive
                                             ? 'bg-white border-[#00B4D8] shadow-lg shadow-blue-500/5 ring-1 ring-[#00B4D8]/20'
-                                            : lesson.isLocked
-                                                ? 'bg-gray-100/50 border-transparent opacity-60 hover:opacity-100 disabled:cursor-not-allowed'
+                                            : item.isLocked
+                                                ? 'bg-gray-100/50 border-transparent opacity-60 cursor-not-allowed'
                                                 : 'bg-white border-transparent hover:border-gray-200 hover:shadow-sm'
                                             }`}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${lesson.isCompleted ? 'bg-[#FDB813]/20 text-[#FDB813]' :
-                                            lesson.isLocked ? 'bg-gray-200 text-gray-400' :
-                                                activeLesson?.id === lesson.id ? 'bg-[#00B4D8] text-white' : 'bg-gray-100 text-gray-400'
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCompleted ? 'bg-[#FDB813]/20 text-[#FDB813]' :
+                                            item.isLocked ? 'bg-gray-200 text-gray-400' :
+                                                isActive ? 'bg-[#00B4D8] text-white' :
+                                                    isProject ? 'bg-amber-100 text-amber-500' :
+                                                        'bg-gray-100 text-gray-400'
                                             }`}>
-                                            {lesson.isCompleted ? <CheckCircle className="w-4 h-4" /> :
-                                                lesson.isLocked ? <Lock className="w-4 h-4" /> :
-                                                    lesson.contentType === 'quiz' ? <HelpCircle className="w-4 h-4" /> :
-                                                        <span className="text-xs font-black">{idx + 1}</span>}
+                                            {isCompleted ? <CheckCircle className="w-4 h-4" /> :
+                                                item.isLocked ? <Lock className="w-4 h-4" /> :
+                                                    item.contentType === 'quiz' ? <HelpCircle className="w-4 h-4" /> :
+                                                        isProject ? <File className="w-4 h-4" /> :
+                                                            <span className="text-xs font-black">{idx + 1}</span>
+                                            }
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-bold truncate ${activeLesson?.id === lesson.id ? 'text-gray-900' : 'text-gray-600'}`}>
-                                                {lesson.contentType === 'quiz' ? `Quiz: ${lesson.title}` : lesson.title}
+                                            <p className={`text-sm font-bold truncate ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                                                {item.contentType === 'quiz' ? `Quiz: ${item.title}` :
+                                                    isProject ? `Project: ${item.title}` :
+                                                        item.title}
                                             </p>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                                                {lesson.contentType === 'quiz' ? 'Quiz Content' : (lesson.type || 'Lesson')}
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5">
+                                                {isProject ? 'Submission Required' :
+                                                    item.contentType === 'quiz' ? 'Quiz' :
+                                                        (item.type || 'Lesson')}
                                             </p>
                                         </div>
-                                        {activeLesson?.id === lesson.id && (
+                                        {isActive && !item.isLocked && (
                                             <PlayCircle className="w-5 h-5 text-[#00B4D8] animate-pulse" />
                                         )}
                                     </button>
-                                ))
-                            )
-                        ) : (
-                            assignments.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 font-bold">No projects assigned yet</div>
-                            ) : (
-                                assignments.map((assignment, idx) => (
-                                    <button
-                                        key={assignment.id}
-                                        onClick={() => {
-                                            manualDismissRef.current = false;
-                                            setActiveAssignment(assignment);
-                                            setActiveLesson(null);
-                                        }}
-                                        className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center gap-4 group ${activeAssignment?.id === assignment.id
-                                            ? 'bg-white border-[#00B4D8] shadow-lg shadow-blue-500/5 ring-1 ring-[#00B4D8]/20'
-                                            : 'bg-white border-transparent hover:border-gray-200 hover:shadow-sm'
-                                            }`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeAssignment?.id === assignment.id ? 'bg-[#00B4D8] text-white' : 'bg-amber-100 text-amber-500'
-                                            }`}>
-                                            <File className="w-4 h-4" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-bold truncate ${activeAssignment?.id === assignment.id ? 'text-gray-900' : 'text-gray-600'}`}>
-                                                {assignment.title}
-                                            </p>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                                                Assignment
-                                            </p>
-                                        </div>
-                                    </button>
-                                ))
-                            )
+                                );
+                            })
                         )}
                     </div>
                 </div>

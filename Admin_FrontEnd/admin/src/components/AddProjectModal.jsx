@@ -8,7 +8,6 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
         orderNumber: '',
         dueDate: '',
         maxPoints: 100,
-        requiresApproval: true,
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,7 +21,6 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                     ? new Date(projectToEdit.dueDate).toISOString().slice(0, 16)
                     : '',
                 maxPoints: projectToEdit.maxPoints || 100,
-                requiresApproval: projectToEdit.requiresApproval !== false,
             });
         } else if (isOpen) {
             setFormData({
@@ -31,7 +29,6 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                 orderNumber: '',
                 dueDate: '',
                 maxPoints: 100,
-                requiresApproval: true,
             });
         }
     }, [projectToEdit, isOpen]);
@@ -170,27 +167,6 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                         </div>
                     </div>
 
-                    {/* Requires Approval toggle */}
-                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                        <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, requiresApproval: !formData.requiresApproval })}
-                            className={`relative w-12 h-6 rounded-full transition-colors ${formData.requiresApproval ? 'bg-primary' : 'bg-slate-200'}`}
-                        >
-                            <span
-                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.requiresApproval ? 'translate-x-6' : 'translate-x-0'}`}
-                            />
-                        </button>
-                        <div>
-                            <p className="font-black text-slate-700 text-sm">Requires Instructor Approval</p>
-                            <p className="text-xs text-slate-400 font-medium">
-                                {formData.requiresApproval
-                                    ? 'Instructor must review and grade each submission'
-                                    : 'Submissions will be marked complete automatically'}
-                            </p>
-                        </div>
-                    </div>
-
                     {/* Footer */}
                     <div className="flex justify-end gap-3 pt-2">
                         <button
@@ -216,8 +192,8 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

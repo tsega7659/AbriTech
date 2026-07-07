@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, XCircle, Search, ExternalLink, MessageCircle, FileText } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Search, ExternalLink, MessageCircle, FileText, RefreshCw } from 'lucide-react';
 import { useInstructorSubmissions, useAssessSubmission } from '../../hooks/useInstructorQueries';
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
@@ -45,6 +45,7 @@ const InstructorProjects = () => {
     const stats = [
         { label: 'Pending Review', value: submissions.filter(s => s.status === 'pending').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
         { label: 'Approved', value: submissions.filter(s => s.status === 'approved').length, icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
+        { label: 'Redo Requested', value: submissions.filter(s => s.status === 'redo').length, icon: RefreshCw, color: 'text-orange-500', bg: 'bg-orange-50' },
         { label: 'Rejected', value: submissions.filter(s => s.status === 'rejected').length, icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
     ];
 
@@ -78,7 +79,7 @@ const InstructorProjects = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
                         <div className="flex items-center justify-between mb-4">
@@ -93,8 +94,8 @@ const InstructorProjects = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-slate-100/50 p-1.5 rounded-2xl w-fit">
-                {['pending', 'approved', 'rejected'].map((tab) => (
+            <div className="flex bg-slate-100/50 p-1.5 rounded-2xl w-fit flex-wrap gap-1">
+                {['pending', 'approved', 'redo', 'rejected'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -162,7 +163,7 @@ const InstructorProjects = () => {
                                                 onClick={() => {
                                                     setAssessing(sub.id);
                                                     setAssessmentData({
-                                                        status: sub.status === 'pending' ? 'approved' : sub.status,
+                                                        status: 'approved',
                                                         score: sub.score,
                                                         maxScore: sub.maxScore || 10,
                                                         feedback: sub.feedback || ''
@@ -188,6 +189,7 @@ const InstructorProjects = () => {
                                                         className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
                                                     >
                                                         <option value="approved">Approve</option>
+                                                        <option value="redo">Request Redo</option>
                                                         <option value="rejected">Reject</option>
                                                     </select>
                                                 </div>
@@ -239,7 +241,7 @@ const InstructorProjects = () => {
                                     </div>
                                 )}
 
-                                {(sub.status === 'approved' || sub.status === 'rejected') && sub.feedback && (
+                                {(sub.status === 'approved' || sub.status === 'rejected' || sub.status === 'redo') && sub.feedback && (
                                     <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4">
                                         <div className="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-300">
                                             <MessageCircle className="w-4 h-4" />

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const fs = require('fs');
 
 // ----- ADMIN: Manage Assignments (Projects) -----
 
@@ -206,7 +207,7 @@ const submitAssignment = async (req, res) => {
 
     // Check for existing submission
     const [existing] = await pool.execute(
-      'SELECT id, status FROM assignmentsubmission WHERE "assignmentId" = ? AND "studentId" = ?',
+      'SELECT id, status, "fileUrl", "textContent" FROM assignmentsubmission WHERE "assignmentId" = ? AND "studentId" = ?',
       [assignmentId, studentId]
     );
 
@@ -216,13 +217,40 @@ const submitAssignment = async (req, res) => {
     const legacyContent = fileUrl || textContent;
 
     if (existing.length > 0) {
-      if (existing[0].status !== 'draft') {
+      if (existing[0].status !== 'draft' && existing[0].status !== 'redo') {
         return res.status(400).json({ message: 'Assignment already submitted for review and cannot be modified' });
       }
 
+      const existingRecord = existing[0];
+
+      // Cleanup ghost file to prevent storage leak
+      if (fileUrl && existingRecord.fileUrl && existingRecord.fileUrl !== fileUrl) {
+        try {
+          if (fs.existsSync(existingRecord.fileUrl)) {
+            fs.unlinkSync(existingRecord.fileUrl);
+          }
+        } catch (err) {
+          console.error('Failed to unlink old assignment file:', err);
+        }
+      }
+
+      // Preserve historical context natively via append
+      let finalContent = textContent;
+      if (existingRecord.textContent && existingRecord.textContent.trim().length > 0 && textContent !== existingRecord.textContent) {
+        finalContent = `${textContent}\n\n--- RESUBMISSION [${new Date().toISOString().split('T')[0]}] ---\n\n${existingRecord.textContent}`;
+      }
+      // If we didn't submit new text, but there was old text, preserve it
+      if (!textContent && existingRecord.textContent) {
+        finalContent = existingRecord.textContent;
+      }
+
+      // Re-evaluate legacyType and legacyContent based on combination
+      const resolvedLegacyType = fileUrl ? 'file' : 'text';
+      const resolvedLegacyContent = fileUrl || finalContent;
+
       await pool.execute(
         'UPDATE assignmentsubmission SET "submissionType" = ?, "submissionContent" = ?, "fileUrl" = ?, "textContent" = ?, status = ?, "submittedAt" = NOW() WHERE id = ?',
-        [legacyType, legacyContent, fileUrl, textContent, newStatus, existing[0].id]
+        [resolvedLegacyType, resolvedLegacyContent, fileUrl || existingRecord.fileUrl, finalContent, newStatus, existingRecord.id]
       );
 
       const [updated] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [existing[0].id]);
@@ -255,7 +283,7 @@ const assessSubmission = async (req, res) => {
     const { id: submissionId } = req.params;
     const { status, result, feedback, score, maxScore } = req.body;
 
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
+    if (!['pending', 'approved', 'rejected', 'redo'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
