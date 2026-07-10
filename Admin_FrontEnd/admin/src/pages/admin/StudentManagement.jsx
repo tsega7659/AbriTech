@@ -165,6 +165,18 @@ const StudentManagement = () => {
         s.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+
     return (
         <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 md:space-y-8 font-sans">
             {/* Header */}
@@ -430,8 +442,8 @@ const StudentManagement = () => {
                                         <Loading fullScreen={false} message="Loading students..." />
                                     </td>
                                 </tr>
-                            ) : filteredStudents.length > 0 ? (
-                                filteredStudents.map((student) => (
+                            ) : currentItems.length > 0 ? (
+                                currentItems.map((student) => (
                                     <tr
                                         key={student.id}
                                         className="hover:bg-slate-50 transition-colors group cursor-pointer"
@@ -502,12 +514,26 @@ const StudentManagement = () => {
                 {/* Pagination */}
                 <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/20 text-center sm:text-left">
                     <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
-                        Total Enrolled Students: {students.length}
+                        Showing {filteredStudents.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredStudents.length)} of {filteredStudents.length} students
                     </p>
-                    <div className="flex gap-2">
-                        <button className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-400 transition-all disabled:opacity-50" disabled>Previous</button>
-                        <button className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all">Next</button>
-                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
             {/* Delete Confirmation Modal */}

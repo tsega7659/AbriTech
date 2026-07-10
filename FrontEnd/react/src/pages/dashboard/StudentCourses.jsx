@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, BookOpen, Clock, PlayCircle, MoreVertical, Plus, User, Calendar } from "lucide-react";
+import { Search, BookOpen, Clock, PlayCircle, MoreVertical, Plus, User, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
@@ -80,9 +80,12 @@ export default function StudentCourses() {
                                     </button>
                                 </div>
 
-                                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 font-bold border-b border-gray-100 pb-4">
+                                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 font-bold border-b border-gray-100 pb-4 flex-wrap">
                                     <span className="flex items-center gap-1.5"><User className="h-4 w-4 text-[#FDB813]" /> {course.instructorName || 'AbriTech'}</span>
                                     <span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-purple-500" /> {course.duration || 'Self-paced'}</span>
+                                    {course.enrolledStudents !== undefined && (
+                                        <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-[#00B4D8]" /> {course.enrolledStudents} Students</span>
+                                    )}
                                 </div>
 
                                 <div className="mt-auto">
@@ -93,7 +96,7 @@ export default function StudentCourses() {
                                     <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
                                         <div className="h-full bg-[#00B4D8] rounded-full transition-all duration-1000" style={{ width: `${course.progress || 0}%` }}></div>
                                     </div>
-                                    
+
                                     {course.lastAccessed && (
                                         <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold mb-4">
                                             <Calendar className="h-3 w-3" />

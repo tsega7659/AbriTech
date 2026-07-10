@@ -238,39 +238,6 @@ export default function StudentAnalytics() {
                     )}
                 </div>
             </div>
-
-            {/* Performance Summary */}
-            <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-3 mb-8">
-                    <Activity className="h-6 w-6 text-[#FDB813]" />
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Performance Summary</h3>
-                </div>
-
-                <div className="grid sm:grid-cols-3 gap-6">
-                    {(() => {
-                        const timePerf = calculatePerformance(student.timeSpent, average.timeSpent);
-                        const quizPerf = calculatePerformance(student.quizScore, average.quizScore);
-                        const progPerf = calculatePerformance(student.progress, average.progress);
-
-                        return (
-                            <>
-                                <div className={`p-6 rounded-[2rem] ${timePerf.bg} border border-transparent flex flex-col items-center text-center`}>
-                                    <p className="text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Pace</p>
-                                    <p className={`text-xl font-black ${timePerf.color}`}>{timePerf.text}</p>
-                                </div>
-                                <div className={`p-6 rounded-[2rem] ${quizPerf.bg} border border-transparent flex flex-col items-center text-center`}>
-                                    <p className="text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Accuracy</p>
-                                    <p className={`text-xl font-black ${quizPerf.color}`}>{quizPerf.text}</p>
-                                </div>
-                                <div className={`p-6 rounded-[2rem] ${progPerf.bg} border border-transparent flex flex-col items-center text-center`}>
-                                    <p className="text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Consistency</p>
-                                    <p className={`text-xl font-black ${progPerf.color}`}>{progPerf.text}</p>
-                                </div>
-                            </>
-                        );
-                    })()}
-                </div>
-            </div>
         </div>
     );
 }

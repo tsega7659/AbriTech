@@ -1,13 +1,14 @@
 import React, { useRef } from "react";
-import { Award, FolderGit2, Printer, Share2, Github, Linkedin, Globe, MapPin, Calendar, BookOpen } from "lucide-react";
-import { useStudentPortfolio } from "../../hooks/useStudentQueries";
+import { Award, FolderGit2, Printer, Share2, Github, Linkedin, Globe, MapPin, Calendar, BookOpen, FileText } from "lucide-react";
+import { useStudentPortfolio, useGrades } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 
 export default function StudentPortfolio() {
     const { data: portfolioData, isLoading } = useStudentPortfolio();
+    const { data: courseGrades = [], isLoading: gradesLoading } = useGrades();
     const printRef = useRef();
 
-    if (isLoading) {
+    if (isLoading || gradesLoading) {
         return <Loading fullScreen={false} message="Loading your portfolio..." />;
     }
 
@@ -16,8 +17,26 @@ export default function StudentPortfolio() {
     };
 
     const profile = portfolioData?.profile || {};
-    const projects = portfolioData?.projects || [];
+    const approvedProjects = portfolioData?.projects || [];
     const completedCourses = portfolioData?.completedCourses || [];
+
+    // Merge graded assignment submissions as portfolio projects
+    const assignmentProjects = courseGrades.flatMap(course =>
+        (course.assignments || [])
+            .filter(a => a.score !== null && a.score !== undefined)
+            .map(a => ({
+                title: a.title,
+                description: a.feedback ? `Feedback: ${a.feedback}` : 'Assignment submission',
+                imageUrl: null,
+                githubLink: null,
+                submittedAt: a.date,
+                score: a.score,
+                maxScore: a.maxScore,
+                courseName: course.courseName,
+                isAssignment: true
+            }))
+    );
+    const projects = [...approvedProjects, ...assignmentProjects];
 
     // Fallbacks for missing backend data
     const age = profile.age || "15";
@@ -47,9 +66,9 @@ export default function StudentPortfolio() {
                 <div className="bg-white p-8 sm:p-12 border-b border-gray-100">
                     <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
                         <div className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 relative">
-                            <img 
-                                src={profile.profileImage ? `${API_BASE_URL}${profile.profileImage}` : "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
-                                alt={profile.fullName} 
+                            <img
+                                src={profile.profileImage ? `${API_BASE_URL}${profile.profileImage}` : "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"}
+                                alt={profile.fullName}
                                 className="w-full h-full rounded-2xl object-cover border-4 border-white shadow-lg print:border-none print:shadow-none"
                             />
                             <div className="absolute -bottom-3 -right-3 bg-[#00B4D8] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
@@ -62,7 +81,7 @@ export default function StudentPortfolio() {
                                 <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">{profile.fullName}</h1>
                                 <span className="bg-blue-50 text-[#00B4D8] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">{profile.educationLevel}</span>
                             </div>
-                            
+
                             <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 mb-6">
                                 <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Age: {age}</div>
                                 <div className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {profile.classLevel}</div>
@@ -99,7 +118,7 @@ export default function StudentPortfolio() {
                             <FolderGit2 className="h-6 w-6 text-[#00B4D8]" />
                             <h2 className="text-2xl font-black text-gray-900 border-b-2 border-gray-100 pb-2 flex-grow">Featured Projects</h2>
                         </div>
-                        
+
                         <div className="grid md:grid-cols-2 gap-8 print:grid-cols-2 print:gap-4">
                             {projects.length === 0 ? (
                                 <p className="text-gray-500 italic md:col-span-2">No projects published yet.</p>
@@ -111,15 +130,32 @@ export default function StudentPortfolio() {
                                                 <img src={proj.imageUrl} alt={proj.title} className="w-full h-full object-cover" />
                                             </div>
                                         )}
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{proj.title}</h3>
+                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                            <h3 className="text-xl font-bold text-gray-900">{proj.title}</h3>
+                                            {proj.isAssignment && (
+                                                <span className="shrink-0 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-50 text-[#00B4D8] border border-blue-100">
+                                                    Assignment
+                                                </span>
+                                            )}
+                                        </div>
+                                        {proj.courseName && (
+                                            <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">{proj.courseName}</p>
+                                        )}
                                         <p className="text-sm text-gray-600 mb-4 line-clamp-3 print:line-clamp-none">{proj.description}</p>
                                         <div className="flex justify-between items-end border-t border-gray-50 pt-4">
                                             <span className="text-xs font-bold text-gray-400 uppercase">{new Date(proj.submittedAt).toLocaleDateString()}</span>
-                                            {proj.githubLink && (
-                                                <span className="text-[#00B4D8] text-sm font-bold flex items-center gap-1">
-                                                    View Source <Github className="h-4 w-4" />
-                                                </span>
-                                            )}
+                                            <div className="flex items-center gap-3">
+                                                {proj.score !== undefined && (
+                                                    <span className="text-sm font-black text-[#00B4D8]">
+                                                        {proj.score}<span className="text-xs text-gray-400 font-bold">/{proj.maxScore || 100}</span>
+                                                    </span>
+                                                )}
+                                                {proj.githubLink && (
+                                                    <span className="text-[#00B4D8] text-sm font-bold flex items-center gap-1">
+                                                        View Source <Github className="h-4 w-4" />
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -133,7 +169,7 @@ export default function StudentPortfolio() {
                             <Award className="h-6 w-6 text-[#FDB813]" />
                             <h2 className="text-2xl font-black text-gray-900 border-b-2 border-gray-100 pb-2 flex-grow">Certifications & Completed Courses</h2>
                         </div>
-                        
+
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-2">
                             {completedCourses.length === 0 ? (
                                 <p className="text-gray-500 italic sm:col-span-2 lg:col-span-3">Enrolled in courses, working towards certificates.</p>
@@ -154,7 +190,7 @@ export default function StudentPortfolio() {
                     </section>
                 </div>
             </div>
-            
+
             {/* Styles for printing */}
             <style jsx global>{`
                 @media print {

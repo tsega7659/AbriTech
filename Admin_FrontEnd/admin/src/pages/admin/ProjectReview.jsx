@@ -68,6 +68,18 @@ const ProjectReview = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredProjects.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
+
     if (loading) return <Loading fullScreen={false} message="Loading student projects..." />;
 
     if (error) return (
@@ -120,8 +132,8 @@ const ProjectReview = () => {
                                 key={s}
                                 onClick={() => setStatusFilter(s)}
                                 className={`px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all border ${statusFilter === s
-                                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'
+                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                    : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'
                                     }`}
                             >
                                 {s}
@@ -149,7 +161,7 @@ const ProjectReview = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredProjects.map((proj) => (
+                                currentItems.map((proj) => (
                                     <tr key={proj.id} className="hover:bg-slate-50/30 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div>
@@ -167,9 +179,9 @@ const ProjectReview = () => {
                                         </td>
                                         <td className="px-8 py-6">
                                             <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${proj.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                    proj.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100' :
-                                                        proj.status === 'redo' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                            'bg-red-50 text-red-600 border-red-100'
+                                                proj.status === 'approved' ? 'bg-green-50 text-green-600 border-green-100' :
+                                                    proj.status === 'redo' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                        'bg-red-50 text-red-600 border-red-100'
                                                 }`}>
                                                 {proj.status === 'redo' ? 'Redo' : proj.status}
                                             </span>
@@ -208,6 +220,30 @@ const ProjectReview = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+                {/* Pagination */}
+                <div className="p-8 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Showing {filteredProjects.length > 0 ? indexOfFirstItem + 1 : 0}–{Math.min(indexOfLastItem, filteredProjects.length)} of {filteredProjects.length} submissions
+                    </p>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

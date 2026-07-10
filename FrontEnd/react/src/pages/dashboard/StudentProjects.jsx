@@ -1,23 +1,27 @@
 import React, { useState } from "react";
 import { FolderGit2, CheckCircle2, Clock, PlayCircle, Star, Github } from "lucide-react";
-import { useStudentDashboard } from "../../hooks/useStudentQueries";
+import { useStudentDashboard, useGrades } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import ProjectSubmissionModal from "../../components/ProjectSubmissionModal";
 
 export default function StudentProjects() {
     const { data: dashboardData, isLoading } = useStudentDashboard();
+    const { data: courseGrades = [], isLoading: gradesLoading } = useGrades();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAssignment, setSelectedAssignment] = useState(null);
 
-    if (isLoading) {
+    if (isLoading || gradesLoading) {
         return <Loading variant="inline" message="Loading your projects..." />;
     }
 
     const pendingProjects = dashboardData?.pendingProjects || [];
 
-    // For now, we will use an empty array for completed projects to remove static data.
-    // In a future update, we can connect this to a /submissions endpoint.
-    const completedProjects = [];
+    // Build completed projects from graded assignment submissions across all courses
+    const completedProjects = courseGrades.flatMap(course =>
+        (course.assignments || [])
+            .filter(a => a.score !== null && a.score !== undefined)
+            .map(a => ({ ...a, courseName: course.courseName }))
+    );
 
     const handleOpenSubmit = (proj) => {
         setSelectedAssignment(proj);
@@ -49,22 +53,40 @@ export default function StudentProjects() {
                             </div>
                         ) : (
                             pendingProjects.map(proj => (
-                                <div key={proj.id} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow group">
-                                    <div className="flex justify-between items-start mb-4">
+                                <div key={proj.id} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow group space-y-4">
+                                    <div className="flex justify-between items-start">
                                         <div>
-                                            <h3 className="font-bold text-lg text-gray-900 mb-1">{proj.title}</h3>
-                                            <p className="text-sm text-[#00B4D8] font-bold">{proj.courseName}</p>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="font-bold text-lg text-gray-900">{proj.title}</h3>
+                                                {proj.status === 'redo' && (
+                                                    <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border border-rose-100">
+                                                        Redo Req
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-[#00B4D8] font-bold mt-1">{proj.courseName}</p>
                                         </div>
-                                        <span className="bg-orange-50 text-orange-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                        <span className="bg-orange-50 text-orange-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shrink-0">
                                             Due {new Date(proj.dueDate).toLocaleDateString()}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-500 mb-6 line-clamp-2">Complete the required implementation and submit your source code along with a demonstration video.</p>
+                                    <p className="text-sm text-gray-500 line-clamp-2">Complete the required implementation and submit your source code along with a demonstration video.</p>
+
+                                    {proj.status === 'redo' && proj.feedback && (
+                                        <div className="bg-orange-50/70 border border-orange-100 rounded-2xl p-4">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Star className="h-4 w-4 text-orange-500 fill-orange-500" />
+                                                <h4 className="font-bold text-xs text-orange-800 uppercase tracking-wider">Instructor Feedback</h4>
+                                            </div>
+                                            <p className="text-xs text-orange-700 italic">"{proj.feedback}"</p>
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={() => handleOpenSubmit(proj)}
-                                        className="w-full bg-[#FDB813] text-white font-bold py-3 rounded-xl hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2"
+                                        className="w-full bg-[#FDB813] text-white font-bold py-3 rounded-xl hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm uppercase tracking-wider"
                                     >
-                                        <PlayCircle className="h-5 w-5" /> Submit Project
+                                        <PlayCircle className="h-5 w-5" /> {proj.status === 'redo' ? "Resubmit Project" : "Submit Project"}
                                     </button>
                                 </div>
                             ))
@@ -85,37 +107,34 @@ export default function StudentProjects() {
                         {completedProjects.length === 0 ? (
                             <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-8 text-center">
                                 <CheckCircle2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                                <p className="text-sm font-bold text-gray-500">No projects completed yet.</p>
+                                <p className="text-sm font-bold text-gray-500">No graded projects yet.</p>
                             </div>
                         ) : (
-                            completedProjects.map(proj => (
-                                <div key={proj.id} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+                            completedProjects.map((proj, idx) => (
+                                <div key={idx} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
                                     <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
                                         <div>
                                             <h3 className="font-bold text-lg text-gray-900 mb-1">{proj.title}</h3>
                                             <p className="text-sm text-gray-500">{proj.courseName}</p>
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full mt-1 inline-block ${proj.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-500'}`}>
+                                                {proj.status}
+                                            </span>
                                         </div>
                                         <div className="text-right">
-                                            <div className="flex items-center gap-1 text-green-500 font-black text-2xl">
-                                                {proj.score} <span className="text-sm text-gray-400 font-bold">/100</span>
+                                            <div className="flex items-center gap-1 text-[#00B4D8] font-black text-2xl">
+                                                {proj.score}<span className="text-sm text-gray-400 font-bold">/{proj.maxScore || 100}</span>
                                             </div>
                                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Score</p>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50/50 rounded-2xl p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Star className="h-4 w-4 text-[#FDB813]" />
-                                            <h4 className="font-bold text-sm text-gray-900">Instructor Feedback</h4>
-                                        </div>
-                                        <p className="text-sm text-gray-600 italic">"{proj.feedback}"</p>
-                                    </div>
-
-                                    {proj.githubLink && (
-                                        <div className="mt-4 flex">
-                                            <a href={proj.githubLink} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors bg-gray-50 px-4 py-2 rounded-xl">
-                                                <Github className="h-4 w-4" /> View Repository
-                                            </a>
+                                    {proj.feedback && (
+                                        <div className="bg-blue-50/50 rounded-2xl p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Star className="h-4 w-4 text-[#FDB813]" />
+                                                <h4 className="font-bold text-sm text-gray-900">Instructor Feedback</h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 italic">"{proj.feedback}"</p>
                                         </div>
                                     )}
                                 </div>

@@ -221,6 +221,18 @@ const CourseManagement = () => {
         (c.category && c.category.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredCourses.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredCourses.length / itemsPerPage));
+
     return (
         <div className="p-4 md:p-6 lg:p-10 space-y-6 md:space-y-8 max-w-[1600px] mx-auto font-sans">
             {/* Header */}
@@ -553,8 +565,8 @@ const CourseManagement = () => {
                                         <Loading fullScreen={false} message="Fetching Courses..." />
                                     </td>
                                 </tr>
-                            ) : filteredCourses.length > 0 ? (
-                                filteredCourses.map((course) => (
+                            ) : currentItems.length > 0 ? (
+                                currentItems.map((course) => (
                                     <tr
                                         key={course.id}
                                         className="hover:bg-slate-50 transition-colors group cursor-pointer"
@@ -632,16 +644,6 @@ const CourseManagement = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigate(`/admin/courses/${course.id}/projects`);
-                                                    }}
-                                                    className="px-4 py-2 text-violet-500 hover:bg-violet-50 rounded-xl transition-all font-bold text-sm flex items-center gap-1.5"
-                                                    title="Manage Projects"
-                                                >
-                                                    <ClipboardList className="w-4 h-4" /> Projects
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
                                                         handleEditClick(course);
                                                     }}
                                                     className="px-4 py-2 text-primary hover:bg-primary/10 rounded-xl transition-all font-bold text-sm"
@@ -674,11 +676,29 @@ const CourseManagement = () => {
                         </tbody>
                     </table>
                 </div>
-                {/* Footer / Count */}
-                <div className="p-6 bg-slate-50/30 border-t border-slate-100">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        Total Published Courses: {courses.length}
+                {/* Pagination */}
+                <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/20 text-center sm:text-left">
+                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
+                        Showing {filteredCourses.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredCourses.length)} of {filteredCourses.length} courses
                     </p>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.max(prev - 1, 1)); }}
+                                disabled={currentPage === 1}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.min(prev + 1, totalPages)); }}
+                                disabled={currentPage === totalPages}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
             {/* Delete Confirmation Modal */}

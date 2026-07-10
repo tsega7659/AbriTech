@@ -223,32 +223,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                             />
                         </div>
 
-                        <div className="md:col-span-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Access Type</label>
-                            <div className="flex items-center gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit mb-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setLessonData({ ...lessonData, accessType: 'preview' })}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lessonData.accessType === 'preview' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    Preview (Free)
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setLessonData({ ...lessonData, accessType: 'locked' })}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lessonData.accessType !== 'preview' ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    Locked (Paid)
-                                </button>
-                            </div>
-                            <p className="text-[10px] text-slate-400 font-bold ml-2">
-                                {lessonData.accessType === 'preview'
-                                    ? 'This lesson is visible to all students as a free preview.'
-                                    : 'Students must enroll & pay before accessing this lesson.'}
-                            </p>
-                        </div>
+                        {/* Access Type hidden as requested */}
 
                         <div className="md:col-span-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Description</label>
@@ -377,13 +352,6 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Lesson Quiz (MCQ)</h3>
                                     <p className="text-[10px] font-bold text-slate-400 mt-1">Students must pass this quiz to complete the lesson.</p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAddQuizQuestion}
-                                    className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-xs transition-all"
-                                >
-                                    <Plus className="w-4 h-4" /> Add Question
-                                </button>
                             </div>
 
                             <div className="space-y-6">
@@ -448,6 +416,15 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                                         <p className="text-slate-400 font-bold text-sm italic">No quiz questions added yet.</p>
                                     </div>
                                 )}
+                                <div className="flex justify-center pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleAddQuizQuestion}
+                                        className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-primary/10 text-primary rounded-xl font-black text-sm transition-all border border-slate-100/50 hover:border-primary/20"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add Question
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}

@@ -129,7 +129,7 @@ const ActivityDetailModal = ({ activity, onClose }) => {
     );
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 6;
 
 export default function ActivityMonitoring() {
     const [activities, setActivities] = useState([]);

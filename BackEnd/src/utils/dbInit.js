@@ -66,6 +66,43 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
 
         console.log('--- Database Schema Initialized Successfully ---');
 
+        // Migration: Ensure 'redo' exists in the SubmissionStatus enum (or convert to VARCHAR)
+        try {
+          // Check if the status column on assignmentsubmission is an enum type
+          const [colInfo] = await conn.query(`
+            SELECT data_type, udt_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'assignmentsubmission'
+              AND column_name = 'status'
+          `);
+
+          if (colInfo.length > 0 && colInfo[0].data_type === 'USER-DEFINED') {
+            const enumTypeName = colInfo[0].udt_name;
+            console.log(`assignmentsubmission.status is enum type: ${enumTypeName}. Checking for 'redo' value...`);
+
+            // Check if 'redo' already exists in the enum
+            const [enumVals] = await conn.query(
+              `SELECT enumlabel FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = $1)`,
+              [enumTypeName]
+            );
+            const existingVals = enumVals.map(r => r.enumlabel);
+
+            if (!existingVals.includes('redo')) {
+              console.log(`Adding 'redo' to enum ${enumTypeName}...`);
+              await conn.query(`ALTER TYPE "${enumTypeName}" ADD VALUE IF NOT EXISTS 'redo'`);
+              console.log(`'redo' added to ${enumTypeName} successfully.`);
+            } else {
+              console.log(`'redo' already present in ${enumTypeName}.`);
+            }
+          } else if (colInfo.length > 0 && colInfo[0].data_type !== 'USER-DEFINED') {
+            // Column is already VARCHAR or similar — no migration needed
+            console.log(`assignmentsubmission.status is ${colInfo[0].data_type} — no enum migration needed.`);
+          }
+        } catch (enumError) {
+          console.error('Migration Error (SubmissionStatus enum):', enumError.message);
+        }
+
         // Migration: Fix teachercourse foreign key if it points to "user" instead of "teacher"
         try {
           console.log('Checking teachercourse constraints...');

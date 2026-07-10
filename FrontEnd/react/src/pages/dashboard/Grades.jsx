@@ -50,6 +50,8 @@ export default function Grades() {
                         const isExpanded = expandedCourses[course.courseName];
                         const totalQuizScore = course.quizzes.reduce((acc, q) => acc + q.score, 0);
                         const avgQuizScore = course.quizzes.length > 0 ? Math.round(totalQuizScore / course.quizzes.length) : 0;
+                        const totalCorrect = course.quizzes.reduce((acc, q) => acc + (q.correctAnswers || 0), 0);
+                        const totalPossible = course.quizzes.reduce((acc, q) => acc + (q.totalQuestions || 0), 0);
 
                         return (
                             <div key={idx} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
@@ -65,7 +67,7 @@ export default function Grades() {
                                             <h3 className="text-xl font-black text-gray-900">{course.courseName}</h3>
                                             <div className="flex items-center gap-4 mt-1">
                                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                    <Award className="w-3.5 h-3.5 text-amber-500" /> Avg. Quiz: {avgQuizScore}%
+                                                    <Award className="w-3.5 h-3.5 text-amber-500" /> Quiz Score: {totalPossible > 0 ? `${totalCorrect}/${totalPossible}` : 'N/A'}
                                                 </p>
                                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                                     <FileText className="w-3.5 h-3.5 text-blue-500" /> {course.assignments.length} Projects
@@ -101,7 +103,9 @@ export default function Grades() {
                                                                     </td>
                                                                     <td className="p-4 text-right">
                                                                         <span className={`text-sm font-black ${q.score >= 70 ? 'text-[#FDB813]' : q.score >= 40 ? 'text-amber-500' : 'text-rose-500'}`}>
-                                                                            {q.score}%
+                                                                            {q.correctAnswers !== undefined && q.totalQuestions !== undefined
+                                                                                ? `${q.correctAnswers} / ${q.totalQuestions}`
+                                                                                : `${q.score}%`}
                                                                         </span>
                                                                     </td>
                                                                 </tr>

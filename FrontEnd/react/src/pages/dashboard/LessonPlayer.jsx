@@ -522,7 +522,7 @@ export default function LessonPlayer() {
                                         onChange={(e) => setSubmissionText(e.target.value)}
                                         placeholder="Type your project content, paste links, or add notes about your submission here..."
                                         className="w-full min-h-[200px] p-6 rounded-[2rem] border border-gray-200 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none font-medium disabled:bg-gray-50 disabled:cursor-not-allowed"
-                                        disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
+                                        disabled={activeAssignment.status && activeAssignment.status !== 'draft' && activeAssignment.status !== 'redo'}
                                     />
                                 </div>
 
@@ -532,9 +532,9 @@ export default function LessonPlayer() {
                                         <input
                                             type="file"
                                             onChange={(e) => setSubmissionFile(e.target.files[0])}
-                                            className={`absolute inset-0 w-full h-full opacity-0 z-10 ${activeAssignment.status && activeAssignment.status !== 'draft' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                            className={`absolute inset-0 w-full h-full opacity-0 z-10 ${activeAssignment.status && activeAssignment.status !== 'draft' && activeAssignment.status !== 'redo' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.mp4,.mkv"
-                                            disabled={activeAssignment.status && activeAssignment.status !== 'draft'}
+                                            disabled={activeAssignment.status && activeAssignment.status !== 'draft' && activeAssignment.status !== 'redo'}
                                         />
                                         <div className="border-2 border-dashed border-gray-200 rounded-[2rem] p-10 text-center group-hover:border-primary/50 transition-colors bg-gray-50/50">
                                             <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">

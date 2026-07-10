@@ -46,7 +46,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 6;
 
 const Payments = () => {
     const [data, setData] = useState(null);

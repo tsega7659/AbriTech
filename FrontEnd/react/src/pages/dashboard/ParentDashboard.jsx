@@ -15,14 +15,14 @@ const DetailedProgressModal = ({ isOpen, onClose, studentId, courseId, courseNam
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-                    onClick={onClose} 
+                    onClick={onClose}
                 />
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -99,19 +99,15 @@ const DetailedProgressModal = ({ isOpen, onClose, studentId, courseId, courseNam
                                         {progress?.quizzes?.length > 0 ? progress.quizzes.map((quiz, i) => (
                                             <div key={i} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:border-blue-100 transition-colors group">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-white font-black text-xs", quiz.isCorrect ? "bg-emerald-500" : "bg-rose-500")}>
-                                                        {quiz.isCorrect ? "✓" : "✗"}
+                                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-white font-black text-xs", (quiz.correctAnswers / quiz.totalQuestions) >= 0.7 ? "bg-emerald-500" : "bg-rose-500")}>
+                                                        {(quiz.correctAnswers / quiz.totalQuestions) >= 0.7 ? "✓" : "✗"}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900 text-sm">{quiz.lessonTitle}</p>
-                                                        <p className="text-[10px] text-gray-400 font-medium truncate max-w-[200px] sm:max-w-md">{quiz.question}</p>
+                                                        <p className="font-bold text-gray-900 text-sm">
+                                                            {quiz.correctAnswers}/{quiz.totalQuestions} - {quiz.lessonTitle}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 font-medium">Attempted on {new Date(quiz.attemptedAt).toLocaleDateString()}</p>
                                                     </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md", quiz.result === 'pass' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
-                                                        {quiz.result || (quiz.isCorrect ? 'SUCCESS' : 'FAILED')}
-                                                    </span>
-                                                    <p className="text-[9px] font-bold text-gray-300 mt-1 uppercase">{new Date(quiz.attemptedAt).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
                                         )) : (
@@ -135,17 +131,25 @@ const DetailedProgressModal = ({ isOpen, onClose, studentId, courseId, courseNam
                                                         <h5 className="font-black text-gray-900 tracking-tight">{project.title}</h5>
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5 tracking-tighter">Submitted {new Date(project.submittedAt).toLocaleDateString()}</p>
                                                     </div>
-                                                    <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest", 
-                                                        project.status === 'approved' ? "bg-emerald-50 text-emerald-600" : 
-                                                        project.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600")}>
+                                                    <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest",
+                                                        project.status === 'approved' ? "bg-emerald-50 text-emerald-600" :
+                                                            project.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600")}>
                                                         {project.status}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-gray-500 font-medium line-clamp-2 mb-4 leading-relaxed">{project.description}</p>
                                                 {project.score !== null && (
                                                     <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                                        <span className="text-[10px] font-black text-gray-400 uppercase uppercase">Grade Awarded</span>
-                                                        <span className="text-sm font-black text-purple-600">{project.score}%</span>
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase">Grade Awarded</span>
+                                                        <span className="text-sm font-black text-purple-600">
+                                                            {project.score}/{project.maxScore || 100}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {project.feedback && (
+                                                    <div className="mt-3 p-3 bg-gray-50 rounded-xl">
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Feedback</p>
+                                                        <p className="text-xs text-gray-600 italic">"{project.feedback}"</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -177,12 +181,12 @@ export default function ParentDashboard() {
     const { data: dashboardData, isLoading: statsLoading } = useParentDashboardStats();
     const { data: linkedStudents = [], isLoading: studentsLoading } = useLinkedStudents();
 
-    const [modalConfig, setModalConfig] = useState({ 
-        isOpen: false, 
-        studentId: null, 
-        courseId: null, 
-        courseName: '', 
-        studentName: '' 
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        studentId: null,
+        courseId: null,
+        courseName: '',
+        studentName: ''
     });
 
     const openProgressModal = (student, course) => {
@@ -311,7 +315,7 @@ export default function ParentDashboard() {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <button 
+                                                        <button
                                                             onClick={() => openProgressModal(student, course)}
                                                             className="p-2 bg-white text-gray-400 hover:text-[#00B4D8] hover:bg-[#00B4D8]/5 rounded-lg border border-gray-100 active:scale-95 transition-all shadow-sm group/btn flex items-center gap-1.5"
                                                         >
@@ -319,7 +323,7 @@ export default function ParentDashboard() {
                                                             <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
                                                         </button>
                                                     </div>
-                                                    
+
                                                     <div className="space-y-1.5">
                                                         <div className="flex justify-between text-[10px]">
                                                             <span className="text-gray-400 font-bold uppercase tracking-wider">Progress</span>
@@ -347,9 +351,9 @@ export default function ParentDashboard() {
                     </div>
                 </section>
             )}
- 
+
             {/* Detailed Progress Modal */}
-            <DetailedProgressModal 
+            <DetailedProgressModal
                 {...modalConfig}
                 onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
             />

@@ -298,20 +298,9 @@ const CourseLessons = () => {
                                                 <h3 className="font-black text-slate-800 truncate">
                                                     {isProject ? `[Project] ${lesson.title}` : lesson.title}
                                                 </h3>
-                                                {isProject ? (
+                                                {isProject && (
                                                     <span className="text-[9px] font-black bg-amber-50 text-amber-600 border border-amber-200 uppercase tracking-widest px-2 py-0.5 rounded-full">
                                                         Points: {lesson.maxPoints || lesson.maxScore || 100}
-                                                    </span>
-                                                ) : (
-                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${lesson.accessType === 'preview'
-                                                        ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                                        : 'bg-slate-100 text-slate-500 border-slate-200'
-                                                        }`}>
-                                                        {lesson.accessType === 'preview' ? (
-                                                            <><Sparkles className="w-2.5 h-2.5" /> Preview</>
-                                                        ) : (
-                                                            <><Lock className="w-2.5 h-2.5" /> Locked</>
-                                                        )}
                                                     </span>
                                                 )}
                                             </div>

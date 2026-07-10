@@ -71,14 +71,14 @@ const getDashboard = async (req, res) => {
       LIMIT 3
     `, [studentId, studentId]);
 
-    // 5. Pending Projects
+    // 5. Pending Projects (including redo requests)
     const [pendingProjects] = await pool.execute(`
-      SELECT a.id, a.title, c.name as "courseName", a."dueDate"
+      SELECT a.id, a.title, c.name as "courseName", a."dueDate", s.status, s.feedback
       FROM assignment a
       JOIN course c ON a."courseId" = c.id
       JOIN enrollment e ON c.id = e."courseId"
       LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
-      WHERE e."studentId" = ? AND (s.id IS NULL OR s.status = 'draft')
+      WHERE e."studentId" = ? AND (s.id IS NULL OR s.status = 'draft' OR s.status = 'redo')
       LIMIT 3
     `, [studentId, studentId]);
 
@@ -134,6 +134,7 @@ const getEnrolledCourses = async (req, res) => {
         e."progressPercentage" as progress,
         e."timeSpentSeconds",
         e."enrolledAt",
+        (SELECT COUNT(*) FROM enrollment WHERE "courseId" = c.id) as "enrolledStudents",
         (SELECT u."fullName" FROM "user" u JOIN teacher t ON u.id = t."userId" JOIN teachercourse tc ON t.id = tc."teacherId" WHERE tc."courseId" = c.id LIMIT 1) as "instructorName",
         (SELECT MAX(lp."completedAt") FROM lessonprogress lp JOIN lesson l ON lp."lessonId" = l.id WHERE lp."studentId" = ? AND l."courseId" = c.id) as "lastAccessed"
       FROM course c
@@ -213,6 +214,8 @@ const getStudentGrades = async (req, res) => {
       if (courseGrades[q.courseId]) {
         courseGrades[q.courseId].quizzes.push({
           lessonTitle: q.lessonTitle,
+          correctAnswers: Number(q.correctAnswers),
+          totalQuestions: Number(q.totalQuestions),
           score: Math.round((Number(q.correctAnswers) / Number(q.totalQuestions)) * 100),
           date: q.lastAttempted
         });

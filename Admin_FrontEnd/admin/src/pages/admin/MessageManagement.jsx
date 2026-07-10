@@ -93,6 +93,18 @@ const MessageManagement = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredMessages.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredMessages.length / itemsPerPage));
+
     return (
         <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
             <FeedbackModal
@@ -136,7 +148,7 @@ const MessageManagement = () => {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3 flex flex-col md:flex-row gap-4">
                     <div className="relative flex-1 group">
-                        
+
                         <input
                             type="text"
                             placeholder=" Search messages, names or emails..."
@@ -175,8 +187,8 @@ const MessageManagement = () => {
                                         <Loading fullScreen={false} message="Fetching messages..." />
                                     </td>
                                 </tr>
-                            ) : filteredMessages.length > 0 ? (
-                                filteredMessages.map((msg) => (
+                            ) : currentItems.length > 0 ? (
+                                currentItems.map((msg) => (
                                     <tr
                                         key={msg.id}
                                         onClick={() => { setSelectedMessage(msg); setIsViewModalOpen(true); }}
@@ -247,6 +259,30 @@ const MessageManagement = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+                {/* Pagination */}
+                <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/20 text-center sm:text-left">
+                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
+                        Showing {filteredMessages.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredMessages.length)} of {filteredMessages.length} messages
+                    </p>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.max(prev - 1, 1)); }}
+                                disabled={currentPage === 1}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.min(prev + 1, totalPages)); }}
+                                disabled={currentPage === totalPages}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

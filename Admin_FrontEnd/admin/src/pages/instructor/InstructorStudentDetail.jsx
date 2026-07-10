@@ -186,9 +186,10 @@ const InstructorStudentDetail = () => {
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
                                             </div>
                                             <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest h-fit ${sub.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                sub.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                                                sub.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                                    sub.status === 'redo' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                                                 }`}>
-                                                {sub.status}
+                                                {sub.status === 'redo' ? 'redo requested' : sub.status}
                                             </span>
                                         </div>
 
@@ -213,6 +214,7 @@ const InstructorStudentDetail = () => {
                                                             className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest focus:outline-none"
                                                         >
                                                             <option value="approved">Approve</option>
+                                                            <option value="redo">Request Redo</option>
                                                             <option value="rejected">Reject</option>
                                                         </select>
                                                     </div>

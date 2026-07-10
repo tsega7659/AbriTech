@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Link as LinkIcon, Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useSubmitAssignment } from '../hooks/useStudentQueries';
@@ -14,6 +14,17 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
 
     const submitMutation = useSubmitAssignment();
 
+    // Reset all state whenever the modal opens fresh (including for a different assignment)
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({ textContent: '', githubLink: '' });
+            setFile(null);
+            setUploadProgress(0);
+            setIsSuccess(false);
+            submitMutation.reset();
+        }
+    }, [isOpen, assignment?.id]);
+
     const handleFileChange = (e) => {
         if (e.target.files?.[0]) {
             setFile(e.target.files[0]);
@@ -25,6 +36,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
 
         const data = new FormData();
         data.append('textContent', formData.textContent);
+        data.append('isFinal', 'true'); // Always submit as final (pending), not draft
         if (formData.githubLink) data.append('githubLink', formData.githubLink);
         if (file) data.append('file', file);
 

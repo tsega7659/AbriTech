@@ -205,32 +205,51 @@ const getDetailedCourseProgress = async (req, res) => {
 
     if (enrollment.length === 0) return res.status(404).json({ message: "No enrollment found for this course" });
 
-    // 3. Fetch Quiz Attempts for this student and course
-    // Note: Quizzes are linked to lessons, which are linked to the course.
+    // 3. Fetch Quiz Attempts for this student and course grouped by lesson/quiz
     const [quizzes] = await pool.execute(`
-      SELECT l.title as "lessonTitle", lq.question, qa."selectedOption", qa."isCorrect", qa.result, qa."attemptedAt"
+      SELECT 
+        l.title as "lessonTitle",
+        SUM(CASE WHEN qa."isCorrect" THEN 1 ELSE 0 END) as "correctAnswers",
+        COUNT(qa.id) as "totalQuestions",
+        MAX(qa."attemptedAt") as "attemptedAt"
       FROM quizattempt qa
       JOIN lessonquiz lq ON qa."quizId" = lq.id
       JOIN lesson l ON lq."lessonId" = l.id
       WHERE qa."studentId" = ? AND l."courseId" = ?
-      ORDER BY qa."attemptedAt" DESC
+      GROUP BY l.id, l.title
+      ORDER BY "attemptedAt" DESC
     `, [studentId, courseId]);
 
-    // 4. Fetch Projects for this student
-    // Note: In the current schema, Projects are linked to the Student directly. 
-    // If they were linked to courses, we'd filter that too.
-    // For now, let's return projects where the student is working on.
+    // 4. Fetch assignment submissions (projects in coursework context)
+    const [submissions] = await pool.execute(`
+      SELECT a.title, a.description, sub.status, sub.score, sub."maxScore", sub.feedback, sub."fileUrl" as "githubLink", sub."submittedAt", 'assignment' as type
+      FROM assignmentsubmission sub
+      JOIN assignment a ON sub."assignmentId" = a.id
+      WHERE sub."studentId" = ? AND a."courseId" = ?
+      ORDER BY sub."submittedAt" DESC
+    `, [studentId, courseId]);
+
+    // 5. Fetch general projects matching this student & course
     const [projects] = await pool.execute(`
-      SELECT title, description, status, score, "githubLink", "submittedAt"
+      SELECT title, description, status, score, 100 as "maxScore", feedback, "githubLink", "submittedAt", 'project' as type
       FROM project
-      WHERE "studentId" = ?
+      WHERE "studentId" = ? AND "courseId" = ?
       ORDER BY "submittedAt" DESC
-    `, [studentId]);
+    `, [studentId, courseId]);
+
+    const allProjects = [...submissions, ...projects].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 
     res.json({
-      overview: enrollment[0],
-      quizzes,
-      projects
+      overview: {
+        ...enrollment[0],
+        progressPercentage: Math.round(enrollment[0].progressPercentage || 0)
+      },
+      quizzes: quizzes.map(q => ({
+        ...q,
+        correctAnswers: Number(q.correctAnswers),
+        totalQuestions: Number(q.totalQuestions)
+      })),
+      projects: allProjects
     });
 
   } catch (error) {

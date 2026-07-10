@@ -148,6 +148,18 @@ const InstructorManagement = () => {
         t.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredTeachers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredTeachers.length / itemsPerPage));
+
     return (
         <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -358,85 +370,112 @@ const InstructorManagement = () => {
             {/* Instructors List */}
             {teachersLoading ? (
                 <Loading fullScreen={false} message="Loading instructors..." />
-            ) : filteredTeachers.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredTeachers.map((inst) => (
-                        <div key={inst.id || inst.userId} onClick={() => handleViewDetail(inst.id || inst.userId)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden cursor-pointer">
-                            {/* Card Background Accent */}
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:bg-primary/10" />
+            ) : currentItems.length > 0 ? (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {currentItems.map((inst) => (
+                            <div key={inst.id || inst.userId} onClick={() => handleViewDetail(inst.id || inst.userId)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden cursor-pointer">
+                                {/* Card Background Accent */}
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:bg-primary/10" />
 
-                            <div className="flex justify-between items-start mb-6 relative">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 overflow-hidden ring-4 ring-slate-50 shrink-0">
-                                        <img
-                                            src={`https://ui-avatars.com/api/?name=${inst.fullName}&background=4dbfec&color=fff`}
-                                            alt={inst.fullName}
-                                            onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff' }}
-                                        />
+                                <div className="flex justify-between items-start mb-6 relative">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 overflow-hidden ring-4 ring-slate-50 shrink-0">
+                                            <img
+                                                src={`https://ui-avatars.com/api/?name=${inst.fullName}&background=4dbfec&color=fff`}
+                                                alt={inst.fullName}
+                                                onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff' }}
+                                            />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="font-bold text-slate-800 truncate pr-2">{inst.fullName}</h4>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
+                                                <Mail className="w-3 h-3 shrink-0" /> {inst.email}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0">
-                                        <h4 className="font-bold text-slate-800 truncate pr-2">{inst.fullName}</h4>
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
-                                            <Mail className="w-3 h-3 shrink-0" /> {inst.email}
+                                    <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors shrink-0">
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 relative">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <Link2 className="w-3 h-3" /> Assigned Courses
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Array.isArray(inst.assignedCourses) && inst.assignedCourses.length > 0 ? inst.assignedCourses.map((c, i) => (
+                                                <span key={i} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight ring-1 ring-blue-100">
+                                                    {c}
+                                                </span>
+                                            )) : (
+                                                <span className="text-[10px] font-bold text-slate-400 italic">No courses assigned</span>
+                                            )}
+                                            <button onClick={(e) => { e.stopPropagation(); handleViewDetail(inst.id); }} className="px-3 py-1 border border-dashed border-slate-300 text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-tight hover:border-primary hover:text-primary transition-all">
+                                                + Assign
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {inst.specialization && (
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                                <ShieldCheck className="w-3 h-3" /> Specialization
+                                            </p>
+                                            <p className="text-xs font-bold text-slate-600 ml-4.5">{inst.specialization}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                            <CheckCircle2 className="w-3 h-3" /> Active
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => handleDeleteClick(inst)}
+                                                className="text-[11px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                            >
+                                                Delete
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleViewDetail(inst.id)}
+                                                className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline"
+                                            >
+                                                Manage Profile
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                                <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors shrink-0">
-                                    <MoreHorizontal className="w-5 h-5" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="p-6 border border-slate-100 rounded-[1.5rem] bg-white flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left mt-6">
+                        <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
+                            Showing {filteredTeachers.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredTeachers.length)} of {filteredTeachers.length} instructors
+                        </p>
+                        {totalPages > 1 && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                                >
+                                    Next
                                 </button>
                             </div>
-
-                            <div className="space-y-4 relative">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <Link2 className="w-3 h-3" /> Assigned Courses
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.isArray(inst.assignedCourses) && inst.assignedCourses.length > 0 ? inst.assignedCourses.map((c, i) => (
-                                            <span key={i} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight ring-1 ring-blue-100">
-                                                {c}
-                                            </span>
-                                        )) : (
-                                            <span className="text-[10px] font-bold text-slate-400 italic">No courses assigned</span>
-                                        )}
-                                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(inst.id); }} className="px-3 py-1 border border-dashed border-slate-300 text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-tight hover:border-primary hover:text-primary transition-all">
-                                            + Assign
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {inst.specialization && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                                            <ShieldCheck className="w-3 h-3" /> Specialization
-                                        </p>
-                                        <p className="text-xs font-bold text-slate-600 ml-4.5">{inst.specialization}</p>
-                                    </div>
-                                )}
-
-                                <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                        <CheckCircle2 className="w-3 h-3" /> Active
-                                    </span>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => handleDeleteClick(inst)}
-                                            className="text-[11px] font-black text-rose-500 uppercase tracking-widest hover:underline"
-                                        >
-                                            Delete
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleViewDetail(inst.id)}
-                                            className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline"
-                                        >
-                                            Manage Profile
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="bg-white py-20 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center px-4">

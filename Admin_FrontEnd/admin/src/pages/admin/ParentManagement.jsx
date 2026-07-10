@@ -123,6 +123,18 @@ const ParentManagement = () => {
         p.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredParents.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredParents.length / itemsPerPage));
+
     return (
         <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 md:space-y-8 font-sans">
             {/* Header */}
@@ -301,8 +313,8 @@ const ParentManagement = () => {
                                         <Loading fullScreen={false} message="Loading parents..." />
                                     </td>
                                 </tr>
-                            ) : filteredParents.length > 0 ? (
-                                filteredParents.map((parent) => (
+                            ) : currentItems.length > 0 ? (
+                                currentItems.map((parent) => (
                                     <tr
                                         key={parent.id}
                                         className="hover:bg-slate-50 transition-colors group cursor-pointer"
@@ -353,10 +365,29 @@ const ParentManagement = () => {
                         </tbody>
                     </table>
                 </div>
-                <div className="p-6 border-t border-slate-100 bg-slate-50/20">
+                {/* Pagination */}
+                <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/20 text-center sm:text-left">
                     <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
-                        Total Registered Parents: {parents.length}
+                        Showing {filteredParents.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredParents.length)} of {filteredParents.length} parents
                     </p>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white text-slate-700 shadow-sm transition-all disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
             {/* Delete Confirmation Modal */}
