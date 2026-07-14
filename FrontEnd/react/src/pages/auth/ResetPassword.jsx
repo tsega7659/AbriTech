@@ -132,6 +132,14 @@ export default function ResetPassword() {
                             className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00B4D8]/20 focus:border-[#00B4D8] outline-none transition-all"
                             placeholder="Confirm new password"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                     </div>
                 </div>
 

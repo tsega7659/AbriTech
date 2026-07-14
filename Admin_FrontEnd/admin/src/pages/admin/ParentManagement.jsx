@@ -20,7 +20,9 @@ import {
     BookOpen,
     ArrowUpRight,
     Award,
-    ShieldCheck
+    ShieldCheck,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { useParents, useRegisterParent, useDeleteParent, useParentDetails } from '../../hooks/useAdminQueries';
 import Loading from '../../components/Loading';
@@ -34,6 +36,8 @@ const ParentManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
+    const [showPassword, setShowPassword] = useState(true);
+
     const [newParent, setNewParent] = useState({
         fullName: '',
         username: '',
@@ -214,13 +218,21 @@ const ParentManagement = () => {
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     required
                                     placeholder="••••••••"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
+                                    className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:outline-none transition-all font-bold text-slate-700"
                                     value={newParent.password}
                                     onChange={(e) => setNewParent({ ...newParent, password: e.target.value })}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                                </button>
                             </div>
                         </div>
 

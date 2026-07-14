@@ -14,16 +14,18 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
 
     const submitMutation = useSubmitAssignment();
 
-    // Reset all state whenever the modal opens fresh (including for a different assignment)
+    // Reset all state whenever assignment changes while modal is open.
+    // Also reset on open. This prevents old submitted text/file from lingering when students switch assignments.
     useEffect(() => {
-        if (isOpen) {
-            setFormData({ textContent: '', githubLink: '' });
-            setFile(null);
-            setUploadProgress(0);
-            setIsSuccess(false);
-            submitMutation.reset();
-        }
+        if (!isOpen) return;
+
+        setFormData({ textContent: '', githubLink: '' });
+        setFile(null);
+        setUploadProgress(0);
+        setIsSuccess(false);
+        submitMutation.reset();
     }, [isOpen, assignment?.id]);
+
 
     const handleFileChange = (e) => {
         if (e.target.files?.[0]) {
@@ -108,6 +110,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                     <textarea
                                         value={formData.textContent}
                                         onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
+
                                         placeholder="Add any context or notes for the instructor..."
                                         className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-transparent focus:border-[#00B4D8] focus:bg-white text-gray-900 text-sm font-medium focus:outline-none transition-all h-32 resize-none"
                                     />
