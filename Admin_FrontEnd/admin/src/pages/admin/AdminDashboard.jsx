@@ -245,7 +245,8 @@ const AdminDashboard = () => {
                     </div>
                     <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={topCoursesData} layout="vertical" margin={{ left: 20 }}>
+<BarChart data={topCoursesData} layout="vertical" margin={{ left: 20, right: 40 }}>
+
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                                 <XAxis type="number" hide />
                                 <YAxis
@@ -253,7 +254,7 @@ const AdminDashboard = () => {
                                     type="category"
                                     axisLine={false}
                                     tickLine={false}
-                                    width={150}
+width={150}
                                     tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
                                 />
                                 <Tooltip
@@ -278,11 +279,23 @@ const AdminDashboard = () => {
                             <p className="text-sm text-slate-400 mt-1">Distribution of student interests</p>
                         </div>
                     </div>
-                    <div className="h-[300px] flex items-center justify-center relative">
+                    <div className="h-[320px] flex items-center justify-center relative">
                         {categoryData.length === 0 ? (
                             <div className="text-slate-400 text-sm">No course categories yet</div>
                         ) : (
                             <>
+                            <div className="absolute -left-8 top-1/2 -translate-y-1/2 hidden xl:block space-y-3 max-h-full overflow-y-auto px-3  ">
+                                    {categoryData.filter(d => d.value > 0).map((d, i) => {
+                                        const percentage = Math.round((d.value / courses.length) * 100);
+                                        return (
+                                            <div key={i} className="flex items-center gap-3 text-xs font-bold text-slate-500 whitespace-nowrap">
+                                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                                                <span className="truncate max-w-[100px]">{d.name}</span>
+                                                <span className="text-slate-400 ml-auto">{percentage}%</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -311,18 +324,7 @@ const AdminDashboard = () => {
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Courses</span>
                                 </div>
                                 {/* Legend */}
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden xl:block space-y-2 max-h-full overflow-y-auto px-2">
-                                    {categoryData.filter(d => d.value > 0).map((d, i) => {
-                                        const percentage = Math.round((d.value / courses.length) * 100);
-                                        return (
-                                            <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-500 whitespace-nowrap">
-                                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                                                <span className="truncate max-w-[100px]">{d.name}</span>
-                                                <span className="text-slate-400 ml-auto">{percentage}%</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+
                             </>
                         )}
                     </div>
@@ -371,15 +373,18 @@ const AdminDashboard = () => {
                          <h3 className="text-lg font-bold text-slate-800">Top Students</h3>
                     </div>
                     <div className="space-y-6">
-                        {adminDashboardStats?.topPerformingStudents?.map((student, i) => (
+                        {(adminDashboardStats?.topPerformingStudents?.length ? adminDashboardStats.topPerformingStudents : []).map((student, i) => (
                             <div key={i} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xs font-black text-slate-300">#0{i+1}</span>
+                                    <span className="text-xs font-black text-slate-300">#0{i + 1}</span>
                                     <span className="text-sm font-bold text-slate-700">{student.name}</span>
                                 </div>
                                 <span className="text-xs font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">{student.score} pts</span>
                             </div>
                         ))}
+                        {(!adminDashboardStats?.topPerformingStudents?.length) && (
+                            <div className="text-center py-6 text-slate-400 text-sm">No top students yet</div>
+                        )}
                     </div>
                 </div>
 
@@ -390,7 +395,7 @@ const AdminDashboard = () => {
                          <h3 className="text-lg font-bold text-slate-800">Most Difficult</h3>
                     </div>
                     <div className="space-y-6">
-                        {adminDashboardStats?.mostDifficultCourses?.map((course, i) => (
+                        {(adminDashboardStats?.mostDifficultCourses || adminDashboardStats?.mostDifficultCoursesData || []).map((course, i) => (
                             <div key={i} className="space-y-1.5">
                                 <div className="flex justify-between items-center text-xs">
                                     <span className="font-bold text-slate-700 truncate max-w-[120px]">{course.title}</span>
@@ -401,6 +406,9 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         ))}
+                        {(!adminDashboardStats?.mostDifficultCourses?.length && !adminDashboardStats?.mostDifficultCoursesData?.length) && (
+                            <div className="text-center py-6 text-slate-400 text-sm">No difficult courses yet</div>
+                        )}
                     </div>
                 </div>
             </div>

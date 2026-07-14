@@ -156,7 +156,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                 <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white/90 backdrop-blur z-10">
                     <div className="flex-1">
                         <h2 className="text-2xl font-black text-slate-800">
-                            {lessonToEdit ? 'Edit Lesson' : 'Add New Lesson'}
+                            {lessonToEdit ? (lessonData.contentType === 'quiz' ? 'Edit Quiz' : 'Edit Lesson') : (lessonData.contentType === 'quiz' ? 'Add New Quiz' : 'Add New Lesson')}
                         </h2>
                         {isSubmitting ? (
                             <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
@@ -188,11 +188,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Title</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">{lessonData.contentType === 'quiz' ? 'Quiz Title' : 'Lesson Title'}</label>
                             <input
                                 required
                                 type="text"
-                                placeholder="e.g., Introduction to React"
+                                placeholder={lessonData.contentType === 'quiz' ? 'e.g., React Basics Quiz' : 'e.g., Introduction to React'}
                                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                                 value={lessonData.title}
                                 onChange={e => setLessonData({ ...lessonData, title: e.target.value })}
@@ -226,11 +226,11 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                         {/* Access Type hidden as requested */}
 
                         <div className="md:col-span-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Lesson Description</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">{lessonData.contentType === 'quiz' ? 'Quiz Description' : 'Lesson Description'}</label>
                             <textarea
                                 required
                                 rows="2"
-                                placeholder="Brief summary of the lesson..."
+                                placeholder={lessonData.contentType === 'quiz' ? 'Brief summary of the quiz... ' : 'Brief summary of the lesson...'}
                                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
                                 value={lessonData.description}
                                 onChange={e => setLessonData({ ...lessonData, description: e.target.value })}
@@ -449,7 +449,9 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                                     <CheckCircle2 className="w-4 h-4 animate-pulse" /> Saving {uploadProgress}%
                                 </>
                             ) : (
-                                (lessonToEdit ? 'Update Lesson' : 'Create Lesson')
+                                lessonToEdit
+                                    ? (lessonData.contentType === 'quiz' ? 'Update Quiz' : 'Update Lesson')
+                                    : (lessonData.contentType === 'quiz' ? 'Create Quiz' : 'Create Lesson')
                             )}
                         </button>
                     </div>

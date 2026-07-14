@@ -272,7 +272,7 @@ const Analytics = () => {
                     </>
                 )}
 
-                {activeTab === 'revenue' && (
+{activeTab === 'revenue' && (
                     <>
                         <SectionCard title="Paid vs Free" description="Enrollment type distribution" icon={PieChartIcon}>
                             <ResponsiveContainer width="100%" height="100%">
@@ -309,10 +309,7 @@ const Analytics = () => {
                         </SectionCard>
                         <div className="lg:col-span-2">
                             <SectionCard title="Monthly Revenue Trend" description="Income over time" icon={ArrowUpRight}>
-                                <div className="absolute top-8 right-8 text-right">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Avg Conversion</p>
-                                    <h4 className="text-2xl font-black text-emerald-500">{analytics?.revenue?.conversionRate}%</h4>
-                                </div>
+
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={analytics?.revenue?.monthlyTrend}>
                                          <defs>
