@@ -346,12 +346,14 @@ export default function Home() {
                             ))}
                         </div>
                     )}
+                    <Link to="/courses">
+                        <div className="mt-12 text-center md:hidden">
+                            <span className="btn-primary w-full">
+                                View All Courses
+                            </span>
+                        </div>
+                    </Link>
 
-                    <div className="mt-12 text-center md:hidden">
-                        <span className="btn-primary w-full">
-                            View All Courses
-                        </span>
-                    </div>
                 </div>
             </section>
         </div>
