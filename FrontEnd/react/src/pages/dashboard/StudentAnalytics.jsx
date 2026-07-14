@@ -40,14 +40,14 @@ export default function StudentAnalytics() {
                     </div>
                     <h3 className="font-bold text-gray-900 mb-2">Time Spent</h3>
                     <div className="flex items-end gap-3 mb-4">
-                        <span className="text-4xl font-black text-[#00B4D8]">{student.timeSpent}m</span>
-                        <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {average.timeSpent}m avg</span>
+                        <span className="text-4xl font-black text-[#00B4D8]">{Math.floor((student.timeSpent || 0) / 60)}:{String((student.timeSpent || 0) % 60).padStart(2, '0')}m</span>
+                        <span className="text-sm font-bold text-gray-400 mb-1 font-mono">vs {Math.floor((average.timeSpent || 0) / 60)}:{String((average.timeSpent || 0) % 60).padStart(2, '0')}m avg</span>
                     </div>
 
                     <div className="space-y-2 mt-6">
                         <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                             <span>You</span>
-                            <span>{student.timeSpent}m</span>
+                            <span>{Math.floor((student.timeSpent || 0) / 60)}:{String((student.timeSpent || 0) % 60).padStart(2, '0')}m</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full bg-[#00B4D8] rounded-full" style={{ width: `${Math.min((student.timeSpent / Math.max(average.timeSpent * 2, 1)) * 100, 100)}%` }}></div>
@@ -55,10 +55,10 @@ export default function StudentAnalytics() {
 
                         <div className="flex justify-between text-xs font-bold text-gray-500 mt-3 uppercase tracking-wider">
                             <span>Average</span>
-                            <span>{average.timeSpent}m</span>
+                            <span>{Math.floor((average.timeSpent || 0) / 60)}:{String((average.timeSpent || 0) % 60).padStart(2, '0')}m</span>
                         </div>
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gray-200 rounded-full" style={{ width: '50%' }}></div>
+<div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#FDB813]/70 rounded-full" style={{ width: '50%' }}></div>
                         </div>
                     </div>
                 </div>
@@ -87,8 +87,8 @@ export default function StudentAnalytics() {
                             <span>Average</span>
                             <span>{average.quizScore}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gray-200 rounded-full" style={{ width: `${average.quizScore}%` }}></div>
+<div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#FDB813]/70 rounded-full" style={{ width: `${average.quizScore}%` }}></div>
                         </div>
                     </div>
                 </div>
@@ -117,8 +117,8 @@ export default function StudentAnalytics() {
                             <span>Average</span>
                             <span>{average.progress}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gray-200 rounded-full" style={{ width: `${average.progress}%` }}></div>
+<div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#FDB813]/70 rounded-full" style={{ width: `${average.progress}%` }}></div>
                         </div>
                     </div>
                 </div>
