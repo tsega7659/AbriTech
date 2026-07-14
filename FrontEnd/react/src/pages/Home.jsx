@@ -234,7 +234,7 @@ export default function Home() {
             </section>
 
             {/* Popular Courses Section */}
-            <section className="max-w-7xl mx-32 px-4 sm:px-6 lg:px-8">
+            <section className="lg:max-w-7xl lg:mx-32 px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-end mb-12">
                     <div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Popular Courses</h2>
@@ -252,28 +252,28 @@ export default function Home() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
                             {courses.map((course, index) => (
                                 <Link to="/courses" key={index} className="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left">
-<div className="relative h-28 sm:h-36 overflow-hidden bg-gray-50">
+                                    <div className="relative h-28 sm:h-36 overflow-hidden bg-gray-50">
                                         <img
                                             src={course.image ? (course.image.startsWith('http') ? course.image : `${API_BASE_URL.replace('/api', '')}${course.image}`) : 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'}
                                             alt={course.name}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
-                                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                        <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                             <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#00B4D8] shadow-sm border border-gray-100">
                                                 {course.category || 'Course'}
                                             </span>
                                         </div>
                                     </div>
 
-<div className="p-4 sm:p-5 flex flex-col flex-1">
+                                    <div className="p-4 sm:p-5 flex flex-col flex-1">
                                         <h3 className="text-xl font-black text-gray-900 mb-2 group-hover:text-primary transition-colors leading-tight">
                                             {course.name}
                                         </h3>
-<p className="text-gray-400 text-[11px] leading-relaxed mb-3 line-clamp-2">
+                                        <p className="text-gray-400 text-[11px] leading-relaxed mb-3 line-clamp-2">
                                             {course.description}
                                         </p>
 
-<div className="mt-auto space-y-4 sm:space-y-6">
+                                        <div className="mt-auto space-y-4 sm:space-y-6">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="flex gap-2.5 items-start">
                                                     <Clock className="w-4 h-4 text-gray-600 mt-0.5" />
