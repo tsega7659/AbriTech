@@ -382,7 +382,7 @@ export default function LessonPlayer() {
                                         key={opt}
                                         disabled={quizResult}
                                         onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}
-className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnswers[q.id] === opt
+                                        className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnswers[q.id] === opt
                                             ? 'bg-[#00B4D8] border-[#00B4D8] text-black shadow-sm'
                                             : 'bg-white border-gray-100 text-gray-600 hover:border-[#00B4D8]/30 hover:bg-slate-50'
                                             } ${quizResult && q.correctOption === opt ? 'bg-emerald-50 border-emerald-500 text-emerald-600' : ''}
@@ -432,7 +432,7 @@ className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnsw
                             <button
                                 onClick={handleMarkComplete}
                                 disabled={completing || activeLesson?.isCompleted || !canComplete}
-                                className={`w-full sm:w-auto px-10 py-4 bg-[#00B4D8] text-black rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20 hover:shadow-primary/30 hover:bg-[#0096B4] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                className={`w-full px-10 py-4 bg-[#00B4D8] text-black rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20 hover:shadow-primary/30 hover:bg-[#0096B4] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                             >
                                 {completing ? 'Completing...' : 'Mark as Complete'}
                                 <CheckCircle className="w-5 h-5" />
@@ -653,10 +653,25 @@ className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnsw
                                         Once you submit your work for review, you won't be able to edit or resubmit it. Make sure everything is correct!
                                     </p>
                                 </div>
+                                {submitAssignmentMutation.isPending && uploadProgress > 0 && (
+                                    <div className="space-y-2 pt-2">
+                                        <div className="flex justify-between text-xs font-black uppercase tracking-widest text-primary">
+                                            <span>Uploading...</span>
+                                            <span>{uploadProgress}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary transition-all duration-300 rounded-full"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="flex gap-3 pt-4">
                                     <button
                                         onClick={() => setShowConfirmModal(false)}
-                                        className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                        disabled={submitAssignmentMutation.isPending}
+                                        className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Wait, Let me check
                                     </button>
@@ -666,7 +681,7 @@ className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnsw
                                         className={`flex-1 py-4 px-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${submitAssignmentMutation.isPending
                                             ? 'bg-primary text-black opacity-90 cursor-not-allowed'
                                             : 'bg-primary hover:bg-[#0096B4] text-black'
-                                        }`}
+                                            }`}
                                     >
                                         {submitAssignmentMutation.isPending ? 'Uploading...' : 'Yes, Submit'}
                                     </button>
