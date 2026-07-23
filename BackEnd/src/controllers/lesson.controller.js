@@ -226,6 +226,7 @@ const getLessons = async (req, res) => {
     }));
 
     // Fetch progress map for lessons from lessonprogress table
+    // Note: Normalize keys to String to avoid BigInt vs number key-lookup mismatches
     let progressMap = {};
     if (studentId && lessonIds.length > 0) {
       const [progress] = await pool.execute(
@@ -234,12 +235,13 @@ const getLessons = async (req, res) => {
         [studentId]
       );
       progress.forEach(p => {
-        progressMap[p.lessonId] = p.completed === true;
+        progressMap[String(p.lessonId)] = p.completed === true;
       });
     }
 
     processedLessons.forEach(l => {
-      l.isCompleted = !!progressMap[l.id];
+      // Use String key to match the normalized map
+      l.isCompleted = !!progressMap[String(l.id)];
     });
 
     const processedAssignments = assignments.map(a => ({
@@ -263,9 +265,13 @@ const getLessons = async (req, res) => {
     for (let i = 0; i < unifiedCurriculum.length; i++) {
       const item = unifiedCurriculum[i];
 
+      // If the student has already completed this lesson, they proved they had access.
+      // Always allow re-access to completed lessons, regardless of payment or progression.
+      const alreadyCompleted = item.isCompleted;
+
       // Payment Tier Logic
       let isPaymentLocked = false;
-      if (!isPaid && !canBypassLocks) {
+      if (!isPaid && !canBypassLocks && !alreadyCompleted) {
         const model = (courseInfo.accessModel || 'free').toLowerCase();
         if (model === 'fully_paid') {
           isPaymentLocked = true;
@@ -275,8 +281,10 @@ const getLessons = async (req, res) => {
         }
       }
 
+      // Progression Lock Logic
+      // Skip entirely if already completed — students can always re-access their work.
       let isProgressionLocked = false;
-      if (!canBypassLocks && studentId) {
+      if (!canBypassLocks && studentId && !alreadyCompleted) {
         isProgressionLocked = !previousCompleted;
       }
 

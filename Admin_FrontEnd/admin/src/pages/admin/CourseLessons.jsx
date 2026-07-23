@@ -338,6 +338,7 @@ const CourseLessons = () => {
                     onSave={handleSaveLesson}
                     lessonToEdit={editingLesson}
                     initialContentType={lessonInitialType}
+                    course={currentCourse}
                 />
             )}
 

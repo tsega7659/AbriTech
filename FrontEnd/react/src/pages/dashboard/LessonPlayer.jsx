@@ -853,8 +853,8 @@ export default function LessonPlayer() {
                 {/* Sidebar (Lesson & Assignment List) */}
                 <div className={`w-full lg:w-96 border-r border-gray-100 bg-gray-50/50 flex flex-col h-full lg:h-auto overflow-hidden ${(activeLesson || activeAssignment) ? 'hidden lg:flex' : 'flex'}`}>
                     <div className="p-6 border-b border-gray-100 bg-white">
-                        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-900 font-bold flex items-center gap-2 mb-4 transition-colors">
-                            <ChevronLeft className="w-4 h-4" /> Back to Course
+                        <button onClick={() => navigate('/dashboard/student/courses')} className="text-gray-400 hover:text-gray-900 font-bold flex items-center gap-2 mb-4 transition-colors">
+                            <ChevronLeft className="w-4 h-4" /> My Courses
                         </button>
 
                         <h2 className="text-xl font-black text-gray-900">Course Curriculum</h2>
@@ -880,6 +880,25 @@ export default function LessonPlayer() {
                                     <button
                                         key={`${item.contentType}-${item.id}`}
                                         onClick={() => {
+                                            // ─── COMPLETED LESSONS: Always re-accessible ───────────────────────
+                                            // If the student has already completed this lesson (gold checkmark),
+                                            // bypass all lock/payment checks entirely. They proved past access.
+                                            if (isCompleted && !isProject) {
+                                                manualDismissRef.current = false;
+                                                setActiveLesson(item);
+                                                setActiveAssignment(null);
+                                                navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
+                                                return;
+                                            }
+                                            // Completed projects are also always accessible
+                                            if (isCompleted && isProject) {
+                                                manualDismissRef.current = false;
+                                                setActiveAssignment(item);
+                                                setActiveLesson(null);
+                                                return;
+                                            }
+
+                                            // ─── LOCKED LESSONS ────────────────────────────────────────────────
                                             if (item.isLocked) {
                                                 if (item.requiresPayment) {
                                                     (async () => {
@@ -888,7 +907,7 @@ export default function LessonPlayer() {
                                                             const { data } = await apiClient.get(`/lessons/course/${courseId}`);
                                                             const freshItems = Array.isArray(data?.lessons) ? data.lessons : [];
                                                             const refreshed = freshItems.find(l => l.id === item.id);
-                                                            if (refreshed && !refreshed.requiresPayment && !refreshed.isLocked) {
+                                                            if (refreshed && (!refreshed.requiresPayment || refreshed.isCompleted) && !refreshed.isLocked) {
                                                                 manualDismissRef.current = false;
                                                                 if (refreshed.contentType === 'project') {
                                                                     setActiveAssignment(refreshed);
@@ -918,6 +937,7 @@ export default function LessonPlayer() {
                                                 return;
                                             }
 
+                                            // ─── UNLOCKED LESSONS ──────────────────────────────────────────────
                                             manualDismissRef.current = false;
                                             if (isProject) {
                                                 setActiveAssignment(item);

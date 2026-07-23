@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Link as LinkIcon, FileText, CheckCircle2, Video, Image as ImageIcon, Plus, Trash2, File, GripVertical } from 'lucide-react';
 
-const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentType = 'lesson' }) => {
+const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentType = 'lesson', course }) => {
     const [lessonData, setLessonData] = useState({
         title: '',
         description: '',
@@ -28,7 +28,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                     ? lessonToEdit.resources.map(r => ({ ...r, file: null }))
                     : [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
                 quiz: lessonToEdit.quiz || [],
-                accessType: lessonToEdit.accessType || 'paid'
+                accessType: lessonToEdit.accessType || 'locked'
             });
         } else if (isOpen) {
             setUploadProgress(0);
@@ -39,7 +39,7 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                 contentType: initialContentType,
                 resources: [{ type: 'video', contentUrl: '', textContent: '', file: null, id: Date.now() }],
                 quiz: [],
-                accessType: 'paid'
+                accessType: 'locked'
             });
         }
     }, [lessonToEdit, isOpen, initialContentType]);
@@ -223,8 +223,32 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                             />
                         </div>
 
-                        {/* Access Type hidden as requested */}
-
+                        {course?.accessModel === 'with_preview' && (
+                            <div className="md:col-span-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Access Type</label>
+                                <div className="flex items-center gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit mb-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLessonData({ ...lessonData, accessType: 'preview' })}
+                                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${(lessonData.accessType === 'preview' || lessonData.accessType === 'free') ? 'bg-yellow-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        PREVIEW (FREE)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLessonData({ ...lessonData, accessType: 'locked' })}
+                                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${(lessonData.accessType === 'locked' || lessonData.accessType === 'paid') ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        LOCKED (PAID)
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-bold ml-2">
+                                    {(lessonData.accessType === 'preview' || lessonData.accessType === 'free')
+                                        ? 'Students can access this lesson for free before purchasing.'
+                                        : 'Students must enroll & pay before accessing this lesson.'}
+                                </p>
+                            </div>
+                        )}
                         <div className="md:col-span-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">{lessonData.contentType === 'quiz' ? 'Quiz Description' : 'Lesson Description'}</label>
                             <textarea
