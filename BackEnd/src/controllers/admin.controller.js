@@ -107,6 +107,31 @@ const getDashboardStats = async (req, res) => {
             LIMIT 10
         `);
 
+        // Top Performing Students
+        const [topPerformingStudentsRaw] = await pool.execute(`
+            SELECT u."fullName" as name, COALESCE(ROUND(AVG(e."progressPercentage")), 0) as score
+            FROM "user" u
+            JOIN student s ON u.id = s."userId"
+            JOIN enrollment e ON s.id = e."studentId"
+            WHERE e."progressPercentage" > 0
+            GROUP BY u.id, u."fullName"
+            ORDER BY score DESC
+            LIMIT 5
+        `);
+        const topPerformingStudents = topPerformingStudentsRaw.map(s => ({ ...s, score: Number(s.score) }));
+
+        // Most Difficult Courses (lowest average progress)
+        const [mostDifficultCoursesRaw] = await pool.execute(`
+            SELECT c.name as title, 
+                   COALESCE(ROUND(100 - AVG(e."progressPercentage")), 100) as rate
+            FROM course c
+            JOIN enrollment e ON c.id = e."courseId"
+            GROUP BY c.id, c.name
+            ORDER BY rate DESC
+            LIMIT 5
+        `);
+        const mostDifficultCourses = mostDifficultCoursesRaw.map(c => ({ ...c, rate: Number(c.rate) }));
+
         res.json({
             totalStudents: Number(stats.totalStudents),
             totalTeachers: Number(stats.totalTeachers),
@@ -124,7 +149,9 @@ const getDashboardStats = async (req, res) => {
             averageLearningTime: Number(stats.avgLearningTime),
             topCourses: topCourses.map(c => ({ ...c, value: Number(c.value) })),
             categoryStats,
-            recentActivity
+            recentActivity,
+            topPerformingStudents,
+            mostDifficultCourses
         });
     } catch (error) {
         console.error('Get Dashboard Stats Error:', error);

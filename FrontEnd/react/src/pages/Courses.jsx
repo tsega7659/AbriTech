@@ -38,6 +38,7 @@ export default function Courses() {
     const [enrollSuccess, setEnrollSuccess] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, courseId: null });
+    const [visibleCount, setVisibleCount] = useState(6);
 
     const showFeedback = useCallback((title, message, type = 'success') => {
         setFeedbackModal({ isOpen: true, title, message, type });
@@ -220,7 +221,7 @@ export default function Courses() {
                             exit={{ opacity: 0 }}
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                         >
-                            {filteredCourses.map((course) => (
+                            {filteredCourses.slice(0, visibleCount).map((course) => (
                                 <motion.div
                                     layout
                                     key={course.id}
@@ -389,6 +390,20 @@ export default function Courses() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+                {filteredCourses.length > 6 && (
+                    <div className="flex justify-center mt-12">
+                        <button
+                            onClick={() => setVisibleCount(prev => prev === 6 ? filteredCourses.length : 6)}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 shadow-sm"
+                        >
+                            {visibleCount === 6 ? (
+                                <>View More Courses <ChevronRight className="w-4 h-4" /></>
+                            ) : (
+                                "Show Less"
+                            )}
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Modals and Overlays */}

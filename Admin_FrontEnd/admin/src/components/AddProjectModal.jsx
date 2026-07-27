@@ -35,8 +35,8 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.title || !formData.description || !formData.orderNumber) {
-            alert('Title, description, and order number are required.');
+        if (!formData.title || !formData.description) {
+            alert('Title and description are required.');
             return;
         }
 
@@ -46,7 +46,7 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                 courseId,
                 title: formData.title,
                 description: formData.description,
-                orderNumber: Number(formData.orderNumber),
+                orderNumber: formData.orderNumber ? Number(formData.orderNumber) : undefined,
                 dueDate: formData.dueDate || null,
                 maxPoints: Number(formData.maxPoints) || 100,
                 requiresApproval: formData.requiresApproval,
@@ -106,20 +106,21 @@ const AddProjectModal = ({ isOpen, onClose, onSave, projectToEdit, courseId }) =
                             />
                         </div>
 
-                        <div>
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">
-                                Order Number
-                            </label>
-                            <input
-                                required
-                                type="number"
-                                min="1"
-                                placeholder="1"
-                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={formData.orderNumber}
-                                onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })}
-                            />
-                        </div>
+                        {projectToEdit && (
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">
+                                    Order Number
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Auto-assigned"
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    value={formData.orderNumber}
+                                    onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Description */}

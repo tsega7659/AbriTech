@@ -112,7 +112,9 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
         const data = new FormData();
         data.append('title', lessonData.title);
         data.append('description', lessonData.description);
-        data.append('orderNumber', lessonData.orderNumber);
+        if (lessonData.orderNumber !== '') {
+            data.append('orderNumber', lessonData.orderNumber);
+        }
         data.append('contentType', lessonData.contentType);
         data.append('accessType', lessonData.accessType);
 
@@ -211,17 +213,18 @@ const AddLessonModal = ({ isOpen, onClose, onSave, lessonToEdit, initialContentT
                             </select>
                         </div>
 
-                        <div>
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Order Number</label>
-                            <input
-                                required
-                                type="number"
-                                placeholder="1"
-                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={lessonData.orderNumber}
-                                onChange={e => setLessonData({ ...lessonData, orderNumber: e.target.value })}
-                            />
-                        </div>
+                        {lessonToEdit && (
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Order Number</label>
+                                <input
+                                    type="number"
+                                    placeholder="Auto-assigned"
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    value={lessonData.orderNumber}
+                                    onChange={e => setLessonData({ ...lessonData, orderNumber: e.target.value })}
+                                />
+                            </div>
+                        )}
 
                         {course?.accessModel === 'with_preview' && (
                             <div className="md:col-span-3">

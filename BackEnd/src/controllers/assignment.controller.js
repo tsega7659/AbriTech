@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const fs = require('fs');
+const { updateStudentCourseProgress } = require('./lesson.controller');
 
 // ----- ADMIN: Manage Assignments (Projects) -----
 
@@ -95,10 +96,22 @@ const getAssignmentById = async (req, res) => {
 // Admin creates a project/assignment
 const createAssignment = async (req, res) => {
   try {
-    const { courseId, title, description, orderNumber, dueDate, requiresApproval, maxPoints } = req.body;
+    let { courseId, title, description, orderNumber, dueDate, requiresApproval, maxPoints } = req.body;
 
     if (!courseId || !title || !description) {
       return res.status(400).json({ message: 'Course ID, title, and description are required' });
+    }
+
+    if (!orderNumber) {
+      const [[lessonMax]] = await pool.execute(
+        'SELECT COALESCE(MAX("orderNumber"), 0) as val FROM lesson WHERE "courseId" = ?',
+        [courseId]
+      );
+      const [[assignMax]] = await pool.execute(
+        'SELECT COALESCE(MAX("orderNumber"), 0) as val FROM assignment WHERE "courseId" = ?',
+        [courseId]
+      );
+      orderNumber = Math.max(Number(lessonMax.val || 0), Number(assignMax.val || 0)) + 1;
     }
 
     const [result] = await pool.execute(
@@ -107,7 +120,7 @@ const createAssignment = async (req, res) => {
         courseId,
         title,
         description,
-        orderNumber || 1,
+        orderNumber,
         dueDate || null,
         requiresApproval !== undefined ? (requiresApproval ? true : false) : true,
         maxPoints || 100
@@ -287,10 +300,28 @@ const assessSubmission = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // Fetch submission to get studentId + assignmentId for progress update
+    const [submissionRows] = await pool.execute(
+      'SELECT "studentId", "assignmentId" FROM assignmentsubmission WHERE id = ?',
+      [submissionId]
+    );
+
     await pool.execute(
       'UPDATE assignmentsubmission SET status = ?, result = ?, feedback = ?, score = ?, "maxScore" = ? WHERE id = ?',
       [status, result || null, feedback || null, score !== undefined ? score : null, maxScore || 100, submissionId]
     );
+
+    // Recalculate course progress whenever a submission is graded
+    if (submissionRows.length > 0) {
+      const { studentId, assignmentId } = submissionRows[0];
+      const [assignmentRows] = await pool.execute(
+        'SELECT "courseId" FROM assignment WHERE id = ?',
+        [assignmentId]
+      );
+      if (assignmentRows.length > 0) {
+        await updateStudentCourseProgress(studentId, assignmentRows[0].courseId);
+      }
+    }
 
     res.json({ message: 'Submission assessed successfully' });
   } catch (error) {

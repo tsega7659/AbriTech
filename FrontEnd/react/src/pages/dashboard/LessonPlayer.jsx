@@ -622,7 +622,7 @@ export default function LessonPlayer() {
                                         <div className="flex items-center justify-between mb-4">
                                             <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Teacher's Assessment</h4>
                                             {activeAssignment.score !== null && (
-                                                <span className="text-xl font-black text-primary">{activeAssignment.score}/{activeAssignment.maxScore}</span>
+                                                <span className="text-xl font-black text-primary">{activeAssignment.score}/{activeAssignment.maxScore || activeAssignment.maxPoints || 100}</span>
                                             )}
                                         </div>
                                         {activeAssignment.feedback ? (

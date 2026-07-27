@@ -11,15 +11,19 @@ const upload = (folderName) => {
     const storage = new CloudinaryStorage({
         cloudinary: cloudinary,
         params: async (req, file) => {
-            // Check if file is a document (PDF, Word, etc.)
-            const isRaw = file.mimetype === 'application/pdf' || 
-                          file.mimetype.includes('msword') || 
-                          file.mimetype.includes('officedocument') || 
-                          file.originalname.toLowerCase().endsWith('.pdf');
-            
+            // Check if file is a document/archive (PDF, Word, RAR, etc.)
+            const isRaw = file.mimetype === 'application/pdf' ||
+                file.mimetype.includes('msword') ||
+                file.mimetype.includes('officedocument') ||
+                file.mimetype === 'application/x-rar-compressed' ||
+                file.mimetype === 'application/vnd.rar' ||
+                file.mimetype === 'application/octet-stream' ||
+                file.originalname.toLowerCase().endsWith('.pdf') ||
+                file.originalname.toLowerCase().endsWith('.rar');
+
             return {
                 folder: folderName,
-                resource_type: isRaw ? 'raw' : 'auto', 
+                resource_type: isRaw ? 'raw' : 'auto',
                 public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname.split('.')[0]}`
             };
         },
@@ -29,14 +33,16 @@ const upload = (folderName) => {
         storage: storage,
         limits: { fileSize: 200 * 1024 * 1024 }, // Increased to 200MB for videos
         fileFilter: (req, file, cb) => {
-            const allowedTypes = /jpeg|jpg|png|webp|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|video/;
+            const allowedTypes = /jpeg|jpg|png|webp|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|video|rar|x-rar|octet-stream/;
+            const isRarFile = file.originalname.toLowerCase().endsWith('.rar');
             const isSupported = allowedTypes.test(file.mimetype) ||
-                allowedTypes.test(file.originalname.toLowerCase());
+                allowedTypes.test(file.originalname.toLowerCase()) ||
+                isRarFile;
 
             if (isSupported) {
                 return cb(null, true);
             } else {
-                cb(new Error('Format not supported! (Allowed: Images, PDF, Doc, Video)'));
+                cb(new Error('Format not supported! (Allowed: Images, PDF, Doc, Video, RAR)'));
             }
         }
     });

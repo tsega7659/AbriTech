@@ -233,11 +233,10 @@ const InstructorStudentDetail = () => {
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Max Mark</label>
                                                         <input
                                                             type="number"
-                                                            value={assessmentData.maxScore || 10}
-                                                            onChange={(e) => setAssessmentData({ ...assessmentData, maxScore: e.target.value })}
+                                                            value={assessmentData.maxScore || 100}
+                                                            readOnly
                                                             placeholder="Out of"
-                                                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none"
-                                                            required
+                                                            className="w-full p-3 bg-slate-100 border border-slate-100 rounded-xl font-bold text-sm focus:outline-none text-slate-400 cursor-not-allowed"
                                                         />
                                                     </div>
                                                 </div>
@@ -262,7 +261,7 @@ const InstructorStudentDetail = () => {
                                                     setAssessmentData({
                                                         status: sub.status === 'pending' ? 'approved' : sub.status,
                                                         score: sub.score,
-                                                        maxScore: sub.maxScore || 10,
+                                                        maxScore: sub.maxScore || 100,
                                                         feedback: sub.feedback || ''
                                                     });
                                                 }}

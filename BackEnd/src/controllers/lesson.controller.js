@@ -16,11 +16,24 @@ const createLesson = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { courseId, title, description, summaryText, orderNumber, contentType, accessType, resources: resourcesJson, quiz: quizJson } = req.body;
+    const { courseId, title, description, summaryText, contentType, accessType, resources: resourcesJson, quiz: quizJson } = req.body;
+    let { orderNumber } = req.body;
 
     // Validate required fields
-    if (!courseId || !title || !description || !orderNumber) {
-      return res.status(400).json({ message: 'CourseId, Title, Description, and OrderNumber are required.' });
+    if (!courseId || !title || !description) {
+      return res.status(400).json({ message: 'CourseId, Title, and Description are required.' });
+    }
+
+    if (!orderNumber) {
+      const [[lessonMax]] = await connection.execute(
+        'SELECT COALESCE(MAX("orderNumber"), 0) as val FROM lesson WHERE "courseId" = ?',
+        [courseId]
+      );
+      const [[assignMax]] = await connection.execute(
+        'SELECT COALESCE(MAX("orderNumber"), 0) as val FROM assignment WHERE "courseId" = ?',
+        [courseId]
+      );
+      orderNumber = Math.max(Number(lessonMax.val || 0), Number(assignMax.val || 0)) + 1;
     }
 
     let resources = [];
@@ -668,5 +681,6 @@ module.exports = {
   updateLesson,
   deleteLesson,
   markLessonComplete,
-  submitQuiz
+  submitQuiz,
+  updateStudentCourseProgress
 };
