@@ -13,7 +13,8 @@ import {
     Plus,
     AlertCircle,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Maximize
 } from "lucide-react";
 import { useStudentDashboard } from "../../hooks/useStudentQueries";
 import { useLessons, useAssignments, useCompleteLesson, useSubmitQuiz, useSubmitAssignment, useUpdateTimeSpent } from "../../hooks/useStudentQueries";
@@ -161,12 +162,19 @@ export default function LessonPlayer() {
 
     useEffect(() => {
         if (lessons.length > 0) {
-            // Priority 1: Item from URL ID (lessons/quizzes only — projects don't use URL IDs)
+            // Priority 1: Item from URL ID
             if (urlLessonId && (!activeLesson || activeLesson.id !== parseInt(urlLessonId))) {
                 const target = lessons.find(l => l.id === parseInt(urlLessonId) && l.contentType !== 'project');
                 if (target && !target.isLocked) {
                     setActiveLesson(target);
                     setActiveAssignment(null);
+
+                    if (target.quizResult && target.quizResult.selectedOptions) {
+                        setQuizAnswers(target.quizResult.selectedOptions);
+                    } else {
+                        setQuizAnswers({});
+                    }
+
                     setQuizResult(target.quizResult || null);
                     if (target.isCompleted) setCanComplete(true);
                     manualDismissRef.current = false;
@@ -174,12 +182,10 @@ export default function LessonPlayer() {
                 }
             }
 
-            // Priority 2: Auto-select first available if no active item and NOT manually dismissed
+            // Priority 2: Auto-select first available if no active item
             if (!activeLesson && !activeAssignment && !manualDismissRef.current) {
-                // On mobile, don't auto-select if no specific lesson ID in URL to allow seeing playlist first
                 if (isMobile && !urlLessonId) return;
 
-                // Find first unlocked item in the unified list
                 const firstActive = lessons.find(l => !l.isLocked && !l.isCompleted)
                     || lessons.find(l => !l.isLocked)
                     || lessons[0];
@@ -189,6 +195,13 @@ export default function LessonPlayer() {
                         setActiveAssignment(firstActive);
                     } else {
                         setActiveLesson(firstActive);
+
+                        if (firstActive.quizResult && firstActive.quizResult.selectedOptions) {
+                            setQuizAnswers(firstActive.quizResult.selectedOptions);
+                        } else {
+                            setQuizAnswers({});
+                        }
+
                         setQuizResult(firstActive.quizResult || null);
                         if (firstActive.isCompleted) setCanComplete(true);
                     }
@@ -262,7 +275,14 @@ export default function LessonPlayer() {
         if (!lesson.isLocked) {
             setActiveLesson(lesson);
             setActiveAssignment(null);
-            setQuizAnswers({});
+
+            // Re-populate old answers if user has already taken the quiz
+            if (lesson.quizResult && lesson.quizResult.selectedOptions) {
+                setQuizAnswers(lesson.quizResult.selectedOptions);
+            } else {
+                setQuizAnswers({});
+            }
+
             setQuizResult(lesson.quizResult || null);
             setCanComplete(lesson.isCompleted || !!lesson.quizResult);
         }
@@ -377,26 +397,37 @@ export default function LessonPlayer() {
                                 <h4 className="text-xl font-bold text-gray-800 leading-snug">{q.question}</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-10">
-                                {['optionA', 'optionB', 'optionC', 'optionD'].map((opt) => (
-                                    <button
-                                        key={opt}
-                                        disabled={quizResult}
-                                        onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                                        className={`p-4 rounded-2xl text-left font-bold transition-all border ${quizAnswers[q.id] === opt
-                                            ? 'bg-[#00B4D8] border-[#00B4D8] text-black shadow-sm'
-                                            : 'bg-white border-gray-100 text-gray-600 hover:border-[#00B4D8]/30 hover:bg-slate-50'
-                                            } ${quizResult && q.correctOption === opt ? 'bg-emerald-50 border-emerald-500 text-emerald-600' : ''}
-                                               ${quizResult && quizAnswers[q.id] === opt && q.correctOption !== opt ? 'bg-rose-50 border-rose-500 text-rose-700' : ''}
-                                            `}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${quizAnswers[q.id] === opt ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-400'}`}>
-                                                {opt.slice(-1)}
+                                {['optionA', 'optionB', 'optionC', 'optionD'].map((opt) => {
+                                    let bgClass = "bg-white border-gray-100 text-gray-600 hover:border-[#00B4D8]/30 hover:bg-slate-50";
+                                    if (quizResult) {
+                                        if (q.correctOption === opt) {
+                                            bgClass = "!bg-emerald-50 !border-emerald-500 !text-emerald-700 shadow-sm";
+                                        } else if (quizAnswers?.[q.id] === opt) {
+                                            bgClass = "!bg-rose-50 !border-rose-500 !text-rose-700 shadow-sm";
+                                        } else {
+                                            bgClass = "bg-white border-gray-100 text-gray-400 opacity-60";
+                                        }
+                                    } else if (quizAnswers?.[q.id] === opt) {
+                                        bgClass = "bg-[#00B4D8] border-[#00B4D8] text-black shadow-sm";
+                                    }
+
+                                    return (
+                                        <button
+                                            key={opt}
+                                            disabled={!!quizResult}
+                                            onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                                            className={`p-4 rounded-2xl text-left font-bold transition-all border ${bgClass}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${quizResult ? (q.correctOption === opt ? 'border-emerald-500 bg-emerald-500 text-white' : (quizAnswers?.[q.id] === opt ? 'border-rose-500 bg-rose-500 text-white' : 'border-gray-200 text-gray-400'))
+                                                    : (quizAnswers?.[q.id] === opt ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-400')}`}>
+                                                    {opt.slice(-1)}
+                                                </div>
+                                                {q[opt]}
                                             </div>
-                                            {q[opt]}
-                                        </div>
-                                    </button>
-                                ))}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
@@ -718,7 +749,7 @@ export default function LessonPlayer() {
         }
 
         return (
-            <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+            <div className="animate-in fade-in duration-500 pb-20">
                 {/* Mobile Back Button */}
                 <button
                     onClick={() => {
@@ -727,56 +758,116 @@ export default function LessonPlayer() {
                         setActiveAssignment(null);
                         navigate(`/dashboard/student/courses/${courseId}/learn`);
                     }}
-                    className="lg:hidden flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-4 bg-primary/5 px-4 py-2 rounded-xl"
+                    className="lg:hidden flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-4 bg-primary/5 px-4 py-2 rounded-xl mx-6"
                 >
                     <ChevronLeft className="w-4 h-4" /> Back to Playlist
                 </button>
 
-                <div className="border-b border-gray-100 pb-6">
+                <div className="border-b border-gray-100 pb-6 mb-0 px-6 lg:px-10 pt-6 lg:pt-10">
                     <h1 className="text-3xl font-black text-gray-900 mb-2">{title}</h1>
                     <p className="text-gray-500 font-medium">{description}</p>
                 </div>
 
                 {lessonResources.map((res, index) => {
-                    const fullContentUrl = res.contentUrl?.startsWith('http') ? res.contentUrl : `${API_BASE_URL}/${res.contentUrl}`;
+                    let fullContentUrl = res.contentUrl;
+                    if (fullContentUrl) {
+                        if (res.type === 'link') {
+                            if (!fullContentUrl.startsWith('http')) {
+                                fullContentUrl = `https://${fullContentUrl}`;
+                            }
+                        } else {
+                            if (!fullContentUrl.startsWith('http')) {
+                                fullContentUrl = `${API_BASE_URL}/${fullContentUrl}`;
+                            }
+                        }
+                    }
+
+                    const isMedia = res.type === 'video' || res.type === 'link';
 
                     return (
-                        <div key={index} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm mb-8 last:mb-0">
+                        <div key={index} className={`bg-white overflow-hidden shadow-sm mb-0 last:mb-0 ${isMedia ? 'w-full' : 'mx-6 lg:mx-10 mt-6 rounded-3xl border border-gray-100'}`}>
                             {/* Main Content Rendering */}
                             {res.type === 'video' && fullContentUrl && (
-                                <video
-                                    key={fullContentUrl}
-                                    controls
-                                    onEnded={() => setCanComplete(true)}
-                                    className="w-full h-full object-contain bg-black max-h-[600px]"
-                                >
-                                    <source src={fullContentUrl} />
-                                    Your browser does not support the video tag.
-                                </video>
+                                <div className="w-full relative aspect-video bg-black flex justify-center items-center group">
+                                    <video
+                                        key={fullContentUrl}
+                                        controls
+                                        onEnded={() => setCanComplete(true)}
+                                        className="w-full h-full object-contain"
+                                    >
+                                        <source src={fullContentUrl} />
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
                             )}
 
                             {res.type === 'image' && fullContentUrl && (
                                 <img src={fullContentUrl} alt={title} className="w-full h-auto object-contain" />
                             )}
 
-                            {res.type === 'link' && fullContentUrl && (
-                                <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-50 gap-6 p-8 text-center border-b border-slate-50">
-                                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-500">
-                                        <LinkIcon className="w-8 h-8" />
+                            {res.type === 'link' && fullContentUrl && (() => {
+                                let ytId = null;
+                                try {
+                                    const ytRegex = /(?:youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+                                    const match = fullContentUrl.match(ytRegex);
+                                    if (match && match[1]) {
+                                        ytId = match[1];
+                                    }
+                                } catch (e) { }
+
+                                if (ytId) {
+                                    return (
+                                        <div className="flex flex-col relative group shadow-sm bg-black overflow-hidden aspect-video">
+                                            <div className="w-full h-full relative" id={`yt-container-${index}`}>
+                                                <iframe
+                                                    src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&showinfo=0`}
+                                                    className="absolute top-0 left-0 w-full h-full border-0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                                                    allowFullScreen
+                                                    title="YouTube Video"
+                                                ></iframe>
+                                            </div>
+                                            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        const elem = document.getElementById(`yt-container-${index}`);
+                                                        if (elem.requestFullscreen) {
+                                                            elem.requestFullscreen();
+                                                        } else if (elem.webkitRequestFullscreen) {
+                                                            elem.webkitRequestFullscreen();
+                                                        } else if (elem.msRequestFullscreen) {
+                                                            elem.msRequestFullscreen();
+                                                        }
+                                                    }}
+                                                    className="bg-black/60 hover:bg-primary text-white backdrop-blur-sm p-3 rounded-xl shadow-lg transition-all flex items-center justify-center transform hover:scale-110 active:scale-95"
+                                                    title="Fullscreen"
+                                                >
+                                                    <Maximize className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-50 gap-6 p-8 text-center border-b border-slate-50">
+                                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-500">
+                                            <LinkIcon className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">External Content</h3>
+                                            <a
+                                                href={fullContentUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 bg-[#00B4D8] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all"
+                                            >
+                                                Open Link <LinkIcon className="w-4 h-4" />
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">External Content</h3>
-                                        <a
-                                            href={fullContentUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 bg-[#00B4D8] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#0096B4] transition-all"
-                                        >
-                                            Open Link <LinkIcon className="w-4 h-4" />
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
 
                             {res.type === 'file' && fullContentUrl && (
                                 <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-50 gap-6 p-8 text-center border-b border-slate-50">
@@ -810,12 +901,14 @@ export default function LessonPlayer() {
                     );
                 })}
 
-                {lessonResources.length === 0 && activeLesson.contentType !== 'quiz' && <div className="p-10 text-center text-gray-400 font-bold">No content available for this lesson.</div>}
+                {lessonResources.length === 0 && activeLesson.contentType !== 'quiz' && <div className="px-6 lg:px-10 py-10 text-center text-gray-400 font-bold">No content available for this lesson.</div>}
 
                 {/* Quiz Section (for lessons with quizzes) */}
-                {activeLesson.contentType === 'lesson' && activeLesson.quiz && activeLesson.quiz.length > 0 && renderQuiz()}
+                {activeLesson.contentType === 'lesson' && activeLesson.quiz && activeLesson.quiz.length > 0 && (
+                    <div className="px-6 lg:px-10">{renderQuiz()}</div>
+                )}
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end pt-4 px-6 lg:px-10 pb-6">
                     {!activeLesson.isCompleted && (
                         <button
                             onClick={handleMarkComplete}
@@ -991,8 +1084,8 @@ export default function LessonPlayer() {
                 </div>
 
                 {/* Main Content Area */}
-                <div className={`flex-1 h-full overflow-y-auto bg-white p-6 lg:p-10 ${(activeLesson || activeAssignment) ? 'flex' : 'hidden lg:flex'}`}>
-                    <div className="max-w-4xl mx-auto">
+                <div className={`flex-1 h-full overflow-y-auto bg-white ${(activeLesson || activeAssignment) ? 'flex' : 'hidden lg:flex'}`}>
+                    <div className="w-full">
                         {renderContent()}
                     </div>
                 </div>

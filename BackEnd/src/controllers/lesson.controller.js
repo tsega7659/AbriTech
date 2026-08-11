@@ -217,11 +217,25 @@ const getLessons = async (req, res) => {
             GROUP BY lq."lessonId"
         `, [studentId]);
 
+        const [attempts] = await pool.execute(`
+            SELECT lq."lessonId", qa."quizId", qa."selectedOption"
+            FROM quizattempt qa
+            JOIN lessonquiz lq ON qa."quizId" = lq.id
+            WHERE qa."studentId" = ? AND lq."lessonId" IN (${lessonIds.join(',')})
+        `, [studentId]);
+
+        const attemptMap = {};
+        attempts.forEach(a => {
+          if (!attemptMap[a.lessonId]) attemptMap[a.lessonId] = {};
+          attemptMap[a.lessonId][a.quizId] = a.selectedOption;
+        });
+
         results.forEach(r => {
           quizResultsMap[r.lessonId] = {
             correctCount: r.correctCount,
             totalQuestions: r.totalQuestions,
-            passed: r.totalQuestions > 0 ? (r.correctCount / r.totalQuestions) >= 0.8 : false
+            passed: r.totalQuestions > 0 ? (r.correctCount / r.totalQuestions) >= 0.8 : false,
+            selectedOptions: attemptMap[r.lessonId] || {}
           };
         });
       }
