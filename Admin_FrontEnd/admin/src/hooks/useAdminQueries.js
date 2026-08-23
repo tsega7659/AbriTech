@@ -64,6 +64,21 @@ export const useParents = () => {
     });
 };
 
+export const useAdmins = () => {
+    return useQuery({
+        queryKey: ['admin', 'admins'],
+        queryFn: adminService.getAdmins
+    });
+};
+
+export const useAdminDetails = (id) => {
+    return useQuery({
+        queryKey: ['admin', 'admin-detail', id],
+        queryFn: () => adminService.getAdminDetails(id),
+        enabled: !!id
+    });
+};
+
 export const useStudentDetails = (id) => {
     return useQuery({
         queryKey: ['admin', 'student', id],
@@ -210,8 +225,18 @@ export const useRegisterParent = () => {
 };
 
 export const useRegisterAdmin = () => {
+    const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: adminService.registerAdmin
+        mutationFn: adminService.registerAdmin,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'admins'] })
+    });
+};
+
+export const useDeleteAdmin = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: adminService.deleteAdmin,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'admins'] })
     });
 };
 
@@ -311,6 +336,24 @@ export const useDeleteAssignment = () => {
         mutationFn: ({ id }) => adminService.deleteAssignment(id),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['admin', 'assignments', String(variables.courseId)] });
+        }
+    });
+};
+
+// Data Management Queries & Mutations
+export const useDataStats = () => {
+    return useQuery({
+        queryKey: ['admin', 'data-stats'],
+        queryFn: adminService.getDataStats
+    });
+};
+
+export const useClearData = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload) => adminService.clearData(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin'] });
         }
     });
 };

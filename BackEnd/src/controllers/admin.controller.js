@@ -624,6 +624,466 @@ const getPayments = async (req, res) => {
     }
 };
 
+const getDataStats = async (req, res) => {
+    try {
+        const [[counts]] = await pool.execute(`
+            SELECT 
+                (SELECT COUNT(*) FROM student) as "studentsCount",
+                (SELECT COUNT(*) FROM teacher) as "teachersCount",
+                (SELECT COUNT(*) FROM parent) as "parentsCount",
+                (SELECT COUNT(*) FROM "user" u JOIN role r ON u."roleId" = r.id WHERE r.name = 'admin') as "adminsCount",
+                (SELECT COUNT(*) FROM course) as "coursesCount",
+                (SELECT COUNT(*) FROM lesson) as "lessonsCount",
+                (SELECT COUNT(*) FROM lessonquiz) as "quizzesCount",
+                (SELECT COUNT(*) FROM assignment) as "assignmentsCount",
+                (SELECT COUNT(*) FROM enrollment) as "enrollmentsCount",
+                (SELECT COUNT(*) FROM lessonprogress) as "lessonProgressCount",
+                (SELECT COUNT(*) FROM assignmentsubmission) as "submissionsCount",
+                (SELECT COUNT(*) FROM quizattempt) as "quizAttemptsCount",
+                (SELECT COUNT(*) FROM project) as "projectsCount",
+                (SELECT COUNT(*) FROM payment) as "paymentsCount",
+                (SELECT COUNT(*) FROM blog) as "blogsCount",
+                (SELECT COUNT(*) FROM contactmessage) as "messagesCount",
+                (SELECT COUNT(*) FROM aichatlog) as "aiChatLogsCount",
+                (SELECT COUNT(*) FROM notification) as "notificationsCount"
+        `);
+
+        const categories = [
+            {
+                id: 'students',
+                name: 'Students & Accounts',
+                description: 'Student profiles, user accounts, and personal data',
+                count: Number(counts.studentsCount || 0),
+                subCounts: {
+                    students: Number(counts.studentsCount || 0)
+                },
+                icon: 'GraduationCap',
+                color: 'blue'
+            },
+            {
+                id: 'teachers',
+                name: 'Instructors & Teachers',
+                description: 'Teacher profiles, course assignments, and credentials',
+                count: Number(counts.teachersCount || 0),
+                subCounts: {
+                    teachers: Number(counts.teachersCount || 0)
+                },
+                icon: 'UserCheck',
+                color: 'emerald'
+            },
+            {
+                id: 'parents',
+                name: 'Parents & Families',
+                description: 'Parent accounts and student link relationships',
+                count: Number(counts.parentsCount || 0),
+                subCounts: {
+                    parents: Number(counts.parentsCount || 0)
+                },
+                icon: 'Users',
+                color: 'violet'
+            },
+            {
+                id: 'courses',
+                name: 'Courses & Curriculum',
+                description: 'Course catalog, lessons, quizzes, and assignments',
+                count: Number(counts.coursesCount || 0) + Number(counts.lessonsCount || 0) + Number(counts.quizzesCount || 0) + Number(counts.assignmentsCount || 0),
+                subCounts: {
+                    courses: Number(counts.coursesCount || 0),
+                    lessons: Number(counts.lessonsCount || 0),
+                    quizzes: Number(counts.quizzesCount || 0),
+                    assignments: Number(counts.assignmentsCount || 0)
+                },
+                icon: 'BookOpen',
+                color: 'amber'
+            },
+            {
+                id: 'enrollments_progress',
+                name: 'Enrollments & Progress',
+                description: 'Student course enrollments and lesson progress tracking',
+                count: Number(counts.enrollmentsCount || 0) + Number(counts.lessonProgressCount || 0),
+                subCounts: {
+                    enrollments: Number(counts.enrollmentsCount || 0),
+                    progress: Number(counts.lessonProgressCount || 0)
+                },
+                icon: 'TrendingUp',
+                color: 'cyan'
+            },
+            {
+                id: 'submissions_quizzes',
+                name: 'Submissions & Assessments',
+                description: 'Assignment uploads, quiz attempts, and project submissions',
+                count: Number(counts.submissionsCount || 0) + Number(counts.quizAttemptsCount || 0) + Number(counts.projectsCount || 0),
+                subCounts: {
+                    submissions: Number(counts.submissionsCount || 0),
+                    quizAttempts: Number(counts.quizAttemptsCount || 0),
+                    projects: Number(counts.projectsCount || 0)
+                },
+                icon: 'CheckSquare',
+                color: 'indigo'
+            },
+            {
+                id: 'payments',
+                name: 'Payments & Revenue Records',
+                description: 'Transaction history, payment logs, and deposit records',
+                count: Number(counts.paymentsCount || 0),
+                subCounts: {
+                    payments: Number(counts.paymentsCount || 0)
+                },
+                icon: 'CreditCard',
+                color: 'green'
+            },
+            {
+                id: 'blogs',
+                name: 'Blogs & Articles',
+                description: 'Published and draft blog articles and cover metadata',
+                count: Number(counts.blogsCount || 0),
+                subCounts: {
+                    blogs: Number(counts.blogsCount || 0)
+                },
+                icon: 'FileText',
+                color: 'orange'
+            },
+            {
+                id: 'messages',
+                name: 'Contact Messages & Inquiries',
+                description: 'Public contact inquiries, support tickets, and replies',
+                count: Number(counts.messagesCount || 0),
+                subCounts: {
+                    messages: Number(counts.messagesCount || 0)
+                },
+                icon: 'MessageSquare',
+                color: 'rose'
+            },
+            {
+                id: 'ai_notifications',
+                name: 'AI Chat History & Notifications',
+                description: 'User AI conversations and platform notification history',
+                count: Number(counts.aiChatLogsCount || 0) + Number(counts.notificationsCount || 0),
+                subCounts: {
+                    aiChats: Number(counts.aiChatLogsCount || 0),
+                    notifications: Number(counts.notificationsCount || 0)
+                },
+                icon: 'Bot',
+                color: 'fuchsia'
+            }
+        ];
+
+        const totalRecords = categories.reduce((sum, c) => sum + c.count, 0);
+
+        res.json({
+            categories,
+            totalRecords,
+            adminsCount: Number(counts.adminsCount || 0),
+            counts: {
+                students: Number(counts.studentsCount || 0),
+                teachers: Number(counts.teachersCount || 0),
+                parents: Number(counts.parentsCount || 0),
+                admins: Number(counts.adminsCount || 0),
+                courses: Number(counts.coursesCount || 0),
+                lessons: Number(counts.lessonsCount || 0),
+                quizzes: Number(counts.quizzesCount || 0),
+                assignments: Number(counts.assignmentsCount || 0),
+                enrollments: Number(counts.enrollmentsCount || 0),
+                lessonProgress: Number(counts.lessonProgressCount || 0),
+                submissions: Number(counts.submissionsCount || 0),
+                quizAttempts: Number(counts.quizAttemptsCount || 0),
+                projects: Number(counts.projectsCount || 0),
+                payments: Number(counts.paymentsCount || 0),
+                blogs: Number(counts.blogsCount || 0),
+                messages: Number(counts.messagesCount || 0),
+                aiChatLogs: Number(counts.aiChatLogsCount || 0),
+                notifications: Number(counts.notificationsCount || 0)
+            }
+        });
+    } catch (error) {
+        console.error('Get Data Stats Error:', error);
+        res.status(500).json({ message: 'Failed to fetch database statistics', error: error.message });
+    }
+};
+
+const clearData = async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const { mode, targets = [] } = req.body;
+        const currentUserId = req.user?.userId;
+
+        await conn.beginTransaction();
+
+        let clearedSummary = {};
+
+        if (mode === 'all') {
+            // 1. Delete dependent leaf/child tables first:
+            await conn.execute('DELETE FROM assignmentsubmission');
+            await conn.execute('DELETE FROM quizattempt');
+            await conn.execute('DELETE FROM project');
+            await conn.execute('DELETE FROM lessonprogress');
+            await conn.execute('DELETE FROM enrollment');
+            await conn.execute('DELETE FROM payment');
+            await conn.execute('DELETE FROM aichatlog');
+            await conn.execute('DELETE FROM notification');
+            await conn.execute('DELETE FROM contactmessage');
+
+            try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
+            try { await conn.execute('DELETE FROM achievement'); } catch (e) {}
+            try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) {}
+            try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) {}
+            try { await conn.execute('DELETE FROM userbadge'); } catch (e) {}
+            try { await conn.execute('DELETE FROM eventregistration'); } catch (e) {}
+            try { await conn.execute('DELETE FROM certificate'); } catch (e) {}
+            try { await conn.execute('DELETE FROM portfolio'); } catch (e) {}
+
+            // 2. Delete curriculum:
+            await conn.execute('DELETE FROM lessonquiz');
+            await conn.execute('DELETE FROM lesson');
+            await conn.execute('DELETE FROM assignment');
+            await conn.execute('DELETE FROM teachercourse');
+            await conn.execute('DELETE FROM course');
+
+            // 3. Delete user relationships and role-specific rows:
+            await conn.execute('DELETE FROM parentstudent');
+            await conn.execute('DELETE FROM student');
+            await conn.execute('DELETE FROM parent');
+            await conn.execute('DELETE FROM teacher');
+            await conn.execute('DELETE FROM blog');
+
+            // 4. Delete all users EXCEPT admin users and current user:
+            const [adminRoleRows] = await conn.execute('SELECT id FROM role WHERE name = ?', ['admin']);
+            const adminRoleId = adminRoleRows[0]?.id;
+
+            if (adminRoleId) {
+                await conn.execute('DELETE FROM "user" WHERE "roleId" != ? AND id != ?', [adminRoleId, currentUserId || 0]);
+            } else {
+                await conn.execute('DELETE FROM "user" WHERE id != ?', [currentUserId || 0]);
+            }
+
+            clearedSummary = { mode: 'all', message: 'All database data successfully wiped (admin accounts preserved).' };
+        } else if (mode === 'selected' && Array.isArray(targets) && targets.length > 0) {
+            // Process selected targets
+            for (const target of targets) {
+                switch (target) {
+                    case 'students':
+                        await conn.execute('DELETE FROM assignmentsubmission');
+                        await conn.execute('DELETE FROM quizattempt');
+                        await conn.execute('DELETE FROM project');
+                        await conn.execute('DELETE FROM lessonprogress');
+                        await conn.execute('DELETE FROM enrollment');
+                        await conn.execute('DELETE FROM parentstudent');
+                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
+                        try { await conn.execute('DELETE FROM achievement'); } catch (e) {}
+
+                        const [studentUsers] = await conn.execute('SELECT "userId" FROM student');
+                        await conn.execute('DELETE FROM student');
+                        if (studentUsers.length > 0) {
+                            const uIds = studentUsers.map(s => s.userId).filter(Boolean);
+                            for (const uid of uIds) {
+                                await conn.execute('DELETE FROM "user" WHERE id = ?', [uid]);
+                            }
+                        }
+                        clearedSummary.students = true;
+                        break;
+
+                    case 'teachers':
+                        await conn.execute('DELETE FROM teachercourse');
+                        const [teacherUsers] = await conn.execute('SELECT "userId" FROM teacher');
+                        await conn.execute('DELETE FROM teacher');
+                        if (teacherUsers.length > 0) {
+                            const uIds = teacherUsers.map(t => t.userId).filter(Boolean);
+                            for (const uid of uIds) {
+                                await conn.execute('DELETE FROM "user" WHERE id = ?', [uid]);
+                            }
+                        }
+                        clearedSummary.teachers = true;
+                        break;
+
+                    case 'parents':
+                        await conn.execute('DELETE FROM parentstudent');
+                        const [parentUsers] = await conn.execute('SELECT "userId" FROM parent');
+                        await conn.execute('DELETE FROM parent');
+                        if (parentUsers.length > 0) {
+                            const uIds = parentUsers.map(p => p.userId).filter(Boolean);
+                            for (const uid of uIds) {
+                                await conn.execute('DELETE FROM "user" WHERE id = ?', [uid]);
+                            }
+                        }
+                        clearedSummary.parents = true;
+                        break;
+
+                    case 'courses':
+                        await conn.execute('DELETE FROM assignmentsubmission');
+                        await conn.execute('DELETE FROM quizattempt');
+                        await conn.execute('DELETE FROM project');
+                        await conn.execute('DELETE FROM lessonprogress');
+                        await conn.execute('DELETE FROM enrollment');
+                        await conn.execute('DELETE FROM payment');
+                        try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) {}
+                        try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) {}
+                        await conn.execute('DELETE FROM lessonquiz');
+                        await conn.execute('DELETE FROM lesson');
+                        await conn.execute('DELETE FROM assignment');
+                        await conn.execute('DELETE FROM teachercourse');
+                        await conn.execute('DELETE FROM course');
+                        clearedSummary.courses = true;
+                        break;
+
+                    case 'enrollments_progress':
+                        await conn.execute('DELETE FROM lessonprogress');
+                        await conn.execute('DELETE FROM enrollment');
+                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
+                        clearedSummary.enrollments_progress = true;
+                        break;
+
+                    case 'submissions_quizzes':
+                        await conn.execute('DELETE FROM assignmentsubmission');
+                        await conn.execute('DELETE FROM quizattempt');
+                        await conn.execute('DELETE FROM project');
+                        clearedSummary.submissions_quizzes = true;
+                        break;
+
+                    case 'payments':
+                        await conn.execute('DELETE FROM payment');
+                        clearedSummary.payments = true;
+                        break;
+
+                    case 'blogs':
+                        await conn.execute('DELETE FROM blog');
+                        clearedSummary.blogs = true;
+                        break;
+
+                    case 'messages':
+                        await conn.execute('DELETE FROM contactmessage');
+                        clearedSummary.messages = true;
+                        break;
+
+                    case 'ai_notifications':
+                        await conn.execute('DELETE FROM aichatlog');
+                        await conn.execute('DELETE FROM notification');
+                        clearedSummary.ai_notifications = true;
+                        break;
+                }
+            }
+            clearedSummary.message = 'Selected categories successfully cleared.';
+        } else {
+            await conn.rollback();
+            return res.status(400).json({ message: 'Invalid clear parameters. Please provide mode or targets.' });
+        }
+
+        await conn.commit();
+        res.json({
+            success: true,
+            message: clearedSummary.message || 'Data cleared successfully',
+            summary: clearedSummary
+        });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Clear Data Error:', error);
+        res.status(500).json({ message: 'Failed to clear data', error: error.message });
+    } finally {
+        conn.release();
+    }
+};
+
+const getAdmins = async (req, res) => {
+    try {
+        const [admins] = await pool.execute(`
+            SELECT 
+                u.id, 
+                u."fullName", 
+                u.username, 
+                u.email, 
+                u."phoneNumber", 
+                u.gender, 
+                u.address, 
+                u."createdAt", 
+                u."lastLogin",
+                r.name as role
+            FROM "user" u
+            JOIN role r ON u."roleId" = r.id
+            WHERE r.name = 'admin'
+            ORDER BY u."createdAt" DESC, u.id DESC
+        `);
+        res.json(admins);
+    } catch (error) {
+        console.error('Get Admins Error:', error);
+        res.status(500).json({ message: 'Failed to fetch administrators', error: error.message });
+    }
+};
+
+const getAdminDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [admins] = await pool.execute(`
+            SELECT 
+                u.id, 
+                u."fullName", 
+                u.username, 
+                u.email, 
+                u."phoneNumber", 
+                u.gender, 
+                u.address, 
+                u."createdAt", 
+                u."lastLogin",
+                r.name as role
+            FROM "user" u
+            JOIN role r ON u."roleId" = r.id
+            WHERE u.id = ? AND r.name = 'admin'
+        `, [id]);
+
+        if (admins.length === 0) {
+            return res.status(404).json({ message: 'Administrator not found' });
+        }
+
+        res.json(admins[0]);
+    } catch (error) {
+        console.error('Get Admin Details Error:', error);
+        res.status(500).json({ message: 'Failed to fetch administrator details', error: error.message });
+    }
+};
+
+const deleteAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUserId = req.user?.userId;
+
+        if (!id) {
+            return res.status(400).json({ message: 'Admin ID is required' });
+        }
+
+        if (String(currentUserId) === String(id)) {
+            return res.status(400).json({ message: 'You cannot delete your own administrator account while logged in.' });
+        }
+
+        // Count total admins to prevent deleting the last admin
+        const [[{ adminCount }]] = await pool.execute(`
+            SELECT COUNT(*) as "adminCount" 
+            FROM "user" u 
+            JOIN role r ON u."roleId" = r.id 
+            WHERE r.name = 'admin'
+        `);
+
+        if (Number(adminCount) <= 1) {
+            return res.status(400).json({ message: 'Cannot delete the only remaining administrator account.' });
+        }
+
+        const [existing] = await pool.execute(`
+            SELECT u.id, u.username, u.email 
+            FROM "user" u 
+            JOIN role r ON u."roleId" = r.id 
+            WHERE u.id = ? AND r.name = 'admin'
+        `, [id]);
+
+        if (existing.length === 0) {
+            return res.status(404).json({ message: 'Administrator not found' });
+        }
+
+        await pool.execute('DELETE FROM "user" WHERE id = ?', [id]);
+
+        res.json({ message: `Administrator ${existing[0].username} deleted successfully` });
+    } catch (error) {
+        console.error('Delete Admin Error:', error);
+        res.status(500).json({ message: 'Failed to delete administrator', error: error.message });
+    }
+};
+
 module.exports = {
     getAllUsers,
     getDashboardStats,
@@ -637,5 +1097,10 @@ module.exports = {
     getAllProjects,
     reviewProject,
     updateTeacherSpecialization,
-    getPayments
+    getPayments,
+    getDataStats,
+    clearData,
+    getAdmins,
+    getAdminDetails,
+    deleteAdmin
 };

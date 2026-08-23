@@ -24,6 +24,8 @@ const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const MessageManagement = lazy(() => import('./pages/admin/MessageManagement'));
 const Payments = lazy(() => import('./pages/admin/Payments'));
 const ActivityMonitoring = lazy(() => import('./pages/admin/ActivityMonitoring'));
+const ManageData = lazy(() => import('./pages/admin/ManageData'));
+const AdminManagement = lazy(() => import('./pages/admin/AdminManagement'));
 
 // Instructor Pages
 const InstructorDashboard = lazy(() => import('./pages/instructor/InstructorDashboard'));
@@ -80,6 +82,7 @@ function App() {
               <Route path="courses/:courseId/projects" element={<CourseProjects />} />
               <Route path="instructors" element={<InstructorManagement />} />
               <Route path="parents" element={<ParentManagement />} />
+              <Route path="admins" element={<AdminManagement />} />
               <Route path="users/register" element={<UserRegistration />} />
               <Route path="projects" element={<ProjectReview />} />
               <Route path="blogs" element={<BlogManagement />} />
@@ -87,6 +90,7 @@ function App() {
               <Route path="payments" element={<Payments />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="activity" element={<ActivityMonitoring />} />
+              <Route path="manage-data" element={<ManageData />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

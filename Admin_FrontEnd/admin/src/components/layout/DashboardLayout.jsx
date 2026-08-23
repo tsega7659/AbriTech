@@ -17,7 +17,9 @@ import {
     UserPlus,
     FileText,
     MessageSquare,
-    CreditCard
+    CreditCard,
+    Database,
+    ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -71,10 +73,12 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/students', icon: Users, label: 'Students' },
         { to: '/admin/instructors', icon: UserCheck, label: 'Instructors' },
         { to: '/admin/parents', icon: Users, label: 'Parents' },
+        { to: '/admin/admins', icon: ShieldCheck, label: 'Admins' },
         { to: '/admin/users/register', icon: UserPlus, label: 'Register User' },
         { to: '/admin/projects', icon: CheckSquare, label: 'Projects' },
         { to: '/admin/messages', icon: MessageSquare, label: 'User Messages' },
         { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
+        { to: '/admin/manage-data', icon: Database, label: 'Manage Data' },
         { to: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 

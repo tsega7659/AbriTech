@@ -132,16 +132,30 @@ export const adminService = {
         const response = await apiClient.post('/auth/register/parent', data);
         return response.data;
     },
-    registerAdmin: async (data) => {
-        const response = await apiClient.post('/auth/register/admin', data);
-        return response.data;
-    },
     deleteParent: async (id) => {
         const response = await apiClient.delete(`/parents/${id}`);
         return response.data;
     },
     getParentDetails: async (id) => {
         const response = await apiClient.get(`/admin/parents/${id}`);
+        return response.data;
+    },
+
+    // Admins
+    getAdmins: async () => {
+        const response = await apiClient.get('/admin/admins');
+        return response.data;
+    },
+    registerAdmin: async (data) => {
+        const response = await apiClient.post('/auth/register/admin', data);
+        return response.data;
+    },
+    getAdminDetails: async (id) => {
+        const response = await apiClient.get(`/admin/admins/${id}`);
+        return response.data;
+    },
+    deleteAdmin: async (id) => {
+        const response = await apiClient.delete(`/admin/admins/${id}`);
         return response.data;
     },
 
@@ -170,6 +184,16 @@ export const adminService = {
     },
     deleteAssignment: async (id) => {
         const response = await apiClient.delete(`/assignments/${id}`);
+        return response.data;
+    },
+
+    // Data Management
+    getDataStats: async () => {
+        const response = await apiClient.get('/admin/data-stats');
+        return response.data;
+    },
+    clearData: async (payload) => {
+        const response = await apiClient.post('/admin/clear-data', payload);
         return response.data;
     }
 };
