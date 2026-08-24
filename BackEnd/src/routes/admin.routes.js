@@ -3,7 +3,6 @@ const router = express.Router();
 const adminController = require('../controllers/admin.controller');
 const { authenticateToken, authorizeRole } = require('../middleware/auth.middleware');
 
-// All routes here are protected and require admin role
 router.use(authenticateToken);
 router.use(authorizeRole('admin'));
 

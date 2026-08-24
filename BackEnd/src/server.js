@@ -1,4 +1,3 @@
-// quiet: true suppresses the "injecting env" and "tips" messages in recent dotenv versions
 require('dotenv').config({ quiet: true });
 const app = require('./app');
 const { logChapaSetupHints } = require('./config/chapa.config');

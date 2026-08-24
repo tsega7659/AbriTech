@@ -19,7 +19,6 @@ const getAllUsers = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        // Optimized: Fetch all basic counts and simple metrics in ONE query
         const [[stats]] = await pool.execute(`
             SELECT 
                 (SELECT COUNT(*) FROM student) as "totalStudents",
@@ -52,7 +51,6 @@ const getDashboardStats = async (req, res) => {
 
         const completionRate = `${Math.round(stats.completionRateVal)}% completion rate`;
 
-        // Top Courses (Still separate as it returns multiple rows)
         const [topCourses] = await pool.execute(`
             SELECT c.name, COUNT(e.id) as value
             FROM course c
@@ -69,7 +67,7 @@ const getDashboardStats = async (req, res) => {
             GROUP BY category
         `);
 
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f43f5e', '#6366f1'];
+        const colors = ['#00B4D8', '#004466', '#0088CC', '#005F99', '#003366', '#0088CC', '#00B4D8'];
         const categoryStats = categoryStatsRaw.map((stat, index) => ({
             ...stat,
             value: Number(stat.value),
@@ -414,7 +412,7 @@ const getInstructorDetails = async (req, res) => {
 
 const getParentDetails = async (req, res) => {
     try {
-        const { id } = req.params; // This is the userId from the frontend
+        const { id } = req.params;
         const [parents] = await pool.execute(`
             SELECT u.id, u."fullName", u.email, u.username, u."phoneNumber", u.gender, u.address, u."createdAt", p.id as "parentId"
             FROM "user" u
@@ -434,7 +432,6 @@ const getParentDetails = async (req, res) => {
             WHERE ps."parentId" = ?
         `, [parentId]);
 
-        // Add some stats for the premium modal
         const [[{ totalEnrollments }]] = await pool.execute(`
             SELECT COUNT(*) as "totalEnrollments"
             FROM enrollment e
@@ -558,7 +555,6 @@ const updateTeacherSpecialization = async (req, res) => {
 
 const getPayments = async (req, res) => {
     try {
-        // Use LEFT JOINs to be safe with potentially null fields and join via student table
         const [payments] = await pool.execute(`
             SELECT 
                 p.id,
@@ -823,14 +819,14 @@ const clearData = async (req, res) => {
             await conn.execute('DELETE FROM notification');
             await conn.execute('DELETE FROM contactmessage');
 
-            try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
-            try { await conn.execute('DELETE FROM achievement'); } catch (e) {}
-            try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) {}
-            try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) {}
-            try { await conn.execute('DELETE FROM userbadge'); } catch (e) {}
-            try { await conn.execute('DELETE FROM eventregistration'); } catch (e) {}
-            try { await conn.execute('DELETE FROM certificate'); } catch (e) {}
-            try { await conn.execute('DELETE FROM portfolio'); } catch (e) {}
+            try { await conn.execute('DELETE FROM learning_log'); } catch (e) { }
+            try { await conn.execute('DELETE FROM achievement'); } catch (e) { }
+            try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) { }
+            try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) { }
+            try { await conn.execute('DELETE FROM userbadge'); } catch (e) { }
+            try { await conn.execute('DELETE FROM eventregistration'); } catch (e) { }
+            try { await conn.execute('DELETE FROM certificate'); } catch (e) { }
+            try { await conn.execute('DELETE FROM portfolio'); } catch (e) { }
 
             // 2. Delete curriculum:
             await conn.execute('DELETE FROM lessonquiz');
@@ -868,8 +864,8 @@ const clearData = async (req, res) => {
                         await conn.execute('DELETE FROM lessonprogress');
                         await conn.execute('DELETE FROM enrollment');
                         await conn.execute('DELETE FROM parentstudent');
-                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
-                        try { await conn.execute('DELETE FROM achievement'); } catch (e) {}
+                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) { }
+                        try { await conn.execute('DELETE FROM achievement'); } catch (e) { }
 
                         const [studentUsers] = await conn.execute('SELECT "userId" FROM student');
                         await conn.execute('DELETE FROM student');
@@ -915,8 +911,8 @@ const clearData = async (req, res) => {
                         await conn.execute('DELETE FROM lessonprogress');
                         await conn.execute('DELETE FROM enrollment');
                         await conn.execute('DELETE FROM payment');
-                        try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) {}
-                        try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) {}
+                        try { await conn.execute('DELETE FROM lesson_resource'); } catch (e) { }
+                        try { await conn.execute('DELETE FROM lessonaisummary'); } catch (e) { }
                         await conn.execute('DELETE FROM lessonquiz');
                         await conn.execute('DELETE FROM lesson');
                         await conn.execute('DELETE FROM assignment');
@@ -928,7 +924,7 @@ const clearData = async (req, res) => {
                     case 'enrollments_progress':
                         await conn.execute('DELETE FROM lessonprogress');
                         await conn.execute('DELETE FROM enrollment');
-                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) {}
+                        try { await conn.execute('DELETE FROM learning_log'); } catch (e) { }
                         clearedSummary.enrollments_progress = true;
                         break;
 

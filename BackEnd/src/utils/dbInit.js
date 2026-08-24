@@ -139,6 +139,42 @@ const ensureTablesExist = async (retries = 3, delay = 2000) => {
           console.error('Migration Error (teachercourse):', migrationError.message);
         }
 
+        // Performance Optimization: Create Indexes on Foreign Keys and High-Traffic Columns
+        try {
+          const indexQueries = [
+            'CREATE INDEX IF NOT EXISTS idx_user_email ON "user" (email)',
+            'CREATE INDEX IF NOT EXISTS idx_user_roleId ON "user" ("roleId")',
+            'CREATE INDEX IF NOT EXISTS idx_user_username ON "user" (username)',
+            'CREATE INDEX IF NOT EXISTS idx_student_userId ON student ("userId")',
+            'CREATE INDEX IF NOT EXISTS idx_teacher_userId ON teacher ("userId")',
+            'CREATE INDEX IF NOT EXISTS idx_parent_userId ON parent ("userId")',
+            'CREATE INDEX IF NOT EXISTS idx_enrollment_studentId ON enrollment ("studentId")',
+            'CREATE INDEX IF NOT EXISTS idx_enrollment_courseId ON enrollment ("courseId")',
+            'CREATE INDEX IF NOT EXISTS idx_enrollment_status ON enrollment (status)',
+            'CREATE INDEX IF NOT EXISTS idx_payment_studentId ON payment ("studentId")',
+            'CREATE INDEX IF NOT EXISTS idx_payment_status ON payment (status)',
+            'CREATE INDEX IF NOT EXISTS idx_payment_txref ON payment ("transactionReference")',
+            'CREATE INDEX IF NOT EXISTS idx_payment_txid ON payment ("transactionId")',
+            'CREATE INDEX IF NOT EXISTS idx_lessonprogress_studentId ON lessonprogress ("studentId")',
+            'CREATE INDEX IF NOT EXISTS idx_lessonprogress_lessonId ON lessonprogress ("lessonId")',
+            'CREATE INDEX IF NOT EXISTS idx_assignmentsubmission_studentId ON assignmentsubmission ("studentId")',
+            'CREATE INDEX IF NOT EXISTS idx_assignmentsubmission_assignmentId ON assignmentsubmission ("assignmentId")',
+            'CREATE INDEX IF NOT EXISTS idx_parentstudent_parentId ON parentstudent ("parentId")',
+            'CREATE INDEX IF NOT EXISTS idx_parentstudent_studentId ON parentstudent ("studentId")',
+            'CREATE INDEX IF NOT EXISTS idx_teachercourse_teacherId ON teachercourse ("teacherId")',
+            'CREATE INDEX IF NOT EXISTS idx_teachercourse_courseId ON teachercourse ("courseId")',
+            'CREATE INDEX IF NOT EXISTS idx_lesson_courseId ON lesson ("courseId")',
+            'CREATE INDEX IF NOT EXISTS idx_assignment_courseId ON assignment ("courseId")'
+          ];
+
+          for (const idxQuery of indexQueries) {
+            await conn.query(idxQuery);
+          }
+          console.log('--- High-Performance Database Indexes Verified/Created Successfully ---');
+        } catch (indexError) {
+          console.error('Error creating database indexes:', indexError.message);
+        }
+
         return true;
       } catch (error) {
         console.error(`Database Initialization Attempt ${attempt} failed:`, error.message);

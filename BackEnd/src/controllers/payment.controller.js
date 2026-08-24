@@ -5,118 +5,118 @@ const paymentService = require('../services/payment.service');
 const courseService = require('../services/course.service');
 const { v4: uuidv4 } = require('uuid');
 
-const payWithTelebirr = async (req, res) => {
-  const { courseId, phoneNumber } = req.body;
-  const { userId } = req.user;
+// const payWithTelebirr = async (req, res) => {
+//   const { courseId, phoneNumber } = req.body;
+//   const { userId } = req.user;
 
-  if (!courseId || !phoneNumber) {
-    return res.status(400).json({ message: 'Course ID and phone number are required' });
-  }
+//   if (!courseId || !phoneNumber) {
+//     return res.status(400).json({ message: 'Course ID and phone number are required' });
+//   }
 
-  let studentId;
-  let amount;
-  let transactionReference;
-  let existingEnrollment;
+//   let studentId;
+//   let amount;
+//   let transactionReference;
+//   let existingEnrollment;
 
-  let connection;
-  try {
-    connection = await pool.getConnection();
+//   let connection;
+//   try {
+//     connection = await pool.getConnection();
 
-    const [students] = await connection.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
-    if (students.length === 0) {
-      return res.status(403).json({ message: 'Only registered students can purchase courses' });
-    }
-    studentId = students[0].id;
+//     const [students] = await connection.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
+//     if (students.length === 0) {
+//       return res.status(403).json({ message: 'Only registered students can purchase courses' });
+//     }
+//     studentId = students[0].id;
 
-    const course = await courseService.getCourseById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
+//     const course = await courseService.getCourseById(courseId);
+//     if (!course) {
+//       return res.status(404).json({ message: 'Course not found' });
+//     }
 
-    if (course.isFree || (!course.price && !course.discountPrice)) {
-      return res.status(400).json({ message: 'This course is free. Please use the standard enrollment button.' });
-    }
+//     if (course.isFree || (!course.price && !course.discountPrice)) {
+//       return res.status(400).json({ message: 'This course is free. Please use the standard enrollment button.' });
+//     }
 
-    amount = courseService.calculateFinalPrice(course);
+//     amount = courseService.calculateFinalPrice(course);
 
-    if (amount <= 0) {
-      return res.status(400).json({ message: 'Invalid course price.' });
-    }
+//     if (amount <= 0) {
+//       return res.status(400).json({ message: 'Invalid course price.' });
+//     }
 
-    const [enr] = await connection.execute(
-      'SELECT id, status FROM enrollment WHERE "studentId" = ? AND "courseId" = ?',
-      [studentId, courseId]
-    );
-    existingEnrollment = enr;
+//     const [enr] = await connection.execute(
+//       'SELECT id, status FROM enrollment WHERE "studentId" = ? AND "courseId" = ?',
+//       [studentId, courseId]
+//     );
+//     existingEnrollment = enr;
 
-    if (existingEnrollment.length > 0 && existingEnrollment[0].status === 'active') {
-      return res.status(400).json({ message: 'You are already enrolled in this course.' });
-    }
+//     if (existingEnrollment.length > 0 && existingEnrollment[0].status === 'active') {
+//       return res.status(400).json({ message: 'You are already enrolled in this course.' });
+//     }
 
-    await connection.beginTransaction();
+//     await connection.beginTransaction();
 
-    transactionReference = `TB-${uuidv4().substring(0, 8).toUpperCase()}`;
+//     transactionReference = `TB-${uuidv4().substring(0, 8).toUpperCase()}`;
 
-    await connection.execute(
-      'INSERT INTO payment ("studentId", "courseId", amount, "transactionReference", status, "paymentMethod", "phoneNumber") VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [studentId, courseId, amount, transactionReference, 'pending', 'Telebirr', phoneNumber]
-    );
+//     await connection.execute(
+//       'INSERT INTO payment ("studentId", "courseId", amount, "transactionReference", status, "paymentMethod", "phoneNumber") VALUES (?, ?, ?, ?, ?, ?, ?)',
+//       [studentId, courseId, amount, transactionReference, 'pending', 'Telebirr', phoneNumber]
+//     );
 
-    await connection.commit();
-  } catch (error) {
-    if (connection) await connection.rollback();
-    console.error('Telebirr Payment Error:', error);
-    return res.status(500).json({ message: 'An error occurred during payment processing', error: error.message });
-  } finally {
-    if (connection) connection.release();
-  }
+//     await connection.commit();
+//   } catch (error) {
+//     if (connection) await connection.rollback();
+//     console.error('Telebirr Payment Error:', error);
+//     return res.status(500).json({ message: 'An error occurred during payment processing', error: error.message });
+//   } finally {
+//     if (connection) connection.release();
+//   }
 
-  const paymentResult = await paymentService.initiateTelebirrUSSD(phoneNumber, amount, transactionReference);
+//   const paymentResult = await paymentService.initiateTelebirrUSSD(phoneNumber, amount, transactionReference);
 
-  try {
-    if (paymentResult.success) {
-      await pool.execute(
-        'UPDATE payment SET status = ? WHERE "transactionReference" = ?',
-        ['success', transactionReference]
-      );
+//   try {
+//     if (paymentResult.success) {
+//       await pool.execute(
+//         'UPDATE payment SET status = ? WHERE "transactionReference" = ?',
+//         ['success', transactionReference]
+//       );
 
-      if (existingEnrollment.length > 0) {
-        await pool.execute(
-          'UPDATE enrollment SET status = ? WHERE id = ?',
-          ['active', existingEnrollment[0].id]
-        );
-      } else {
-        await pool.execute(
-          'INSERT INTO enrollment ("studentId", "courseId", "progressPercentage", status) VALUES (?, ?, 0, \'active\')',
-          [studentId, courseId]
-        );
-      }
+//       if (existingEnrollment.length > 0) {
+//         await pool.execute(
+//           'UPDATE enrollment SET status = ? WHERE id = ?',
+//           ['active', existingEnrollment[0].id]
+//         );
+//       } else {
+//         await pool.execute(
+//           'INSERT INTO enrollment ("studentId", "courseId", "progressPercentage", status) VALUES (?, ?, 0, \'active\')',
+//           [studentId, courseId]
+//         );
+//       }
 
-      return res.status(200).json({
-        success: true,
-        message: 'Payment completed successfully. Course is now unlocked!',
-        transactionReference
-      });
-    }
+//       return res.status(200).json({
+//         success: true,
+//         message: 'Payment completed successfully. Course is now unlocked!',
+//         transactionReference
+//       });
+//     }
 
-    await pool.execute(
-      'UPDATE payment SET status = ? WHERE "transactionReference" = ?',
-      ['failed', transactionReference]
-    );
+//     await pool.execute(
+//       'UPDATE payment SET status = ? WHERE "transactionReference" = ?',
+//       ['failed', transactionReference]
+//     );
 
-    return res.status(400).json({
-      success: false,
-      message: paymentResult.message || 'Payment failed. Please check your Telebirr balance or try again.',
-      transactionReference
-    });
-  } catch (error) {
-    console.error('Telebirr Payment Error:', error);
-    return res.status(500).json({ message: 'An error occurred during payment processing', error: error.message });
-  }
-};
+//     return res.status(400).json({
+//       success: false,
+//       message: paymentResult.message || 'Payment failed. Please check your Telebirr balance or try again.',
+//       transactionReference
+//     });
+//   } catch (error) {
+//     console.error('Telebirr Payment Error:', error);
+//     return res.status(500).json({ message: 'An error occurred during payment processing', error: error.message });
+//   }
+// };
 
 const payWithChapa = async (req, res) => {
-  const { courseId } = req.body;
+  const { courseId, phoneNumber } = req.body;
   const { userId } = req.user;
 
   if (!courseId) {
@@ -387,7 +387,7 @@ const processSuccessfulPayment = async (connection, tx_ref, studentId, courseId)
 };
 
 module.exports = {
-  payWithTelebirr,
+  // payWithTelebirr,
   payWithChapa,
   verifyChapaTransaction,
   chapaWebhook

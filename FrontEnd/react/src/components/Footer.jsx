@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa6";
+import { FaInstagram, FaLinkedin, FaTiktok, FaYoutube } from "react-icons/fa6";
 import { Send } from "lucide-react";
 
 export default function Footer() {
@@ -9,14 +9,14 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     <div className="col-span-1 md:col-span-1">
-                        <div className=""> 
+                        <div className="">
                             <Link to="/" className="flex items-center gap-2 px-6 mb-6">
-                            <img src={logo} alt="AbriTech Logo" className="w-32" />
-                        </Link>
-                        <p className="text-white mb-8 leading-relaxed">
-                            "Connecting Education to Innovation"
-                        </p></div>
-                       
+                                <img src={logo} alt="AbriTech Logo" className="w-32" />
+                            </Link>
+                            <p className="text-white mb-8 leading-relaxed">
+                                "Connecting Education to Innovation"
+                            </p></div>
+
                         <p className="text-gray-400 mb-8 leading-relaxed">
                             Making high-quality STEM education accessible, affordable and relevant for Ethiopian youth.
                         </p>
@@ -33,14 +33,17 @@ export default function Footer() {
                             <a href="https://www.tiktok.com/@abritech_solutions?is_from_webapp=1&sender_device=pc" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
                                 <FaTiktok className="h-5 w-5" />
                             </a>
-                            
+                            <a href="https://youtube.com/@abritech-et?si=5Q-58D6fjF_GRlL9" className="bg-gray-800 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#00B4D8] transition-all">
+                                <FaYoutube className="h-5 w-5" />
+                            </a>
+
                         </div>
                     </div>
 
                     <div>
                         <h3 className="font-bold text-white text-lg mb-6">Quick Links</h3>
                         <ul className="space-y-4">
-                            {['Home',  'Courses', 'Blog', 'About', 'Contact'].map((item) => (
+                            {['Home', 'Courses', 'Blog', 'About', 'Contact'].map((item) => (
                                 <li key={item}>
                                     <Link to={item === 'Home' ? '/' : `/${item.toLowerCase()}`} className="text-gray-400 hover:text-[#00B4D8] transition-colors flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[#00B4D8] opacity-0 group-hover:opacity-100"></div>
@@ -73,9 +76,9 @@ export default function Footer() {
                         <h3 className="font-bold text-white text-lg mb-6">Blogs</h3>
                         <p className="text-gray-400 mb-6 text-sm">Subscribe to get the latest updates and news.</p>
                         <form className="flex gap-2">
-                            
-                            <Link to= "/blog" className="bg-[#00B4D8] text-white p-3 rounded-lg hover:bg-[#0096B4] transition-colors shadow-lg shadow-[#00B4D8]/20">
-                               Read Blog
+
+                            <Link to="/blog" className="bg-[#00B4D8] text-white p-3 rounded-lg hover:bg-[#0096B4] transition-colors shadow-lg shadow-[#00B4D8]/20">
+                                Read Blog
                             </Link>
                         </form>
                     </div>
