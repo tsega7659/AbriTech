@@ -1,8 +1,8 @@
 const isDev = import.meta.env.DEV;
 
-export const API_BASE_URL = isDev
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isDev
     ? 'http://localhost:5000/api'
-    : 'https://abritech.onrender.com/api';
+    : 'https://abritech.onrender.com/api');
 
 console.log(`[API Config] Mode: ${isDev ? 'Development' : 'Production'}`);
 console.log(`[API Config] Base URL: ${API_BASE_URL}`);

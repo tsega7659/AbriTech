@@ -19,6 +19,8 @@ const rawAllowedOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
   'https://www.abritechet.com',
   'https://abritechet.com',
+  'https://admin.abritechet.com',
+  'https://abritech-admin.vercel.app',
   'https://abritech.onrender.com',
   'http://localhost:5173',
   'http://localhost:5174',
@@ -37,6 +39,17 @@ const corsOptions = {
     if (allowedOriginsSet.has(normalizedOrigin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
+
+    // Allow any subdomain of abritechet.com, onrender.com, or vercel.app
+    const isAllowedPattern = 
+      /^https?:\/\/([a-z0-9-]+\.)*abritechet\.com$/i.test(normalizedOrigin) ||
+      /^https?:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(normalizedOrigin) ||
+      /^https?:\/\/([a-z0-9-]+\.)*onrender\.com$/i.test(normalizedOrigin);
+
+    if (isAllowedPattern) {
+      return callback(null, true);
+    }
+
     return callback(new Error(`CORS policy error: Origin ${origin} is not allowed`));
   },
   credentials: true,
