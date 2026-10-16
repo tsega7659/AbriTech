@@ -15,6 +15,7 @@ import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import PaymentSuccess from "./pages/PaymentSuccess"; // Payment Success Route
+import ActivateKitPage from "./pages/ActivateKitPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import StudentCourses from "./pages/dashboard/StudentCourses";
@@ -57,6 +58,7 @@ function App() {
             <Route path="blog" element={<Blog />} />
             <Route path="blog/:id" element={<BlogDetail />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="activate" element={<ActivateKitPage />} />
             <Route path="payment/verify" element={<PaymentSuccess />} />
           </Route>
 

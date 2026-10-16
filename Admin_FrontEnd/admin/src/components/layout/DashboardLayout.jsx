@@ -19,7 +19,8 @@ import {
     MessageSquare,
     CreditCard,
     Database,
-    ShieldCheck
+    ShieldCheck,
+    Package
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -69,6 +70,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
         { to: '/admin/activity', icon: Activity, label: 'Activity Log' },
         { to: '/admin/courses', icon: BookOpen, label: 'Courses' },
+        { to: '/admin/kits', icon: Package, label: 'Physical Kits & Keys' },
         { to: '/admin/blogs', icon: FileText, label: 'Blogs' },
         { to: '/admin/students', icon: Users, label: 'Students' },
         { to: '/admin/instructors', icon: UserCheck, label: 'Instructors' },

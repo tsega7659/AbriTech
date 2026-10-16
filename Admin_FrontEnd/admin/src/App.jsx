@@ -16,6 +16,7 @@ const StudentManagement = lazy(() => import('./pages/admin/StudentManagement'));
 const CourseManagement = lazy(() => import('./pages/admin/CourseManagement'));
 const CourseLessons = lazy(() => import('./pages/admin/CourseLessons'));
 const CourseProjects = lazy(() => import('./pages/admin/CourseProjects'));
+const AdminKits = lazy(() => import('./pages/admin/AdminKits'));
 const InstructorManagement = lazy(() => import('./pages/admin/InstructorManagement'));
 const ParentManagement = lazy(() => import('./pages/admin/ParentManagement'));
 const UserRegistration = lazy(() => import('./pages/admin/UserRegistration'));
@@ -80,6 +81,7 @@ function App() {
               <Route path="courses" element={<CourseManagement />} />
               <Route path="courses/:courseId/lessons" element={<CourseLessons />} />
               <Route path="courses/:courseId/projects" element={<CourseProjects />} />
+              <Route path="kits" element={<AdminKits />} />
               <Route path="instructors" element={<InstructorManagement />} />
               <Route path="parents" element={<ParentManagement />} />
               <Route path="admins" element={<AdminManagement />} />

@@ -12,12 +12,14 @@ import {
     FileText,
     Download,
     Share2,
-    PlayCircle as PlayIcon
+    PlayCircle as PlayIcon,
+    QrCode
 } from 'lucide-react';
 import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import apiClient from "../../lib/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
+import ActivationKeyModal from "../../components/ActivationKeyModal";
 
 export default function CourseDetail() {
     const { courseId } = useParams();
@@ -25,6 +27,7 @@ export default function CourseDetail() {
     const [activeTab, setActiveTab] = useState("curriculum");
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [kitModalOpen, setKitModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchCourseDetails = async () => {
@@ -123,6 +126,14 @@ export default function CourseDetail() {
                                 <PlayCircle className="h-5 w-5" /> Continue Learning
                             </Link>
 
+                            <button
+                                onClick={() => setKitModalOpen(true)}
+                                className="px-5 py-4 border-2 border-dashed border-[#00B4D8]/40 bg-blue-50/50 hover:bg-blue-50 text-[#00B4D8] rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:border-[#00B4D8]"
+                                title="Redeem Physical Kit Key"
+                            >
+                                <QrCode className="h-4 w-4" /> Redeem Kit Key
+                            </button>
+
                             <button className="px-6 py-4 border border-gray-100 bg-gray-50 rounded-2xl hover:bg-white hover:border-[#00B4D8]/20 text-gray-400 hover:text-[#00B4D8] transition-all flex items-center justify-center">
                                 <Share2 className="h-5 w-5" />
                             </button>
@@ -208,6 +219,11 @@ export default function CourseDetail() {
 
                 </AnimatePresence>
             </div>
+
+            <ActivationKeyModal
+                isOpen={kitModalOpen}
+                onClose={() => setKitModalOpen(false)}
+            />
         </div>
     );
 }

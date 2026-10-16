@@ -682,7 +682,83 @@ const schema = [
       UNIQUE("studentId", date),
       FOREIGN KEY ("studentId") REFERENCES student(id) ON DELETE CASCADE
     )`
+  },
+  {
+    table: 'kit',
+    columns: [
+      { name: 'id', type: 'BIGSERIAL PRIMARY KEY' },
+      { name: 'name', type: 'VARCHAR(255) NOT NULL' },
+      { name: 'description', type: 'TEXT' },
+      { name: 'courseId', type: 'BIGINT NOT NULL' },
+      { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
+    ],
+    foreignKeys: [
+      'FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE'
+    ],
+    sql: `CREATE TABLE IF NOT EXISTS kit (
+      id BIGSERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      "courseId" BIGINT NOT NULL,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE
+    )`
+  },
+  {
+    table: 'batch',
+    columns: [
+      { name: 'id', type: 'BIGSERIAL PRIMARY KEY' },
+      { name: 'name', type: 'VARCHAR(255) NOT NULL' },
+      { name: 'description', type: 'TEXT' },
+      { name: 'courseId', type: 'BIGINT NOT NULL' },
+      { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
+    ],
+    foreignKeys: [
+      'FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE'
+    ],
+    sql: `CREATE TABLE IF NOT EXISTS batch (
+      id BIGSERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      "courseId" BIGINT NOT NULL,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("courseId") REFERENCES course(id) ON DELETE CASCADE
+    )`
+  },
+  {
+    table: 'activationkey',
+    columns: [
+      { name: 'id', type: 'BIGSERIAL PRIMARY KEY' },
+      { name: 'key', type: 'VARCHAR(255) UNIQUE NOT NULL' },
+      { name: 'kitId', type: 'BIGINT NOT NULL' },
+      { name: 'batchId', type: 'BIGINT NOT NULL' },
+      { name: 'status', type: "VARCHAR(50) DEFAULT 'unused'" },
+      { name: 'redeemedByStudentId', type: 'BIGINT' },
+      { name: 'expiresAt', type: 'TIMESTAMP' },
+      { name: 'redeemedAt', type: 'TIMESTAMP' },
+      { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
+    ],
+    foreignKeys: [
+      'FOREIGN KEY ("kitId") REFERENCES kit(id) ON DELETE CASCADE',
+      'FOREIGN KEY ("batchId") REFERENCES batch(id) ON DELETE CASCADE',
+      'FOREIGN KEY ("redeemedByStudentId") REFERENCES student(id) ON DELETE SET NULL'
+    ],
+    sql: `CREATE TABLE IF NOT EXISTS activationkey (
+      id BIGSERIAL PRIMARY KEY,
+      key VARCHAR(255) UNIQUE NOT NULL,
+      "kitId" BIGINT NOT NULL,
+      "batchId" BIGINT NOT NULL,
+      status VARCHAR(50) DEFAULT 'unused',
+      "redeemedByStudentId" BIGINT,
+      "expiresAt" TIMESTAMP,
+      "redeemedAt" TIMESTAMP,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("kitId") REFERENCES kit(id) ON DELETE CASCADE,
+      FOREIGN KEY ("batchId") REFERENCES batch(id) ON DELETE CASCADE,
+      FOREIGN KEY ("redeemedByStudentId") REFERENCES student(id) ON DELETE SET NULL
+    )`
   }
+
 ];
 
 module.exports = schema;

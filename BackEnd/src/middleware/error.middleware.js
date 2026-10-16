@@ -1,9 +1,6 @@
 const multer = require('multer');
 
-/**
- * Global Error Handling Middleware
- * Catch and handle common errors (like Multer upload errors)
- */
+
 const errorMiddleware = (err, req, res, next) => {
     // Check if it's a Multer error
     if (err instanceof multer.MulterError) {
@@ -35,7 +32,7 @@ const errorMiddleware = (err, req, res, next) => {
 
     // Sanitize database/system error messages in production
     let clientMessage = err.message || 'Something went wrong on the server';
-    const isSensitiveInternalError = statusCode >= 500 || 
+    const isSensitiveInternalError = statusCode >= 500 ||
         /syntax error|violates|foreign key|constraint|column.*does not exist|select.*from/i.test(String(clientMessage));
 
     if (isProduction && isSensitiveInternalError) {

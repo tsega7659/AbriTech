@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop, Users, Shield } from "lucide-react";
+import { Search, Filter, BookOpen, Clock, ChevronRight, Star, ArrowRight, CheckCircle2, Cpu, Code, Globe, Boxes, Laptop, Users, Shield, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPeopleGroup, FaUsers } from "react-icons/fa6";
 import Loading from "../components/Loading";
 import PaymentOverlay from "../components/PaymentOverlay";
+import ActivationKeyModal from "../components/ActivationKeyModal";
 import { useAllCourses } from "../hooks/useStudentQueries";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../lib/apiClient";
@@ -38,6 +39,7 @@ export default function Courses() {
     const [enrollSuccess, setEnrollSuccess] = useState(false);
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, courseId: null });
+    const [kitModalOpen, setKitModalOpen] = useState(false);
     const [visibleCount, setVisibleCount] = useState(6);
 
     const showFeedback = useCallback((title, message, type = 'success') => {
@@ -156,6 +158,15 @@ export default function Courses() {
                     >
                         Comprehensive curriculum covering robotics, mechatronics, programming, and the Internet of Things suitable for all ages.
                     </motion.p>
+
+                    <div className="flex justify-center mt-6">
+                        <button
+                            onClick={() => setKitModalOpen(true)}
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-[#00B4D8] text-white px-6 py-3 rounded-full text-xs font-black shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-105 transition-all uppercase tracking-wider"
+                        >
+                            <QrCode className="w-4 h-4" /> Have a Physical Kit? Redeem Key
+                        </button>
+                    </div>
 
                     {/* Search and Filters */}
                     <div className="mt-12 max-w-5xl mx-auto space-y-6">
@@ -432,6 +443,11 @@ export default function Courses() {
                 title={feedbackModal.title}
                 message={feedbackModal.message}
                 variant="minimal"
+            />
+
+            <ActivationKeyModal
+                isOpen={kitModalOpen}
+                onClose={() => setKitModalOpen(false)}
             />
 
             {/* School Partnership CTA */}

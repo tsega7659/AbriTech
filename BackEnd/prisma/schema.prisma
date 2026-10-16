@@ -60,6 +60,11 @@ enum LessonAccessType {
   locked
   paid
 }
+enum KeyStatus {
+  unused
+  redeemed
+  revoked
+}
 
 enum ProjectStatus {
   pending
@@ -158,6 +163,8 @@ model Student {
   quizAttempts   QuizAttempt[]
   assignmentSubs AssignmentSubmission[]
   projects       Project[]
+  keys           ActivationKey[]
+
 
   parents ParentStudent[]
 
@@ -212,6 +219,8 @@ model Course {
   projects       Project[]
   teacherCourses TeacherCourse[]
   payments       Payment[]
+  kits           Kit[]
+  batches        Batch[]
 
   createdAt DateTime @default(now())
 
@@ -271,6 +280,46 @@ model Lesson {
   aiChatLogs AIChatLog[]
 
   @@map("lesson")
+}
+
+model Kit{
+  id          BigInt @id @default(autoincrement())
+  name        String
+  description String
+  courseId    BigInt
+  course      Course  @relation(fields: [courseId], references: [id])
+  keys        ActivationKey[]
+  createdAt   DateTime @default(now())
+  @@map("kit")
+}
+
+model ActivationKey {
+  id        BigInt @id @default(autoincrement())
+  key       String @unique
+  kitId     BigInt
+  kit       Kit @relation(fields: [kitId], references: [id])
+  batchId   BigInt
+  batch     Batch @relation(fields: [batchId], references: [id])  
+  status    KeyStatus @default(unused)
+  redeemedByStudentId BigInt?
+  redeemedByStudent Student? @relation(fields: [redeemedByStudentId], references: [id])
+  expiresAt DateTime? 
+  createdAt DateTime @default(now())
+  redeemedAt DateTime?  
+
+  @@map("activationkey")
+}
+
+model Batch {
+  id        BigInt @id @default(autoincrement())
+  name      String
+  description String
+  courseId  BigInt
+  course    Course @relation(fields: [courseId], references: [id])
+  keys      ActivationKey[]
+  createdAt DateTime @default(now())
+
+  @@map("batch")  
 }
 
 model LessonProgress {

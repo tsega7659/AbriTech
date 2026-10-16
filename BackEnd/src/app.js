@@ -41,7 +41,7 @@ const corsOptions = {
     }
 
     // Allow any subdomain of abritechet.com, onrender.com, or vercel.app
-    const isAllowedPattern = 
+    const isAllowedPattern =
       /^https?:\/\/([a-z0-9-]+\.)*abritechet\.com$/i.test(normalizedOrigin) ||
       /^https?:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(normalizedOrigin) ||
       /^https?:\/\/([a-z0-9-]+\.)*onrender\.com$/i.test(normalizedOrigin);
@@ -85,9 +85,11 @@ app.use('/api/assignments', require('./routes/assignment.routes'));
 app.use('/api/chat', require('./routes/chat.routes'));
 app.use('/api/contact', require('./routes/contact.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
+app.use('/api/kits', require('./routes/kit.routes'));
 
 const errorMiddleware = require('./middleware/error.middleware');
 app.use(errorMiddleware);
+
 
 module.exports = app;
 
