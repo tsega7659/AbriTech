@@ -1,6 +1,7 @@
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
+const path = require('path');
 
 /**
  * Dynamic Cloudinary upload middleware
@@ -24,10 +25,25 @@ const upload = (folderName) => {
                 file.originalname.toLowerCase().endsWith('.rar') ||
                 file.originalname.toLowerCase().endsWith('.zip');
 
+            // Sanitize filename to prevent invalid characters (spaces, &, ?, #, etc.) in Cloudinary public_id
+            const ext = path.extname(file.originalname);
+            const rawBaseName = path.basename(file.originalname, ext);
+            const sanitizedBaseName = rawBaseName
+                .trim()
+                .replace(/[^a-zA-Z0-9_-]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .slice(0, 50) || 'file';
+
+            const cleanExt = ext.toLowerCase().replace(/[^a-z0-9.]/g, '');
+            const uniquePrefix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+
             return {
                 folder: folderName,
                 resource_type: isRaw ? 'raw' : 'auto',
-                public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${isRaw ? file.originalname : file.originalname.split('.').slice(0, -1).join('.') || file.originalname}`
+                public_id: isRaw
+                    ? `${uniquePrefix}-${sanitizedBaseName}${cleanExt}`
+                    : `${uniquePrefix}-${sanitizedBaseName}`
             };
         },
     });
