@@ -20,7 +20,7 @@ const createCourse = async (req, res) => {
   try {
     const {
       name, category, level, description, duration,
-      price, isFree, hasDiscount, discountPrice, accessModel
+      price, isFree, hasDiscount, discountPrice, accessModel, requiresActivationKey
     } = req.body;
 
     // Handle Image Upload
@@ -45,18 +45,21 @@ const createCourse = async (req, res) => {
       resolvedAccessModel = validModels.includes(accessModel) ? accessModel : 'with_preview';
     }
 
+    const requiresKeyVal = requiresActivationKey === 'true' || requiresActivationKey === true;
+
     // Placeholder for youtubeLink as per instruction
     const youtubeLink = '#lesson-video-links';
 
     const [result] = await pool.execute(
-      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice", "accessModel") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO course (name, category, level, "youtubeLink", image, description, duration, price, "isFree", "hasDiscount", "discountPrice", "accessModel", "requiresActivationKey") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name, category, level, youtubeLink, imageUrl || null, description || null,
         duration || null, price || 0,
         isFreeVal,
         hasDiscount === 'true' || hasDiscount === true,
         discountPrice || null,
-        resolvedAccessModel
+        resolvedAccessModel,
+        requiresKeyVal
       ]
     );
 
@@ -65,7 +68,8 @@ const createCourse = async (req, res) => {
       courseId: result[0].id,
       course: {
         id: result[0].id, name, category, level, youtubeLink, image: imageUrl, description,
-        duration, price, isFree: isFreeVal, hasDiscount, discountPrice, accessModel: resolvedAccessModel
+        duration, price, isFree: isFreeVal, hasDiscount, discountPrice, accessModel: resolvedAccessModel,
+        requiresActivationKey: requiresKeyVal
       }
     });
 
@@ -109,6 +113,16 @@ const enrollCourse = async (req, res) => {
     }
 
     const isFree = course.isFree;
+    const requiresKey = course.requiresActivationKey;
+
+    // Block direct enrollment for courses requiring an activation key
+    if (requiresKey) {
+      return res.status(403).json({
+        message: 'This course requires a physical kit activation key. Please use your kit key to enroll.',
+        requiresActivationKey: true
+      });
+    }
+
     const initialStatus = isFree ? 'active' : 'pending';
 
     // Enroll student
@@ -133,7 +147,7 @@ const updateCourse = async (req, res) => {
     const { id } = req.params;
     const {
       name, category, level, description, duration,
-      price, isFree, hasDiscount, discountPrice, accessModel
+      price, isFree, hasDiscount, discountPrice, accessModel, requiresActivationKey
     } = req.body;
     let imageUrl = req.file ? req.file.path : undefined;
 
@@ -205,6 +219,10 @@ const updateCourse = async (req, res) => {
     if (discountPrice !== undefined) {
       query += '"discountPrice" = ?, ';
       params.push(discountPrice);
+    }
+    if (requiresActivationKey !== undefined) {
+      query += '"requiresActivationKey" = ?, ';
+      params.push(requiresActivationKey === 'true' || requiresActivationKey === true);
     }
 
 

@@ -230,11 +230,10 @@ export default function AdminKits() {
 
             {/* Feedback Alert */}
             {feedback && (
-                <div className={`p-4 rounded-2xl text-sm font-semibold flex items-center gap-3 border ${
-                    feedback.type === 'error'
+                <div className={`p-4 rounded-2xl text-sm font-semibold flex items-center gap-3 border ${feedback.type === 'error'
                         ? 'bg-rose-50 border-rose-200 text-rose-700'
                         : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                }`}>
+                    }`}>
                     {feedback.type === 'error' ? <AlertCircle className="w-5 h-5 shrink-0" /> : <CheckCircle2 className="w-5 h-5 shrink-0" />}
                     <span>{feedback.message}</span>
                 </div>
@@ -276,31 +275,28 @@ export default function AdminKits() {
             <div className="flex border-b border-slate-200 gap-8">
                 <button
                     onClick={() => setActiveTab('kits')}
-                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
-                        activeTab === 'kits'
+                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'kits'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
+                        }`}
                 >
                     <Package className="w-4 h-4" /> Physical Kits Catalog ({kits.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('generate')}
-                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
-                        activeTab === 'generate'
+                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'generate'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
+                        }`}
                 >
                     <QrCode className="w-4 h-4" /> Batch Key Generator
                 </button>
                 <button
                     onClick={() => setActiveTab('batches')}
-                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
-                        activeTab === 'batches'
+                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'batches'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
+                        }`}
                 >
                     <Download className="w-4 h-4" /> Batch Management & Export ({batches.length})
                 </button>
@@ -440,11 +436,10 @@ export default function AdminKits() {
                                         type="button"
                                         key={qty}
                                         onClick={() => setGenForm({ ...genForm, quantity: qty })}
-                                        className={`px-4 py-2.5 rounded-xl font-bold text-xs border transition-all ${
-                                            genForm.quantity === qty
+                                        className={`px-4 py-2.5 rounded-xl font-bold text-xs border transition-all ${genForm.quantity === qty
                                                 ? 'bg-primary text-white border-primary shadow-sm'
                                                 : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                                        }`}
+                                            }`}
                                     >
                                         {qty} Keys
                                     </button>
@@ -607,6 +602,7 @@ export default function AdminKits() {
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                                     Target Digital Course *
+                                    <span className="ml-2 text-yellow-500 normal-case font-medium">(Only courses marked "With Activation Key" are shown)</span>
                                 </label>
                                 <select
                                     required
@@ -615,12 +611,21 @@ export default function AdminKits() {
                                     className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:outline-none focus:border-primary"
                                 >
                                     <option value="">-- Select Course to Unlock --</option>
-                                    {courses.map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name} ({c.level})
-                                        </option>
-                                    ))}
+                                    {courses.filter(c => c.requiresActivationKey).length === 0 ? (
+                                        <option disabled value="">No key-enabled courses yet. Create one in Course Management.</option>
+                                    ) : (
+                                        courses.filter(c => c.requiresActivationKey).map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name} ({c.level})
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
+                                {courses.filter(c => c.requiresActivationKey).length === 0 && (
+                                    <p className="text-xs text-amber-600 mt-2 font-semibold bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
+                                        ⚠️ No courses are set to "With Activation Key" yet. Go to Course Management and set the pricing type to "🔑 With Activation Key" first.
+                                    </p>
+                                )}
                             </div>
 
                             <div>
@@ -706,7 +711,7 @@ export default function AdminKits() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 font-medium">
                                         {batchKeys
-                                            .filter(k => 
+                                            .filter(k =>
                                                 k.key.toLowerCase().includes(keySearch.toLowerCase()) ||
                                                 (k.redeemedBy?.fullName || '').toLowerCase().includes(keySearch.toLowerCase()) ||
                                                 (k.redeemedBy?.email || '').toLowerCase().includes(keySearch.toLowerCase())
@@ -717,13 +722,12 @@ export default function AdminKits() {
                                                         {k.key}
                                                     </td>
                                                     <td className="py-3 px-4">
-                                                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
-                                                            k.status === 'redeemed'
+                                                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${k.status === 'redeemed'
                                                                 ? 'bg-emerald-50 text-emerald-700'
                                                                 : k.status === 'revoked'
-                                                                ? 'bg-rose-50 text-rose-700'
-                                                                : 'bg-amber-50 text-amber-700'
-                                                        }`}>
+                                                                    ? 'bg-rose-50 text-rose-700'
+                                                                    : 'bg-amber-50 text-amber-700'
+                                                            }`}>
                                                             {k.status}
                                                         </span>
                                                     </td>

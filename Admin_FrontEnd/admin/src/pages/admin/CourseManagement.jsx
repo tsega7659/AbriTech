@@ -55,6 +55,7 @@ const CourseManagement = () => {
         youtubeLink: '',
         price: '',
         isFree: true,
+        requiresActivationKey: false,
         hasDiscount: false,
         discountPrice: '',
         accessModel: 'with_preview',
@@ -122,10 +123,11 @@ const CourseManagement = () => {
         formData.append('description', newCourse.description);
         formData.append('duration', newCourse.duration);
         formData.append('price', newCourse.price || 0);
-        formData.append('isFree', newCourse.isFree);
+        formData.append('isFree', newCourse.requiresActivationKey ? false : newCourse.isFree);
         formData.append('hasDiscount', newCourse.hasDiscount);
         formData.append('discountPrice', newCourse.discountPrice || 0);
-        formData.append('accessModel', newCourse.isFree ? 'free' : newCourse.accessModel);
+        formData.append('requiresActivationKey', newCourse.requiresActivationKey);
+        formData.append('accessModel', newCourse.requiresActivationKey ? 'activation_key' : (newCourse.isFree ? 'free' : newCourse.accessModel));
 
 
         if (newCourse.image) {
@@ -151,6 +153,7 @@ const CourseManagement = () => {
                         youtubeLink: '',
                         price: '',
                         isFree: true,
+                        requiresActivationKey: false,
                         hasDiscount: false,
                         discountPrice: '',
                         accessModel: 'with_preview',
@@ -179,10 +182,11 @@ const CourseManagement = () => {
             level: course.level === 'advanced' ? 'all levels' : course.level,
             category: course.category || 'STEM',
             duration: course.duration || '',
-            image: '', // Don't pre-fill the file input
+            image: '',
             youtubeLink: course.youtubeLink || '',
             price: course.price || '',
             isFree: course.isFree !== undefined ? course.isFree : true,
+            requiresActivationKey: course.requiresActivationKey || false,
             hasDiscount: course.hasDiscount || false,
             discountPrice: course.discountPrice || '',
             accessModel: course.accessModel || (course.isFree ? 'free' : 'with_preview'),
@@ -209,6 +213,7 @@ const CourseManagement = () => {
             youtubeLink: '',
             price: '',
             isFree: true,
+            requiresActivationKey: false,
             hasDiscount: false,
             discountPrice: '',
             accessModel: 'with_preview',
@@ -379,25 +384,37 @@ const CourseManagement = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pricing Type</label>
-                                    <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-slate-100 w-fit">
+                                    <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-xl border border-slate-100 w-fit">
                                         <button
                                             type="button"
-                                            onClick={() => setNewCourse({ ...newCourse, isFree: true, price: '' })}
-                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.isFree ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                            onClick={() => setNewCourse({ ...newCourse, isFree: true, requiresActivationKey: false, price: '' })}
+                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.isFree && !newCourse.requiresActivationKey ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
                                         >
                                             Free
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setNewCourse({ ...newCourse, isFree: false })}
-                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!newCourse.isFree ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                            onClick={() => setNewCourse({ ...newCourse, isFree: false, requiresActivationKey: false })}
+                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!newCourse.isFree && !newCourse.requiresActivationKey ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
                                         >
                                             Paid
                                         </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCourse({ ...newCourse, isFree: false, requiresActivationKey: true, price: '', hasDiscount: false })}
+                                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${newCourse.requiresActivationKey ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            With Activation Key
+                                        </button>
                                     </div>
+                                    {newCourse.requiresActivationKey && (
+                                        <p className="text-[10px] text-yellow-500 font-bold ml-2">
+                                            Students must redeem a physical kit activation key to enroll.
+                                        </p>
+                                    )}
                                 </div>
 
-                                {!newCourse.isFree && (
+                                {!newCourse.isFree && !newCourse.requiresActivationKey && (
                                     <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Base Price (ETB)</label>
                                         <div className="relative group">
@@ -414,7 +431,7 @@ const CourseManagement = () => {
                                     </div>
                                 )}
 
-                                {!newCourse.isFree && (
+                                {!newCourse.isFree && !newCourse.requiresActivationKey && (
                                     <div className="flex flex-col justify-end space-y-2 animate-in fade-in slide-in-from-left-4 duration-300">
                                         <label className="flex items-center gap-3 cursor-pointer group w-fit">
                                             <div
@@ -428,7 +445,7 @@ const CourseManagement = () => {
                                     </div>
                                 )}
 
-                                {newCourse.hasDiscount && !newCourse.isFree && (
+                                {newCourse.hasDiscount && !newCourse.isFree && !newCourse.requiresActivationKey && (
                                     <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Discount Price (ETB)</label>
                                         <div className="relative group">
@@ -445,7 +462,7 @@ const CourseManagement = () => {
                                     </div>
                                 )}
 
-                                {!newCourse.isFree && (
+                                {!newCourse.isFree && !newCourse.requiresActivationKey && (
                                     <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300 lg:col-span-4">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Access Model</label>
                                         <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-slate-100 w-fit">
@@ -616,7 +633,9 @@ const CourseManagement = () => {
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col gap-2">
                                                 <div className="text-sm font-black text-slate-800">
-                                                    {course.isFree ? (
+                                                    {course.requiresActivationKey ? (
+                                                        <span className="text-yellow-500"> Kit Key</span>
+                                                    ) : course.isFree ? (
                                                         <span className="text-green-600">Free</span>
                                                     ) : (
                                                         <div className="flex flex-col">
@@ -632,10 +651,14 @@ const CourseManagement = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex flex-wrap gap-1">
+                                                    {/* {course.requiresActivationKey && (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-violet-600/10">
+                                                            Key Required
+                                                        </span>
+                                                    )} */}
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest w-fit ring-1 ring-green-600/10">
                                                         <CheckCircle2 className="w-3 h-3" /> Live
                                                     </span>
-
                                                 </div>
                                             </div>
                                         </td>

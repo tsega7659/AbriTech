@@ -159,6 +159,7 @@ const schema = [
       { name: 'discountPrice', type: 'DECIMAL(10, 2)' },
       { name: 'hasScholarship', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'accessModel', type: "VARCHAR(50) DEFAULT 'free'" },
+      { name: 'requiresActivationKey', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'createdAt', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ],
     sql: `CREATE TABLE IF NOT EXISTS course (
@@ -176,6 +177,7 @@ const schema = [
       discountPrice DECIMAL(10, 2),
       hasScholarship BOOLEAN DEFAULT FALSE,
       accessModel VARCHAR(50) DEFAULT 'free',
+      "requiresActivationKey" BOOLEAN DEFAULT FALSE,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
   },

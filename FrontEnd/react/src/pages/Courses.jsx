@@ -40,6 +40,7 @@ export default function Courses() {
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, courseId: null });
     const [kitModalOpen, setKitModalOpen] = useState(false);
+    const [kitModalCourse, setKitModalCourse] = useState(null);
     const [visibleCount, setVisibleCount] = useState(6);
 
     const showFeedback = useCallback((title, message, type = 'success') => {
@@ -74,6 +75,13 @@ export default function Courses() {
     const handleEnroll = async (course) => {
         if (!user) {
             navigate('/auth/get-started');
+            return;
+        }
+
+        // Course requires a physical activation key — show the kit key modal
+        if (course.requiresActivationKey) {
+            setKitModalCourse(course);
+            setKitModalOpen(true);
             return;
         }
 
@@ -254,7 +262,11 @@ export default function Courses() {
                                     <div className="p-5 flex flex-col flex-1">
 
                                         <div className="flex items-center gap-2 mb-3">
-                                            {course.isFree ? (
+                                            {course.requiresActivationKey ? (
+                                                <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-yellow-200">
+                                                    Kit Key Required
+                                                </span>
+                                            ) : course.isFree ? (
                                                 <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-green-200">
                                                     Free Access
                                                 </span>
@@ -328,7 +340,15 @@ export default function Courses() {
                                                     <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">
                                                         Level: <span className="text-gray-900 ml-1">{course.level === 'advanced' ? 'All Levels' : (course.level?.toUpperCase())}</span>
                                                     </div>
-                                                    {course.isFree ? (
+                                                    {course.requiresActivationKey ? (
+                                                        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-100 rounded-xl px-3 py-2">
+                                                            <span className="text-lg"></span>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-yellow-700 uppercase tracking-widest">Physical Kit Required</p>
+                                                                <p className="text-[9px] text-yellow-500 font-medium">Use your activation key to enroll</p>
+                                                            </div>
+                                                        </div>
+                                                    ) : course.isFree ? (
                                                         <div className="text-lg font-black text-green-600">
                                                             Free Course
                                                         </div>
@@ -363,17 +383,25 @@ export default function Courses() {
                                                 <button
                                                     onClick={() => handleEnroll(course)}
                                                     disabled={enrolling === course.id}
-                                                    className="w-full py-3.5 bg-[#00B4D8] text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-blue-500/20 hover:bg-[#0096B4] hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                                                    className={`w-full py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50 ${course.requiresActivationKey
+                                                        ? 'bg-yellow-600 hover:bg-yellow-700 text-white shadow-yellow-500/20'
+                                                        : 'bg-[#00B4D8] hover:bg-[#0096B4] text-white shadow-blue-500/20'
+                                                        }`}
                                                 >
                                                     {enrolling === course.id
-                                                        ? 'Enrolling...'
-                                                        : course.accessModel === 'with_preview'
-                                                            ? 'Start Free Preview'
-                                                            : 'Enroll Now'}
+                                                        ? 'Processing...'
+                                                        : course.requiresActivationKey
+                                                            ? ' Enter Kit Key'
+                                                            : course.accessModel === 'with_preview'
+                                                                ? 'Start Free Preview'
+                                                                : 'Enroll Now'}
                                                 </button>
                                             ) : (
-                                                <Link to="/auth/get-started" className="block w-full text-center bg-[#00B4D8] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[#0096B4] transition-all shadow-lg shadow-blue-500/20">
-                                                    Enroll Now
+                                                <Link to="/auth/get-started" className={`block w-full text-center py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg ${course.requiresActivationKey
+                                                    ? 'bg-yellow-600 hover:bg-yellow-700 text-white shadow-yellow-500/20'
+                                                    : 'bg-[#00B4D8] hover:bg-[#0096B4] text-white shadow-blue-500/20'
+                                                    }`}>
+                                                    {course.requiresActivationKey ? ' Enter Kit Key' : 'Enroll Now'}
                                                 </Link>
                                             )}
                                         </div>
@@ -447,7 +475,8 @@ export default function Courses() {
 
             <ActivationKeyModal
                 isOpen={kitModalOpen}
-                onClose={() => setKitModalOpen(false)}
+                onClose={() => { setKitModalOpen(false); setKitModalCourse(null); }}
+                onSuccess={() => { setKitModalOpen(false); setKitModalCourse(null); }}
             />
 
             {/* School Partnership CTA */}

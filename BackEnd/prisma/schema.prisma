@@ -207,11 +207,12 @@ model Course {
   description String?
 
   // Pricing & Meta
-  duration             String?
-  price                Float?  @default(0)
-  isFree               Boolean @default(true)
-  discount             Float?  @default(0)
-  scholarshipAvailable Boolean @default(false)
+  duration                String?
+  price                   Float?  @default(0)
+  isFree                  Boolean @default(true)
+  discount                Float?  @default(0)
+  scholarshipAvailable    Boolean @default(false)
+  requiresActivationKey   Boolean @default(false)
 
   lessons        Lesson[]
   enrollments    Enrollment[]

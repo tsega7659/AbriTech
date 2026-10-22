@@ -13,8 +13,10 @@ import {
     Download,
     Share2,
     PlayCircle as PlayIcon,
-    QrCode
+    QrCode,
+    Key
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEnrolledCourses } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 import apiClient from "../../lib/apiClient";
@@ -23,6 +25,7 @@ import ActivationKeyModal from "../../components/ActivationKeyModal";
 
 export default function CourseDetail() {
     const { courseId } = useParams();
+    const queryClient = useQueryClient();
     const { data: enrolledCourses = [], isLoading: contextLoading } = useEnrolledCourses();
     const [activeTab, setActiveTab] = useState("curriculum");
     const [course, setCourse] = useState(null);
@@ -42,7 +45,7 @@ export default function CourseDetail() {
 
             try {
                 const response = await apiClient.get(`/courses`);
-                const list = Array.isArray(response.data) ? response.data : [];
+                const list = Array.isArray(response.data) ? response.data : (response.data?.courses || []);
                 const foundCourse = list.find(c => c.id === parseInt(courseId));
                 setCourse(foundCourse);
             } catch (error) {
@@ -73,10 +76,10 @@ export default function CourseDetail() {
         </div>
     );
 
+    const isEnrolled = enrolledCourses.some(c => c.id === parseInt(courseId));
     const API_BASE_URL = window.location.hostname === 'localhost'
         ? 'http://localhost:5000'
         : 'https://abritech.onrender.com';
-
 
     return (
         <div className="max-w-6xl mx-auto space-y-10">
@@ -86,9 +89,14 @@ export default function CourseDetail() {
 
                 <div className="flex flex-col lg:flex-row gap-10 lg:items-center relative z-10">
                     <div className="flex-1 space-y-6">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <span className="bg-[#00B4D8]/10 text-[#00B4D8] px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">Coding</span>
-                            <span className="bg-purple-50 text-purple-600 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">Beginner</span>
+                            <span className="bg-yellow-50 text-yellow-600 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">Beginner</span>
+                            {course.requiresActivationKey && (
+                                <span className="bg-yellow-100 text-yellow-700 border border-yellow-200/80 px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                    🔑 Kit Key Required
+                                </span>
+                            )}
                         </div>
                         <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">{course.name}</h1>
                         <p className="text-gray-500 text-lg leading-relaxed font-medium line-clamp-3">{course.description}</p>
@@ -103,36 +111,67 @@ export default function CourseDetail() {
                             </div>
                         </div>
 
-                        <div className="space-y-3 pt-2">
-                            <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-gray-400">
-                                <span>Course Progress</span>
-                                <span className="text-[#00B4D8]">{course.progress || 0}%</span>
+                        {/* Progress bar or Kit Required Notice */}
+                        {isEnrolled ? (
+                            <div className="space-y-3 pt-2">
+                                <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-gray-400">
+                                    <span>Course Progress</span>
+                                    <span className="text-[#00B4D8]">{course.progress || 0}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100 p-0.5">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${course.progress || 0}%` }}
+                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                        className="h-full bg-gradient-to-r from-[#00B4D8] to-blue-400 rounded-full"
+                                    />
+                                </div>
                             </div>
-                            <div className="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100 p-0.5">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${course.progress || 0}%` }}
-                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                    className="h-full bg-gradient-to-r from-[#00B4D8] to-blue-400 rounded-full"
-                                />
+                        ) : course.requiresActivationKey ? (
+                            <div className="bg-yellow-50 border border-yellow-200/80 rounded-2xl p-4 flex items-center gap-3.5">
+                                <div className="w-10 h-10 rounded-xl bg-yellow-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-yellow-500/20">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-yellow-900">Physical Kit Key Required</p>
+                                    <p className="text-xs text-yellow-700">Enter the activation key found on your kit packaging to unlock and access all lessons.</p>
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
 
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <Link
-                                to={`/dashboard/student/courses/${courseId}/learn`}
-                                className="flex-1 bg-[#00B4D8] text-white font-black py-4 rounded-2xl hover:bg-[#0096B4] transition-all shadow-xl shadow-blue-500/20 text-center flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:-translate-y-0.5"
-                            >
-                                <PlayCircle className="h-5 w-5" /> Continue Learning
-                            </Link>
+                            {isEnrolled ? (
+                                <>
+                                    <Link
+                                        to={`/dashboard/student/courses/${courseId}/learn`}
+                                        className="flex-1 bg-[#00B4D8] text-white font-black py-4 rounded-2xl hover:bg-[#0096B4] transition-all shadow-xl shadow-blue-500/20 text-center flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:-translate-y-0.5"
+                                    >
+                                        <PlayCircle className="h-5 w-5" /> Continue Learning
+                                    </Link>
 
-                            <button
-                                onClick={() => setKitModalOpen(true)}
-                                className="px-5 py-4 border-2 border-dashed border-[#00B4D8]/40 bg-blue-50/50 hover:bg-blue-50 text-[#00B4D8] rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:border-[#00B4D8]"
-                                title="Redeem Physical Kit Key"
-                            >
-                                <QrCode className="h-4 w-4" /> Redeem Kit Key
-                            </button>
+                                    <button
+                                        onClick={() => setKitModalOpen(true)}
+                                        className="px-5 py-4 border-2 border-dashed border-[#00B4D8]/40 bg-blue-50/50 hover:bg-blue-50 text-[#00B4D8] rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:border-[#00B4D8]"
+                                        title="Redeem Physical Kit Key"
+                                    >
+                                        <QrCode className="h-4 w-4" /> Redeem Kit Key
+                                    </button>
+                                </>
+                            ) : course.requiresActivationKey ? (
+                                <button
+                                    onClick={() => setKitModalOpen(true)}
+                                    className="flex-1 bg-gradient-to-r from-yellow-600 to-indigo-600 hover:from-yellow-700 hover:to-indigo-700 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-yellow-500/25 text-center flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:-translate-y-0.5 cursor-pointer"
+                                >
+                                    <Key className="h-5 w-5" /> Enter Kit Activation Key
+                                </button>
+                            ) : (
+                                <Link
+                                    to="/courses"
+                                    className="flex-1 bg-[#00B4D8] text-white font-black py-4 rounded-2xl hover:bg-[#0096B4] transition-all shadow-xl shadow-blue-500/20 text-center flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:-translate-y-0.5"
+                                >
+                                    Enroll in Course
+                                </Link>
+                            )}
 
                             <button className="px-6 py-4 border border-gray-100 bg-gray-50 rounded-2xl hover:bg-white hover:border-[#00B4D8]/20 text-gray-400 hover:text-[#00B4D8] transition-all flex items-center justify-center">
                                 <Share2 className="h-5 w-5" />
@@ -188,12 +227,21 @@ export default function CourseDetail() {
                             </div>
                             <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Curriculum Under Review</h3>
                             <p className="text-gray-500 max-w-sm mx-auto">We're currently finalizing the lesson sequence to provide the best learning experience.</p>
-                            <Link
-                                to={`/dashboard/student/courses/${courseId}/learn`}
-                                className="mt-8 inline-block bg-gray-900 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#00B4D8] transition-all"
-                            >
-                                Preview Lessons
-                            </Link>
+                            {course.requiresActivationKey && !isEnrolled ? (
+                                <button
+                                    onClick={() => setKitModalOpen(true)}
+                                    className="mt-8 inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:from-yellow-700 hover:to-indigo-700 transition-all cursor-pointer shadow-lg shadow-yellow-500/20"
+                                >
+                                    <Key className="h-4 w-4" /> Unlock with Kit Key
+                                </button>
+                            ) : (
+                                <Link
+                                    to={`/dashboard/student/courses/${courseId}/learn`}
+                                    className="mt-8 inline-block bg-gray-900 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#00B4D8] transition-all"
+                                >
+                                    {isEnrolled ? "Continue Learning" : "Preview Lessons"}
+                                </Link>
+                            )}
                         </motion.div>
                     )}
 
@@ -223,6 +271,9 @@ export default function CourseDetail() {
             <ActivationKeyModal
                 isOpen={kitModalOpen}
                 onClose={() => setKitModalOpen(false)}
+                onSuccess={() => {
+                    queryClient.invalidateQueries(['student', 'courses']);
+                }}
             />
         </div>
     );
