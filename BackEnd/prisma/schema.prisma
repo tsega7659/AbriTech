@@ -287,8 +287,8 @@ model Kit{
   id          BigInt @id @default(autoincrement())
   name        String
   description String
-  courseId    BigInt
-  course      Course  @relation(fields: [courseId], references: [id])
+  courseId    BigInt?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
   keys        ActivationKey[]
   createdAt   DateTime @default(now())
   @@map("kit")
@@ -315,8 +315,8 @@ model Batch {
   id        BigInt @id @default(autoincrement())
   name      String
   description String
-  courseId  BigInt
-  course    Course @relation(fields: [courseId], references: [id])
+  courseId  BigInt?
+  course    Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
   keys      ActivationKey[]
   createdAt DateTime @default(now())
 

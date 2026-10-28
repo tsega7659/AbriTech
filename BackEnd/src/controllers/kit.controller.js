@@ -67,6 +67,10 @@ const activateKey = async (req, res) => {
                 throw { status: 400, message: "This activation key has expired." };
             }
 
+            if (!keyRecord.kit?.course) {
+                throw { status: 400, message: "This kit is not currently linked to an active course. Please contact support or your instructor." };
+            }
+
             // Check if student is already enrolled in this course
             const existingEnrollment = await tx.enrollment.findFirst({
                 where: {
@@ -187,8 +191,8 @@ const getAllKits = async (req, res) => {
                 id: k.id.toString(),
                 name: k.name,
                 description: k.description,
-                courseId: k.courseId.toString(),
-                courseName: k.course.name,
+                courseId: k.courseId ? k.courseId.toString() : null,
+                courseName: k.course?.name || 'Unlinked (No Course)',
                 createdAt: k.createdAt,
                 stats: {
                     totalKeys,
@@ -202,6 +206,76 @@ const getAllKits = async (req, res) => {
     } catch (error) {
         console.error('Error fetching kits:', error);
         return res.status(500).json({ message: 'Failed to fetch kits', error: error.message });
+    }
+};
+
+/**
+ * ADMIN: Update a kit (e.g. re-link to a new course, change name/description)
+ * PATCH /api/kits/:id
+ */
+const updateKit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, courseId } = req.body;
+
+        const kit = await prisma.kit.findUnique({
+            where: { id: BigInt(id) }
+        });
+
+        if (!kit) {
+            return res.status(404).json({ message: 'Kit not found' });
+        }
+
+        const dataToUpdate = {};
+        if (name) dataToUpdate.name = name.trim();
+        if (description !== undefined) dataToUpdate.description = description.trim();
+
+        if (courseId !== undefined) {
+            if (courseId) {
+                const course = await prisma.course.findUnique({
+                    where: { id: BigInt(courseId) }
+                });
+                if (!course) {
+                    return res.status(404).json({ message: 'Target course not found' });
+                }
+                dataToUpdate.course = { connect: { id: BigInt(courseId) } };
+            } else {
+                dataToUpdate.course = { disconnect: true };
+            }
+        }
+
+        const updated = await prisma.kit.update({
+            where: { id: BigInt(id) },
+            data: dataToUpdate,
+            include: { course: true }
+        });
+
+        // If newly linked to a course, also sync any unassigned batches containing this kit's keys
+        if (courseId) {
+            await prisma.batch.updateMany({
+                where: {
+                    keys: { some: { kitId: BigInt(id) } },
+                    courseId: null
+                },
+                data: { courseId: BigInt(courseId) }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Kit updated successfully',
+            kit: {
+                id: updated.id.toString(),
+                name: updated.name,
+                description: updated.description,
+                courseId: updated.courseId ? updated.courseId.toString() : null,
+                courseName: updated.course?.name || 'Unlinked (No Course)',
+                createdAt: updated.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('Error updating kit:', error);
+        return res.status(500).json({ message: 'Failed to update kit', error: error.message });
     }
 };
 
@@ -309,8 +383,8 @@ const getAllBatches = async (req, res) => {
                 id: b.id.toString(),
                 name: b.name,
                 description: b.description,
-                courseId: b.courseId.toString(),
-                courseName: b.course?.name || 'N/A',
+                courseId: b.courseId ? b.courseId.toString() : null,
+                courseName: b.course?.name || 'Unassigned (No Course)',
                 kitId,
                 createdAt: b.createdAt,
                 stats: { total, redeemed, unused }
@@ -411,6 +485,7 @@ const exportBatch = async (req, res) => {
 module.exports = {
     activateKey,
     createKit,
+    updateKit,
     getAllKits,
     generateBatch,
     getAllBatches,

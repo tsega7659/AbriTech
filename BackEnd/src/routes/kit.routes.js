@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const {
     activateKey,
     createKit,
+    updateKit,
     getAllKits,
     generateBatch,
     getAllBatches,
@@ -37,6 +38,8 @@ router.use(authorizeRole('admin'));
 // Kit catalog
 router.post('/', createKit);
 router.get('/', getAllKits);
+router.patch('/:id', updateKit);
+router.put('/:id', updateKit);
 
 // Batch & key generation
 router.post('/batches/generate', generateBatch);

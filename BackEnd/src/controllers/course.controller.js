@@ -300,6 +300,10 @@ const deleteCourse = async (req, res) => {
         await connection.execute('DELETE FROM lesson WHERE id = ?', [l.id]);
       }
 
+      // 7. Unlink Kits and Batches (preserve them for re-assignment)
+      await connection.execute('UPDATE kit SET "courseId" = NULL WHERE "courseId" = ?', [id]);
+      await connection.execute('UPDATE batch SET "courseId" = NULL WHERE "courseId" = ?', [id]);
+
       // Finally, delete the Course
       await connection.execute('DELETE FROM course WHERE id = ?', [id]);
 

@@ -16,7 +16,9 @@ import {
     RefreshCw,
     X,
     ExternalLink,
-    Printer
+    Printer,
+    Edit3,
+    Link
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE_URL, getAuthHeaders } from '../../config/apiConfig';
@@ -34,6 +36,10 @@ export default function AdminKits() {
     const [isCreateKitOpen, setIsCreateKitOpen] = useState(false);
     const [kitForm, setKitForm] = useState({ name: '', description: '', courseId: '' });
     const [kitSubmitting, setKitSubmitting] = useState(false);
+
+    // Kit editing / re-linking modal state
+    const [editKit, setEditKit] = useState(null); // { id, name, description, courseId }
+    const [editKitSubmitting, setEditKitSubmitting] = useState(false);
 
     // Key generator state
     const [genForm, setGenForm] = useState({
@@ -118,6 +124,38 @@ export default function AdminKits() {
             setKitSubmitting(false);
         }
     };
+
+    // Update Kit Handler
+    const handleUpdateKit = async (e) => {
+        e.preventDefault();
+        if (!editKit) return;
+        setEditKitSubmitting(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/kits/${editKit.id}`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    name: editKit.name,
+                    description: editKit.description,
+                    courseId: editKit.courseId || null
+                })
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Failed to update kit');
+            }
+
+            showFeedback('success', 'Kit updated and course link saved!');
+            setEditKit(null);
+            fetchData();
+        } catch (err) {
+            showFeedback('error', err.message);
+        } finally {
+            setEditKitSubmitting(false);
+        }
+    };
+
 
     // Generate Batch Handler
     const handleGenerateBatch = async (e) => {
@@ -322,14 +360,28 @@ export default function AdminKits() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {kits.map((kit) => (
-                                <div key={kit.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all space-y-4">
+                                <div key={kit.id} className={`bg-white rounded-3xl p-6 border shadow-sm hover:shadow-md transition-all space-y-4 ${kit.courseId ? 'border-slate-100' : 'border-amber-200 ring-1 ring-amber-100'}`}>
                                     <div className="flex items-start justify-between gap-3">
-                                        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg ${kit.courseId ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
                                             {kit.name.charAt(0)}
                                         </div>
-                                        <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 bg-slate-100 text-slate-600 rounded-full">
-                                            Kit #{kit.id}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${kit.courseId ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                {kit.courseId ? `Kit #${kit.id}` : '⚠️ Unlinked Kit'}
+                                            </span>
+                                            <button
+                                                onClick={() => setEditKit({
+                                                    id: kit.id,
+                                                    name: kit.name,
+                                                    description: kit.description || '',
+                                                    courseId: kit.courseId || ''
+                                                })}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 transition-all"
+                                                title="Edit Kit / Link Course"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-black text-slate-900">{kit.name}</h3>
@@ -339,10 +391,25 @@ export default function AdminKits() {
                                     </div>
 
                                     <div className="pt-2 border-t border-slate-100">
-                                        <p className="text-[11px] font-bold text-slate-400 uppercase">Unlocks Digital Course:</p>
-                                        <p className="text-sm font-black text-primary flex items-center gap-1.5 mt-0.5">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-bold text-slate-400 uppercase">Unlocks Digital Course:</p>
+                                            {!kit.courseId && (
+                                                <button
+                                                    onClick={() => setEditKit({
+                                                        id: kit.id,
+                                                        name: kit.name,
+                                                        description: kit.description || '',
+                                                        courseId: ''
+                                                    })}
+                                                    className="text-[11px] text-amber-700 font-extrabold hover:underline inline-flex items-center gap-1"
+                                                >
+                                                    <Link className="w-3 h-3" /> Connect Course
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className={`text-sm font-black flex items-center gap-1.5 mt-0.5 ${kit.courseId ? 'text-primary' : 'text-amber-600'}`}>
                                             <BookOpen className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{kit.courseName}</span>
+                                            <span className="truncate">{kit.courseName || 'Unlinked (No course assigned)'}</span>
                                         </p>
                                     </div>
 
@@ -362,15 +429,35 @@ export default function AdminKits() {
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => {
-                                            setGenForm(prev => ({ ...prev, kitId: kit.id }));
-                                            setActiveTab('generate');
-                                        }}
-                                        className="w-full py-2.5 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <QrCode className="w-4 h-4" /> Generate Keys for this Kit
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setGenForm(prev => ({ ...prev, kitId: kit.id }));
+                                                setActiveTab('generate');
+                                            }}
+                                            disabled={!kit.courseId}
+                                            className={`flex-1 py-2.5 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 ${
+                                                kit.courseId
+                                                    ? 'bg-slate-100 hover:bg-primary hover:text-white text-slate-700'
+                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            }`}
+                                            title={!kit.courseId ? 'Connect a course first to generate keys' : 'Generate keys for this kit'}
+                                        >
+                                            <QrCode className="w-4 h-4" /> Generate Keys
+                                        </button>
+                                        <button
+                                            onClick={() => setEditKit({
+                                                id: kit.id,
+                                                name: kit.name,
+                                                description: kit.description || '',
+                                                courseId: kit.courseId || ''
+                                            })}
+                                            className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center"
+                                            title="Edit Kit / Link Course"
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -648,6 +735,112 @@ export default function AdminKits() {
                             >
                                 {kitSubmitting ? 'Saving Kit...' : 'Save Kit Definition'}
                             </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* EDIT KIT / RE-LINK COURSE MODAL */}
+            {editKit && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 relative">
+                        <button
+                            onClick={() => setEditKit(null)}
+                            className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-blue-50 px-2.5 py-1 rounded-full">
+                                Kit #{editKit.id}
+                            </span>
+                            <h3 className="text-xl font-black text-slate-900 mt-2">Edit Kit & Connect Course</h3>
+                            <p className="text-xs text-slate-400 mt-1">
+                                Update kit details or bind this hardware kit to an active digital course.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleUpdateKit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                                    Kit Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Kit name"
+                                    value={editKit.name}
+                                    onChange={(e) => setEditKit({ ...editKit, name: e.target.value })}
+                                    className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-800 focus:outline-none focus:border-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                                    Linked Digital Course
+                                </label>
+                                <select
+                                    value={editKit.courseId || ''}
+                                    onChange={(e) => setEditKit({ ...editKit, courseId: e.target.value })}
+                                    className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:outline-none focus:border-primary"
+                                >
+                                    <option value="">-- No Course (Keep Unlinked) --</option>
+                                    <optgroup label="Key-Enabled Courses (Recommended)">
+                                        {courses.filter(c => c.requiresActivationKey).map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                🔑 {c.name} ({c.level})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Other Courses">
+                                        {courses.filter(c => !c.requiresActivationKey).map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name} ({c.level})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    Selecting a course connects all keys generated for this kit to that course.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                                    Description (Optional)
+                                </label>
+                                <textarea
+                                    rows="3"
+                                    placeholder="Box contents, target age group, sensor list..."
+                                    value={editKit.description || ''}
+                                    onChange={(e) => setEditKit({ ...editKit, description: e.target.value })}
+                                    className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-800 focus:outline-none focus:border-primary"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditKit(null)}
+                                    className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editKitSubmitting}
+                                    className="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20 text-xs transition-all flex items-center justify-center gap-1.5"
+                                >
+                                    {editKitSubmitting ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
