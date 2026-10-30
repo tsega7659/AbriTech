@@ -35,6 +35,20 @@ export const AuthProvider = ({ children }) => {
             const response = await apiClient.post('/auth/login', credentials);
             const { token: newToken, user: userData } = response.data;
 
+            if (userData.role === 'teacher') {
+                return {
+                    success: false,
+                    message: 'This is an instructor account. Please sign in through the instructor dashboard.'
+                };
+            }
+
+            if (userData.role === 'admin') {
+                return {
+                    success: false,
+                    message: 'This is an administrator account. Please sign in through the admin dashboard.'
+                };
+            }
+
             setToken(newToken);
             setUser(userData);
             localStorage.setItem('token', newToken);

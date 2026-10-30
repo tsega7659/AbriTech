@@ -3,6 +3,8 @@
  */
 
 const teacherWelcomeEmail = (fullName, username, password) => {
+  const instructorLoginUrl = `${(process.env.ADMIN_FRONTEND_URL || 'https://abritech-admin.vercel.app').replace(/\/+$/, '')}/login`;
+
   return {
     subject: 'Welcome to AbriTech - Your Instructor Account',
     html: `
@@ -53,7 +55,7 @@ const teacherWelcomeEmail = (fullName, username, password) => {
       </div>
       
       <div style="text-align: center;">
-        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="button">
+        <a href="${instructorLoginUrl}" class="button">
           Login to Your Account
         </a>
       </div>
@@ -70,7 +72,7 @@ const teacherWelcomeEmail = (fullName, username, password) => {
 </body>
 </html>
     `,
-    text: `Welcome to AbriTech, ${fullName}!\n\nYour instructor account has been created.\n\nUsername: ${username}\nTemporary Password: ${password}\n\nPlease login and change your credentials on first login.\n\nLogin at: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`
+    text: `Welcome to AbriTech, ${fullName}!\n\nYour instructor account has been created.\n\nUsername: ${username}\nTemporary Password: ${password}\n\nPlease login and change your credentials on first login.\n\nLogin at: ${instructorLoginUrl}`
   };
 };
 

@@ -9,13 +9,13 @@ import {
     Mail
 } from 'lucide-react';
 import Loading from '../../components/Loading';
-import { useProfile } from '../../hooks/useAdminQueries';
+import { useAuth } from '../../context/AuthContext';
 
 const Settings = () => {
     const navigate = useNavigate();
-    const { data: user, isLoading } = useProfile();
+    const { user, loading } = useAuth();
 
-    if (isLoading) return <Loading fullScreen={false} message="Loading profile..." />;
+    if (loading) return <Loading fullScreen={false} message="Loading profile..." />;
 
     const settingsSections = [
         {

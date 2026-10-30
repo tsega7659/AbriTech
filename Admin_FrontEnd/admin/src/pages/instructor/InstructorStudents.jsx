@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Search, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Loading from '../../components/Loading';
 import { useInstructorStudents } from '../../hooks/useInstructorQueries';
 
 const InstructorStudents = () => {
+    const navigate = useNavigate();
     const { data: students = [], isLoading: loading } = useInstructorStudents();
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -69,9 +71,25 @@ const InstructorStudents = () => {
                                     const enrolledCourses = Array.isArray(student.enrolledCourses)
                                         ? student.enrolledCourses
                                         : (typeof student.enrolledCourses === 'string' ? JSON.parse(student.enrolledCourses) : []);
+                                    const courseId = student.courseIds?.[0];
 
                                     return (
-                                        <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <tr
+                                            key={student.id}
+                                            className={`hover:bg-slate-50/50 transition-colors ${courseId != null ? 'cursor-pointer' : ''}`}
+                                            onClick={() => {
+                                                if (courseId != null) {
+                                                    navigate(`/instructor/courses/${courseId}/students/${student.id}`);
+                                                }
+                                            }}
+                                            onKeyDown={(event) => {
+                                                if (courseId != null && (event.key === 'Enter' || event.key === ' ')) {
+                                                    event.preventDefault();
+                                                    navigate(`/instructor/courses/${courseId}/students/${student.id}`);
+                                                }
+                                            }}
+                                            tabIndex={courseId != null ? 0 : undefined}
+                                        >
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -122,4 +140,3 @@ const InstructorStudents = () => {
 };
 
 export default InstructorStudents;
-

@@ -185,6 +185,7 @@ const getEnrolledStudents = async (req, res) => {
                 u."fullName",
                 u.email,
                 json_agg(c.name) as "enrolledCourses",
+                json_agg(DISTINCT c.id) as "courseIds",
                 AVG(e."progressPercentage") as "avgProgress"
             FROM "user" u
             JOIN student s ON u.id = s."userId"
@@ -208,6 +209,7 @@ const getEnrolledStudents = async (req, res) => {
         // Robust JSON parsing for environments where json_agg returns strings or arrays
         const formattedStudents = students.map(s => {
             let enrolled = s.enrolledCourses;
+            let courseIds = s.courseIds;
             if (typeof enrolled === 'string') {
                 try {
                     enrolled = JSON.parse(enrolled);
@@ -215,9 +217,17 @@ const getEnrolledStudents = async (req, res) => {
                     enrolled = [];
                 }
             }
+            if (typeof courseIds === 'string') {
+                try {
+                    courseIds = JSON.parse(courseIds);
+                } catch (e) {
+                    courseIds = [];
+                }
+            }
             return {
                 ...s,
-                enrolledCourses: Array.isArray(enrolled) ? enrolled.filter(c => c !== null) : []
+                enrolledCourses: Array.isArray(enrolled) ? enrolled.filter(c => c !== null) : [],
+                courseIds: Array.isArray(courseIds) ? courseIds.filter(id => id !== null) : []
             };
         });
 
@@ -356,4 +366,3 @@ module.exports = {
     getAllSubmissions,
     deleteTeacher
 };
-

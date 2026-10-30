@@ -2,26 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Users, Clock, TrendingUp, CheckCircle2, ArrowRight, Info, X } from 'lucide-react';
 import Loading from '../../components/Loading';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../../config/apiConfig';
 
 import { useInstructorDashboardStats, useInstructorCourses } from '../../hooks/useInstructorQueries';
+import { useAuth } from '../../context/AuthContext';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { data: statsData, isLoading: statsLoading } = useInstructorDashboardStats();
     const { data: courses = [], isLoading: coursesLoading } = useInstructorCourses();
     const loading = statsLoading || coursesLoading;
     const [showBanner, setShowBanner] = useState(false);
-    const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            setShowBanner(!!parsedUser.firstLogin);
-        }
-    }, []);
+        setShowBanner(!!user?.firstLogin);
+    }, [user]);
 
     if (loading) {
         return <Loading fullScreen={false} message="Loading dashboard data..." />;
@@ -99,7 +94,12 @@ const InstructorDashboard = () => {
                                 <p className="text-xs text-slate-400 font-bold">Active assignments across your courses</p>
                             </div>
                         </div>
-                        <button className="text-sm font-bold text-primary hover:underline">View All</button>
+                        <button
+                            className="text-sm font-bold text-primary hover:underline"
+                            onClick={() => navigate('/instructor/projects')}
+                        >
+                            View All
+                        </button>
                     </div>
 
                     <div className="flex flex-col items-center justify-center py-12">

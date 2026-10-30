@@ -56,7 +56,8 @@ The project is divided into three main components:
 ```bash
 cd BackEnd
 npm install
-# Create a .env file with your DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME
+# Create a .env file with your database credentials and ADMIN_FRONTEND_URL
+# ADMIN_FRONTEND_URL should point to the deployed instructor/admin portal
 npm start
 ```
 
