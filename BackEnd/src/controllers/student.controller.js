@@ -73,13 +73,14 @@ const getDashboard = async (req, res) => {
 
     // 5. Pending Projects (including redo requests)
     const [pendingProjects] = await pool.execute(`
-      SELECT a.id, a.title, c.name as "courseName", a."dueDate", s.status, s.feedback
+      SELECT a.id, a."courseId", a.title, a.description, a."orderNumber",
+             c.name as "courseName", a."dueDate", s.status, s.feedback
       FROM assignment a
       JOIN course c ON a."courseId" = c.id
       JOIN enrollment e ON c.id = e."courseId"
       LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
       WHERE e."studentId" = ? AND (s.id IS NULL OR s.status = 'draft' OR s.status = 'redo')
-      LIMIT 3
+      ORDER BY a."dueDate" ASC NULLS LAST, a.id ASC
     `, [studentId, studentId]);
 
     // 6. Recommended Courses
@@ -191,8 +192,11 @@ const getStudentGrades = async (req, res) => {
     // Fetch assignment submissions
     const [assignments] = await pool.execute(`
       SELECT 
+        a.id as "assignmentId",
         c.id as "courseId",
         a.title as "assignmentTitle",
+        a.description as "assignmentDescription",
+        a."dueDate",
         asub."fileUrl",
         asub."textContent",
         asub.status,
@@ -226,7 +230,10 @@ const getStudentGrades = async (req, res) => {
     assignments.forEach(a => {
       if (courseGrades[a.courseId]) {
         courseGrades[a.courseId].assignments.push({
+          id: a.assignmentId,
           title: a.assignmentTitle,
+          description: a.assignmentDescription,
+          dueDate: a.dueDate,
           status: a.status,
           result: a.result,
           score: a.score,

@@ -188,6 +188,62 @@ const deleteAssignment = async (req, res) => {
 
 // ----- STUDENT: Submit Assignment -----
 
+const requirePreviousLessonsCompleted = async (req, res, next) => {
+  try {
+    const { id: assignmentId } = req.params;
+    const { userId } = req.user;
+    const [assignments] = await pool.execute(
+      'SELECT id, "courseId", "orderNumber" FROM assignment WHERE id = ?',
+      [assignmentId]
+    );
+
+    if (assignments.length === 0) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
+    if (students.length === 0) {
+      return res.status(403).json({ message: 'Only students can submit assignments' });
+    }
+
+    const assignment = assignments[0];
+    const [incompleteLessons] = await pool.execute(`
+      SELECT l.id
+      FROM lesson l
+      WHERE l."courseId" = ?
+        AND (
+          l."orderNumber" < ?
+          OR (l."orderNumber" = ? AND l.id < ?)
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM lessonprogress lp
+          WHERE lp."lessonId" = l.id
+            AND lp."studentId" = ?
+            AND lp.completed = TRUE
+        )
+      LIMIT 1
+    `, [
+      assignment.courseId,
+      assignment.orderNumber,
+      assignment.orderNumber,
+      assignment.id,
+      students[0].id
+    ]);
+
+    if (incompleteLessons.length > 0) {
+      return res.status(403).json({
+        message: 'Complete all lessons before this assignment before submitting.'
+      });
+    }
+
+    return next();
+  } catch (error) {
+    console.error('Assignment Prerequisite Check Error:', error);
+    return res.status(500).json({ message: 'Failed to verify assignment prerequisites' });
+  }
+};
+
 const submitAssignment = async (req, res) => {
   try {
     const { id: assignmentId } = req.params;
@@ -337,6 +393,7 @@ module.exports = {
   createAssignment,
   updateAssignment,
   deleteAssignment,
+  requirePreviousLessonsCompleted,
   submitAssignment,
   assessSubmission
 };

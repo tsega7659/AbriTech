@@ -30,7 +30,10 @@ export default function LessonPlayer() {
 
     // Ref to track if user manually clicked "Back to Playlist" on mobile
     const manualDismissRef = React.useRef(false);
+    const videoPlayerRef = React.useRef(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const [videoEnded, setVideoEnded] = useState(false);
+    const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentCourseId, setPaymentCourseId] = useState(null);
@@ -39,6 +42,21 @@ export default function LessonPlayer() {
         const handleResize = () => setIsMobile(window.innerWidth < 1024);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const syncFullscreenState = () => {
+            setIsVideoFullscreen(
+                document.fullscreenElement === videoPlayerRef.current ||
+                document.webkitFullscreenElement === videoPlayerRef.current
+            );
+        };
+        document.addEventListener('fullscreenchange', syncFullscreenState);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+        return () => {
+            document.removeEventListener('fullscreenchange', syncFullscreenState);
+            document.removeEventListener('webkitfullscreenchange', syncFullscreenState);
+        };
     }, []);
 
     // TanStack Queries
@@ -217,11 +235,8 @@ export default function LessonPlayer() {
             // Completion is enabled when the video starts playing.
             // Set canComplete based on contentType
             if (activeLesson.contentType === 'quiz') {
-                setCanComplete(false);
+                setCanComplete(Boolean(activeLesson.isCompleted || activeLesson.quizResult));
                 setTimeLeft(0);
-                // Reset quiz states for new quiz item
-                setQuizAnswers({});
-                setQuizResult(null);
                 return;
             }
 
@@ -234,16 +249,15 @@ export default function LessonPlayer() {
                 return;
             }
 
-            // Reset quiz states for new lesson if it has a quiz
-            setQuizAnswers({});
-            setQuizResult(null);
-
             // If a lesson has a quiz, completion is gated by quiz
             if (activeLesson.quiz && activeLesson.quiz.length > 0) {
-                setCanComplete(false);
+                setCanComplete(Boolean(activeLesson.isCompleted || activeLesson.quizResult));
                 setTimeLeft(0);
                 return;
             }
+
+            setQuizAnswers({});
+            setQuizResult(null);
 
             setTimeLeft(60);
             setCanComplete(false);
@@ -275,6 +289,7 @@ export default function LessonPlayer() {
         if (!lesson.isLocked) {
             setActiveLesson(lesson);
             setActiveAssignment(null);
+            setVideoEnded(false);
 
             // Re-populate old answers if user has already taken the quiz
             if (lesson.quizResult && lesson.quizResult.selectedOptions) {
@@ -334,6 +349,60 @@ export default function LessonPlayer() {
                 showFeedback("Error", "Failed to mark lesson as complete.", "error");
             }
         });
+    };
+
+    const getNextLesson = (lesson) => lessons.find(item =>
+        item.contentType !== 'project' &&
+        (
+            Number(item.orderNumber) > Number(lesson.orderNumber) ||
+            (
+                Number(item.orderNumber) === Number(lesson.orderNumber) &&
+                Number(item.id) > Number(lesson.id)
+            )
+        )
+    );
+
+    const handleNextLesson = () => {
+        if (!activeLesson || !videoEnded || completing) return;
+
+        const nextLesson = getNextLesson(activeLesson);
+
+        if (!nextLesson || nextLesson.requiresPayment) return;
+
+        completeLessonMutation.mutate(activeLesson.id, {
+            onSuccess: () => {
+                setActiveLesson(nextLesson);
+                setActiveAssignment(null);
+                setVideoEnded(false);
+                setQuizAnswers(nextLesson.quizResult?.selectedOptions || {});
+                setQuizResult(nextLesson.quizResult || null);
+                navigate(`/dashboard/student/courses/${courseId}/learn/${nextLesson.id}`);
+            },
+            onError: (error) => {
+                console.error("Failed to complete lesson before advancing", error);
+                showFeedback("Error", "Could not complete this lesson. Please try again.", "error");
+            }
+        });
+    };
+
+    const handleVideoFullscreen = async () => {
+        const player = videoPlayerRef.current;
+        if (!player) return;
+
+        try {
+            if (document.fullscreenElement === player) {
+                await document.exitFullscreen();
+            } else if (player.requestFullscreen) {
+                await player.requestFullscreen();
+            } else if (player.webkitRequestFullscreen) {
+                player.webkitRequestFullscreen();
+            } else {
+                showFeedback("Fullscreen unavailable", "Your browser does not support fullscreen video.", "error");
+            }
+        } catch (error) {
+            console.error("Could not toggle video fullscreen", error);
+            showFeedback("Fullscreen unavailable", "Your browser could not open the video in fullscreen.", "error");
+        }
     };
 
     const handleSubmitQuiz = async () => {
@@ -788,16 +857,44 @@ export default function LessonPlayer() {
                         <div key={index} className={`bg-white overflow-hidden shadow-sm mb-0 last:mb-0 ${isMedia ? 'w-full' : 'mx-6 lg:mx-10 mt-6 rounded-3xl border border-gray-100'}`}>
                             {/* Main Content Rendering */}
                             {res.type === 'video' && fullContentUrl && (
-                                <div className="w-full relative aspect-video bg-black flex justify-center items-center group">
+                                <div
+                                    ref={videoPlayerRef}
+                                    className={`group relative flex w-full items-center justify-center bg-black ${isVideoFullscreen ? 'h-screen w-screen' : 'aspect-video'}`}
+                                >
                                     <video
                                         key={fullContentUrl}
                                         controls
-                                        onEnded={() => setCanComplete(true)}
+                                        controlsList="nofullscreen"
+                                        onPlay={() => setVideoEnded(false)}
+                                        onEnded={() => {
+                                            setCanComplete(true);
+                                            setVideoEnded(true);
+                                        }}
                                         className="w-full h-full object-contain"
                                     >
                                         <source src={fullContentUrl} />
                                         Your browser does not support the video tag.
                                     </video>
+                                    <button
+                                        type="button"
+                                        onClick={handleVideoFullscreen}
+                                        className="absolute right-4 top-4 z-20 rounded-xl bg-black/60 p-3 text-white opacity-100 shadow-lg backdrop-blur-sm transition-all hover:bg-black/80 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                        title={isVideoFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                                        aria-label={isVideoFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                                    >
+                                        <Maximize className="h-5 w-5" />
+                                    </button>
+                                    {videoEnded && getNextLesson(activeLesson) && !getNextLesson(activeLesson).requiresPayment && (
+                                        <button
+                                            type="button"
+                                            onClick={handleNextLesson}
+                                            disabled={completing}
+                                            className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#00B4D8] px-6 py-3 text-sm font-black uppercase tracking-wider text-white shadow-xl transition hover:bg-[#0096B4] disabled:cursor-wait disabled:opacity-70"
+                                        >
+                                            {completing ? "Loading next lesson..." : "Next"}
+                                            <PlayCircle className="h-5 w-5" />
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -978,8 +1075,7 @@ export default function LessonPlayer() {
                                             // bypass all lock/payment checks entirely. They proved past access.
                                             if (isCompleted && !isProject) {
                                                 manualDismissRef.current = false;
-                                                setActiveLesson(item);
-                                                setActiveAssignment(null);
+                                                handleLessonSelect(item);
                                                 navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
                                                 return;
                                             }
@@ -1006,8 +1102,7 @@ export default function LessonPlayer() {
                                                                     setActiveAssignment(refreshed);
                                                                     setActiveLesson(null);
                                                                 } else {
-                                                                    setActiveLesson(refreshed);
-                                                                    setActiveAssignment(null);
+                                                                    handleLessonSelect(refreshed);
                                                                     navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
                                                                 }
                                                                 return;
@@ -1036,8 +1131,7 @@ export default function LessonPlayer() {
                                                 setActiveAssignment(item);
                                                 setActiveLesson(null);
                                             } else {
-                                                setActiveLesson(item);
-                                                setActiveAssignment(null);
+                                                handleLessonSelect(item);
                                                 navigate(`/dashboard/student/courses/${courseId}/learn/${item.id}`);
                                             }
                                         }}

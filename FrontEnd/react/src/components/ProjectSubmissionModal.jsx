@@ -62,7 +62,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto p-3 sm:p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -75,12 +75,12 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden"
+                    className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-[2rem]"
                 >
-                    <div className="p-8">
-                        <div className="flex items-center justify-between mb-8">
+                    <div className="overflow-y-auto p-5 sm:p-6">
+                        <div className="mb-5 flex items-center justify-between">
                             <div>
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Submit Project</h2>
+                                <h2 className="text-xl font-black tracking-tight text-gray-900">Submit Project</h2>
                                 <p className="text-sm text-gray-500 font-medium">{assignment?.title}</p>
                             </div>
                             <button
@@ -91,11 +91,18 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                             </button>
                         </div>
 
+                        {assignment?.description && (
+                            <div className="mb-4 rounded-2xl bg-gray-50 p-4">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Assignment Description</h3>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
+                            </div>
+                        )}
+
                         {isSuccess ? (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="py-20 flex flex-col items-center text-center space-y-4"
+                                className="flex flex-col items-center space-y-4 py-12 text-center"
                             >
                                 <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
                                     <CheckCircle2 className="w-10 h-10 text-emerald-500" />
@@ -104,7 +111,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                 <p className="text-gray-500 max-w-xs mx-auto font-medium">Your project has been sent to your instructor for review.</p>
                             </motion.div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-gray-700 ml-1">Additional Notes</label>
                                     <textarea
@@ -112,7 +119,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                         onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
 
                                         placeholder="Add any context or notes for the instructor..."
-                                        className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-transparent focus:border-[#00B4D8] focus:bg-white text-gray-900 text-sm font-medium focus:outline-none transition-all h-32 resize-none"
+                                        className="h-24 w-full resize-none rounded-2xl border border-transparent bg-gray-50 px-4 py-3 text-sm font-medium text-gray-900 transition-all focus:border-[#00B4D8] focus:bg-white focus:outline-none sm:h-28"
                                     />
                                 </div>
 
@@ -125,7 +132,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                             value={formData.githubLink}
                                             onChange={(e) => setFormData({ ...formData, githubLink: e.target.value })}
                                             placeholder="https://github.com/..."
-                                            className="w-full pl-12 pr-5 py-4 rounded-2xl bg-gray-50 border border-transparent focus:border-[#00B4D8] focus:bg-white text-gray-900 text-sm font-medium focus:outline-none transition-all"
+                                            className="w-full rounded-2xl border border-transparent bg-gray-50 py-3 pl-12 pr-5 text-sm font-medium text-gray-900 transition-all focus:border-[#00B4D8] focus:bg-white focus:outline-none"
                                         />
                                     </div>
                                 </div>
@@ -141,10 +148,10 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                         />
                                         <label
                                             htmlFor="project-file"
-                                            className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl p-8 hover:border-[#00B4D8]/50 hover:bg-blue-50/50 transition-all cursor-pointer group"
+                                            className="group flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 p-5 transition-all hover:border-[#00B4D8]/50 hover:bg-blue-50/50"
                                         >
-                                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                <Upload className="h-6 w-6 text-[#00B4D8]" />
+                                            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 transition-transform group-hover:scale-110">
+                                                <Upload className="h-5 w-5 text-[#00B4D8]" />
                                             </div>
                                             <span className="text-sm font-bold text-gray-900">{file ? file.name : "Choose files or drag & drop"}</span>
                                             <span className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">PDF, ZIP, or Documentation</span>
@@ -178,7 +185,7 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                 <button
                                     type="submit"
                                     disabled={submitMutation.isPending}
-                                    className="w-full py-5 bg-[#00B4D8] text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-[#0096B4] hover:shadow-blue-500/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+                                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#00B4D8] py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-blue-500/20 transition-all hover:bg-[#0096B4] hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50"
                                 >
                                     {submitMutation.isPending ? (
                                         <>

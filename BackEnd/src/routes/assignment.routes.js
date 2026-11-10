@@ -15,7 +15,14 @@ router.get('/by-course', authenticateToken, assignmentController.getAssignmentsB
 router.get('/:id', authenticateToken, assignmentController.getAssignmentById);
 
 // --- Student: Submit Assignment ---
-router.post('/:id/submit', authenticateToken, authorizeRole('student'), upload('assignments').single('file'), assignmentController.submitAssignment);
+router.post(
+    '/:id/submit',
+    authenticateToken,
+    authorizeRole('student'),
+    assignmentController.requirePreviousLessonsCompleted,
+    upload('assignments').single('file'),
+    assignmentController.submitAssignment
+);
 
 // --- Instructor: Assess/Grade Submission ---
 router.post('/submissions/:id/assess', authenticateToken, authorizeRole('teacher'), assignmentController.assessSubmission);

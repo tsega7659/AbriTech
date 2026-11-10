@@ -1,27 +1,69 @@
 import React, { useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { FolderGit2, CheckCircle2, Clock, PlayCircle, Star, Github } from "lucide-react";
 import { useStudentDashboard, useGrades } from "../../hooks/useStudentQueries";
+import { lessonService } from "../../services/lessonService";
 import Loading from "../../components/Loading";
 import ProjectSubmissionModal from "../../components/ProjectSubmissionModal";
 
 export default function StudentProjects() {
     const { data: dashboardData, isLoading } = useStudentDashboard();
     const { data: courseGrades = [], isLoading: gradesLoading } = useGrades();
+    const pendingProjects = dashboardData?.pendingProjects || [];
+    const courseIds = Array.from(new Map(
+        pendingProjects
+            .filter(project => project.courseId !== null && project.courseId !== undefined)
+            .map(project => [String(project.courseId), project.courseId])
+    ).values());
+    const lessonQueries = useQueries({
+        queries: courseIds.map(courseId => ({
+            queryKey: ["student", "lessons", courseId],
+            queryFn: () => lessonService.getLessons(courseId)
+        }))
+    });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAssignment, setSelectedAssignment] = useState(null);
 
     if (isLoading || gradesLoading) {
-        return <Loading variant="inline" message="Loading your projects..." />;
+        return <Loading fullScreen={false} message="Loading your projects..." />;
     }
 
-    const pendingProjects = dashboardData?.pendingProjects || [];
+    const lessonQueriesByCourse = new Map(
+        courseIds.map((courseId, index) => [String(courseId), lessonQueries[index]])
+    );
+    const getPrerequisiteState = (project) => {
+        const query = lessonQueriesByCourse.get(String(project.courseId));
+        if (!query) return { isLoading: false, isError: true, isComplete: false };
+        if (query.isLoading) return { isLoading: true, isError: false, isComplete: false };
+        if (query.isError) return { isLoading: false, isError: true, isComplete: false };
+
+        const previousLessons = (query.data || []).filter(lesson =>
+            lesson.contentType !== "project" &&
+            (
+                Number(lesson.orderNumber) < Number(project.orderNumber) ||
+                (
+                    Number(lesson.orderNumber) === Number(project.orderNumber) &&
+                    Number(lesson.id) < Number(project.id)
+                )
+            )
+        );
+        return {
+            isLoading: false,
+            isError: false,
+            isComplete: previousLessons.every(lesson => lesson.isCompleted)
+        };
+    };
 
     // Build completed projects from graded assignment submissions across all courses
     const completedProjects = courseGrades.flatMap(course =>
         (course.assignments || [])
             .filter(a => a.score !== null && a.score !== undefined)
             .map(a => ({ ...a, courseName: course.courseName }))
-    );
+    ).sort((a, b) => {
+        const dueDateA = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        const dueDateB = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        return dueDateA - dueDateB;
+    });
 
     const handleOpenSubmit = (proj) => {
         setSelectedAssignment(proj);
@@ -52,7 +94,12 @@ export default function StudentProjects() {
                                 <p className="text-sm font-bold text-gray-500">No pending projects!</p>
                             </div>
                         ) : (
-                            pendingProjects.map(proj => (
+                            pendingProjects.map(proj => {
+                                const prerequisiteState = getPrerequisiteState(proj);
+                                const dueDate = proj.dueDate ? new Date(proj.dueDate) : null;
+                                const hasValidDueDate = dueDate && !Number.isNaN(dueDate.getTime());
+
+                                return (
                                 <div key={proj.id} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow group space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
@@ -67,10 +114,10 @@ export default function StudentProjects() {
                                             <p className="text-sm text-[#00B4D8] font-bold mt-1">{proj.courseName}</p>
                                         </div>
                                         <span className="bg-orange-50 text-orange-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shrink-0">
-                                            Due {new Date(proj.dueDate).toLocaleDateString()}
+                                            {hasValidDueDate ? `Due ${dueDate.toLocaleDateString()}` : "No due date"}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-500 line-clamp-2">Complete the required implementation and submit your source code along with a demonstration video.</p>
+                                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{proj.description || "No assignment description provided."}</p>
 
                                     {proj.status === 'redo' && proj.feedback && (
                                         <div className="bg-orange-50/70 border border-orange-100 rounded-2xl p-4">
@@ -82,14 +129,26 @@ export default function StudentProjects() {
                                         </div>
                                     )}
 
+                                    {prerequisiteState.isLoading && (
+                                        <p className="text-sm text-gray-500">Checking lesson progress...</p>
+                                    )}
+                                    {prerequisiteState.isError && (
+                                        <p className="text-sm text-red-600">Unable to check lesson progress. Refresh the page to try again.</p>
+                                    )}
+                                    {!prerequisiteState.isLoading && !prerequisiteState.isError && !prerequisiteState.isComplete && (
+                                        <p className="text-sm font-medium text-amber-700">Complete all lessons before this assignment to unlock submission.</p>
+                                    )}
+
                                     <button
                                         onClick={() => handleOpenSubmit(proj)}
-                                        className="w-full bg-[#FDB813] text-white font-bold py-3 rounded-xl hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm uppercase tracking-wider"
+                                        disabled={!prerequisiteState.isComplete}
+                                        className="w-full bg-[#FDB813] text-white font-bold py-3 rounded-xl hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <PlayCircle className="h-5 w-5" /> {proj.status === 'redo' ? "Resubmit Project" : "Submit Project"}
+                                        <PlayCircle className="h-5 w-5" /> {prerequisiteState.isLoading ? "Checking lessons" : proj.status === 'redo' ? "Resubmit Project" : "Submit Project"}
                                     </button>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </section>
@@ -111,11 +170,17 @@ export default function StudentProjects() {
                             </div>
                         ) : (
                             completedProjects.map((proj, idx) => (
-                                <div key={idx} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+                                <div key={proj.id || idx} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
                                     <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
                                         <div>
                                             <h3 className="font-bold text-lg text-gray-900 mb-1">{proj.title}</h3>
                                             <p className="text-sm text-gray-500">{proj.courseName}</p>
+                                            <p className="text-sm text-gray-600 whitespace-pre-wrap mt-2">{proj.description || "No assignment description provided."}</p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                {proj.dueDate && !Number.isNaN(new Date(proj.dueDate).getTime())
+                                                    ? `Due ${new Date(proj.dueDate).toLocaleDateString()}`
+                                                    : "No due date"}
+                                            </p>
                                             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full mt-1 inline-block ${proj.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-500'}`}>
                                                 {proj.status}
                                             </span>

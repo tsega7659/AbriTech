@@ -248,7 +248,13 @@ const getLessons = async (req, res) => {
       ...l,
       isCompleted: studentId ? !!quizResultsMap[l.id]?.passed || (quizMap[l.id]?.length === 0 && !!quizResultsMap[l.id]) || (l.contentType !== 'quiz' && quizMap[l.id]?.length === 0 && !!quizResultsMap[l.id]) || false : false, // wait, let's keep the existing completion logic if possible, or fall back to progressMap
       resources: resourcesMap[l.id] || [],
-      quiz: quizMap[l.id] || [],
+      quiz: (quizMap[l.id] || []).map(question => {
+        if (studentId && !quizResultsMap[l.id]) {
+          const { correctOption, ...unansweredQuestion } = question;
+          return unansweredQuestion;
+        }
+        return question;
+      }),
       quizResult: quizResultsMap[l.id] || null
     }));
 
@@ -318,8 +324,10 @@ const getLessons = async (req, res) => {
       item.isLocked = isPaymentLocked || isProgressionLocked;
       item.requiresPayment = isPaymentLocked;
 
-      // Update previous completed state for the next item
-      previousCompleted = item.isCompleted || canBypassLocks;
+      // Projects are optional checkpoints and must not block the next lesson.
+      if (item.contentType !== 'project') {
+        previousCompleted = item.isCompleted || canBypassLocks;
+      }
     }
 
     res.json({ lessons: unifiedCurriculum });

@@ -195,7 +195,7 @@ export default function ParentChildren() {
         });
     };
 
-    if (loading) return <Loading />;
+    if (loading) return <Loading fullScreen={false} message="Loading your children..." />;
 
     // Detail View
     if (selectedStudent) {

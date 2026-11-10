@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 export default function ParentReports() {
     const { data: report, isLoading } = useParentMonthlyReport();
 
-    if (isLoading) return <Loading />;
+    if (isLoading) return <Loading fullScreen={false} message="Loading your reports..." />;
 
     if (!report) {
         return (
