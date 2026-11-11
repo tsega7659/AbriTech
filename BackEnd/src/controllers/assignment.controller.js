@@ -207,6 +207,14 @@ const requirePreviousLessonsCompleted = async (req, res, next) => {
     }
 
     const assignment = assignments[0];
+    const [enrollments] = await pool.execute(
+      'SELECT "progressPercentage" FROM enrollment WHERE "studentId" = ? AND "courseId" = ?',
+      [students[0].id, assignment.courseId]
+    );
+    if (Number(enrollments[0]?.progressPercentage || 0) >= 100) {
+      return res.status(403).json({ message: 'This course is complete. Assignment submissions are closed.' });
+    }
+
     const [incompleteLessons] = await pool.execute(`
       SELECT l.id
       FROM lesson l
@@ -269,7 +277,10 @@ const submitAssignment = async (req, res) => {
     }
 
     // Check assignment exists
-    const [assignments] = await pool.execute('SELECT "dueDate" FROM assignment WHERE id = ?', [assignmentId]);
+    const [assignments] = await pool.execute(
+      'SELECT "dueDate" FROM assignment WHERE id = ?',
+      [assignmentId]
+    );
     if (assignments.length === 0) {
       return res.status(404).json({ message: 'Assignment not found' });
     }

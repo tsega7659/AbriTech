@@ -170,7 +170,6 @@ export default function ActivationKeyModal({ isOpen, onClose, initialKey = '', o
                                                 onClick={() => setIsScannerOpen(true)}
                                                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00B4D8] hover:text-[#0096B4] transition-colors bg-blue-50/80 px-2.5 py-1 rounded-lg"
                                             >
-                                                <Camera className="w-3.5 h-3.5" /> Scan QR with Camera
                                             </button>
                                         </div>
                                         <div className="relative">

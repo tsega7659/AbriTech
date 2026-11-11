@@ -61,13 +61,20 @@ const getDashboard = async (req, res) => {
 
     // 4. Upcoming Quizzes
     const [upcomingQuizzes] = await pool.execute(`
-      SELECT l.id, l.title, c.name as "courseName"
+      SELECT l.id, l."courseId", l.title, c.name as "courseName"
       FROM lesson l
       JOIN course c ON l."courseId" = c.id
       JOIN enrollment e ON c.id = e."courseId"
       WHERE e."studentId" = ? 
-      AND l."contentType" = 'quiz'
-      AND l.id NOT IN (SELECT "quizId" FROM quizattempt WHERE "studentId" = ?)
+      AND e."progressPercentage" < 100
+      AND l."contentType" IN ('lesson', 'quiz')
+      AND EXISTS (SELECT 1 FROM lessonquiz lq WHERE lq."lessonId" = l.id)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM lessonquiz lq
+        JOIN quizattempt qa ON qa."quizId" = lq.id AND qa."studentId" = ?
+        WHERE lq."lessonId" = l.id
+      )
       LIMIT 3
     `, [studentId, studentId]);
 
@@ -79,7 +86,8 @@ const getDashboard = async (req, res) => {
       JOIN course c ON a."courseId" = c.id
       JOIN enrollment e ON c.id = e."courseId"
       LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
-      WHERE e."studentId" = ? AND (s.id IS NULL OR s.status = 'draft' OR s.status = 'redo')
+      WHERE e."studentId" = ? AND e."progressPercentage" < 100
+        AND (s.id IS NULL OR s.status = 'draft' OR s.status = 'redo')
       ORDER BY a."dueDate" ASC NULLS LAST, a.id ASC
     `, [studentId, studentId]);
 

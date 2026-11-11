@@ -329,8 +329,8 @@ export default function Courses() {
                                                         <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">Payment</p>
                                                         <p className={cn(
                                                             "text-xs font-bold",
-                                                            course.isFree ? "text-green-600" : "text-amber-600"
-                                                        )}>{course.isFree ? 'Free Access' : 'Paid Course'}</p>
+                                                            course.isFree ? "text-green-600" : "text-amber-600" 
+                                                        )}>{course.isFree ? 'Free Access' : 'Paid Course'|| course.requiresActivationKey? 'Require Activation Key': 'Paid Course'}</p>
                                                     </div>
                                                 </div>
                                             </div>

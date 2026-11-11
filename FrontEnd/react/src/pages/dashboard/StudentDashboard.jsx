@@ -215,7 +215,7 @@ export default function StudentDashboard() {
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm text-gray-900">{proj.title}</h4>
-                                        <p className="text-xs text-gray-500">Due: {new Date(proj.dueDate).toLocaleDateString()}</p>
+                                        <p className="text-xs text-gray-500">Due: {proj.dueDate ? new Date(proj.dueDate).toLocaleDateString() : 'No Due Date'}</p>
                                     </div>
                                 </div>
                             ))}

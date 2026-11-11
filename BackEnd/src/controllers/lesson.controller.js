@@ -147,11 +147,16 @@ const getLessons = async (req, res) => {
 
     // Check enrollment and payment status
     let isPaid = false;
+    let courseCompleted = false;
     if (studentId) {
-      const [enrollments] = await pool.execute('SELECT status FROM enrollment WHERE "studentId" = ? AND "courseId" = ?', [studentId, courseId]);
+      const [enrollments] = await pool.execute(
+        'SELECT status, "progressPercentage" FROM enrollment WHERE "studentId" = ? AND "courseId" = ?',
+        [studentId, courseId]
+      );
       if (enrollments.length > 0) {
         // active means fully paid/enrolled. pending means awaiting payment
         isPaid = enrollments[0].status === 'active';
+        courseCompleted = Number(enrollments[0].progressPercentage) >= 100;
       }
     }
 
@@ -304,7 +309,7 @@ const getLessons = async (req, res) => {
 
       // Payment Tier Logic
       let isPaymentLocked = false;
-      if (!isPaid && !canBypassLocks && !alreadyCompleted) {
+      if (!isPaid && !canBypassLocks && !alreadyCompleted && !courseCompleted) {
         const model = (courseInfo.accessModel || 'free').toLowerCase();
         if (model === 'fully_paid') {
           isPaymentLocked = true;
@@ -317,7 +322,7 @@ const getLessons = async (req, res) => {
       // Progression Lock Logic
       // Skip entirely if already completed — students can always re-access their work.
       let isProgressionLocked = false;
-      if (!canBypassLocks && studentId && !alreadyCompleted) {
+      if (!canBypassLocks && studentId && !alreadyCompleted && !courseCompleted) {
         isProgressionLocked = !previousCompleted;
       }
 
@@ -565,6 +570,16 @@ const submitQuiz = async (req, res) => {
     const [students] = await pool.execute('SELECT id FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(403).json({ message: 'Not a student' });
     const studentId = students[0].id;
+
+    const [enrollments] = await pool.execute(`
+      SELECT e."progressPercentage"
+      FROM lesson l
+      JOIN enrollment e ON e."courseId" = l."courseId"
+      WHERE l.id = ? AND e."studentId" = ?
+    `, [lessonId, studentId]);
+    if (enrollments.length > 0 && Number(enrollments[0].progressPercentage) >= 100) {
+      return res.status(403).json({ message: 'This course is complete. Quiz submissions are closed.' });
+    }
 
     const [existingAttempts] = await pool.execute(
       `SELECT qa.id FROM quizattempt qa 

@@ -507,7 +507,6 @@ export default function LessonPlayer() {
                         <div className="text-center space-y-2 animate-in fade-in zoom-in duration-300">
                             <p className="text-primary font-black text-xl">Quiz Results</p>
                             <p className="text-gray-500 font-bold text-sm">You got {quizResult.correctCount} out of {quizResult.totalQuestions} correct.</p>
-                            <p className="text-gray-400 font-medium text-xs tracking-wide">Review your answers above and click "Mark as Complete" to proceed.</p>
                         </div>
                     )}
 
@@ -515,7 +514,7 @@ export default function LessonPlayer() {
                         <button
                             onClick={handleSubmitQuiz}
                             disabled={submitQuizMutation.isPending || Object.keys(quizAnswers ?? {}).length < (activeLesson?.quiz?.length ?? 0)}
-                            className="px-12 py-4 bg-primary text-gray-800 rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
+                            className=" px-12 py-4 bg-primary text-gray-800 rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50 disabled:grayscale"
                         >
                             {submitQuizMutation.isPending ? 'Checking answers...' : 'Submit Quiz'}
                             <HelpCircle className="w-5 h-5" />
@@ -525,14 +524,14 @@ export default function LessonPlayer() {
                     {/* If quiz finished, show actual Mark as Complete button directly under quiz */}
                     {quizResult && (
                         <div className="w-full flex flex-col items-center gap-4">
-                            <div className="text-center text-[11px] font-black uppercase tracking-widest text-gray-400">
+                            <div className=" lg:hidden text-center text-[11px] font-black uppercase tracking-widest text-gray-400">
                                 You can now proceed with <span className="text-[#00B4D8]">Mark as Complete</span>
                             </div>
 
                             <button
                                 onClick={handleMarkComplete}
                                 disabled={completing || activeLesson?.isCompleted || !canComplete}
-                                className={`w-full px-10 py-4 bg-[#00B4D8] text-black rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20 hover:shadow-primary/30 hover:bg-[#0096B4] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                className={` lg:hidden w-full px-10 py-4 bg-[#00B4D8] text-black rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20 hover:shadow-primary/30 hover:bg-[#0096B4] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                             >
                                 {completing ? 'Completing...' : 'Mark as Complete'}
                                 <CheckCircle className="w-5 h-5" />

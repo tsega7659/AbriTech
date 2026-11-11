@@ -94,7 +94,7 @@ function App() {
           </Route>
 
         </Routes>
-        <ChatWidget />
+        {/* <ChatWidget /> */}
       </BrowserRouter>
     </AuthProvider>
   );

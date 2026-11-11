@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Award, FolderGit2, Printer, Share2, Github, Linkedin, Globe, MapPin, Calendar, BookOpen, FileText } from "lucide-react";
+import { Award, FolderGit2, Printer, Share2, Github, Linkedin, Globe, MapPin, Calendar, BookOpen, FileText,Mail } from "lucide-react";
 import { useStudentPortfolio, useGrades } from "../../hooks/useStudentQueries";
 import Loading from "../../components/Loading";
 
@@ -39,7 +39,7 @@ export default function StudentPortfolio() {
     const projects = [...approvedProjects, ...assignmentProjects];
 
     // Fallbacks for missing backend data
-    const age = profile.age || "15";
+    
     const bio = profile.bio || "Enthusiastic robotics and coding student with a passion for building interactive hardware projects.";
     const socialLinks = profile.socialLinks || { github: "github.com", linkedin: "", website: "" };
     const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://abritech.onrender.com';
@@ -52,9 +52,7 @@ export default function StudentPortfolio() {
                     <p className="text-gray-600 mt-1">Your public profile showcasing your achievements.</p>
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition-colors">
-                        <Share2 className="h-4 w-4" /> Publish
-                    </button>
+                    
                     <button onClick={handlePrint} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#FDB813] text-white px-4 py-2.5 rounded-xl font-bold hover:bg-yellow-500 transition-colors">
                         <Printer className="h-4 w-4" /> Export PDF
                     </button>
@@ -83,8 +81,8 @@ export default function StudentPortfolio() {
                             </div>
 
                             <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 mb-6">
-                                <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Age: {age}</div>
-                                <div className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {profile.classLevel}</div>
+                                <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Grade Level: {profile.classLevel}</div>
+                                <div className="flex items-center gap-1.5"><Mail className="h-4 w-4" /> {profile.email}</div>
                                 <div className="flex items-center gap-1.5"><BookOpen className="h-4 w-4 text-[#FDB813]" /> {completedCourses.length} Courses Completed</div>
                             </div>
 
