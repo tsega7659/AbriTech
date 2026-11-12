@@ -3,10 +3,11 @@ import { studentService } from '../services/studentService';
 import { lessonService } from '../services/lessonService';
 import apiClient from '../lib/apiClient';
 
-export const useStudentDashboard = () => {
+export const useStudentDashboard = (enabled = true) => {
     return useQuery({
         queryKey: ['student', 'dashboard'],
-        queryFn: studentService.getDashboardStats
+        queryFn: studentService.getDashboardStats,
+        enabled
     });
 };
 

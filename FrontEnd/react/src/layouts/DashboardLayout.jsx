@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
+import { useStudentDashboard } from "../hooks/useStudentQueries";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoutModal from "../components/LogoutModal";
 
@@ -27,6 +28,7 @@ export default function DashboardLayout({ role = "student" }) {
     useEffect(() => {
         setIsSidebarOpen(false);
     }, [location.pathname]);
+ 
 
     const studentLinks = [
         { name: "Dashboard", href: "/dashboard/student", icon: LayoutDashboard },
@@ -40,11 +42,13 @@ export default function DashboardLayout({ role = "student" }) {
     const parentLinks = [
         { name: "Dashboard", href: "/dashboard/parent", icon: LayoutDashboard },
         { name: "My Children", href: "/dashboard/parent/children", icon: Users },
-        { name: "Reports", href: "/dashboard/parent/reports", icon: TrendingUp },
-        { name: "Events", href: "/dashboard/parent/events", icon: Briefcase },
+        // { name: "Reports", href: "/dashboard/parent/reports", icon: TrendingUp },
+        // { name: "Events", href: "/dashboard/parent/events", icon: Briefcase },
     ];
 
     const { user, logout } = useAuth();
+    const isStudent = (user?.role || role) === "student";
+    const { data: dashboardData } = useStudentDashboard(isStudent);
 
     const getLinks = () => {
         if (role === "parent") return parentLinks;
@@ -85,10 +89,11 @@ export default function DashboardLayout({ role = "student" }) {
                     {/* Logo Area */}
                     <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
                         <Link to="/" className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-[#00B4D8] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-100">
-                                A
+                            <div className="w-9 h-9  rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-100">
+                                <img src="/logo.png" alt="Logo" className="w-8 h-8" />
                             </div>
-                            <span className="font-bold text-gray-900 tracking-tight">AbriTech LMS</span>
+                            <span className="font-bold text-gray-900 tracking-tight">AbriTech LMS</span>    
+                            
                         </Link>
                         <button
                             onClick={() => setIsSidebarOpen(false)}
@@ -129,7 +134,13 @@ export default function DashboardLayout({ role = "student" }) {
                             </div>
                             <div className="min-w-0">
                                 <p className="text-sm font-bold text-gray-900 truncate">{user?.fullName || 'User'}</p>
-                                <p className="text-[10px] font-bold text-[#00B4D8] uppercase tracking-wider">{user?.role || role}</p>
+                                <p className="text-[10px] font-bold text-[#00B4D8] uppercase tracking-wider">{user?.role || role} </p>
+                                {isStudent && dashboardData?.referralCode && (
+                                    <p className="text-[10px] font-semibold text-gray-500 truncate">
+                                        Referral code: <span className="font-bold text-gray-700">{dashboardData.referralCode}</span>
+                                    </p>
+                                )}
+
                             </div>
                         </div>
                     </div>

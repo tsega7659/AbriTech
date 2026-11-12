@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Link as LinkIcon, Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useSubmitAssignment } from '../hooks/useStudentQueries';
@@ -8,7 +8,9 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
         textContent: '',
         githubLink: ''
     });
-    const [file, setFile] = useState(null);
+    const [files, setFiles] = useState([]);
+    const fileInputRef = useRef(null);
+    const [fileError, setFileError] = useState('');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -20,7 +22,8 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
         if (!isOpen) return;
 
         setFormData({ textContent: '', githubLink: '' });
-        setFile(null);
+        setFiles([]);
+        setFileError('');
         setUploadProgress(0);
         setIsSuccess(false);
         submitMutation.reset();
@@ -28,19 +31,35 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
 
 
     const handleFileChange = (e) => {
-        if (e.target.files?.[0]) {
-            setFile(e.target.files[0]);
+        const selectedFiles = Array.from(e.target.files || []);
+        e.target.value = '';
+        const combinedFiles = [...files];
+        selectedFiles.forEach(selectedFile => {
+            const isDuplicate = combinedFiles.some(file =>
+                file.name === selectedFile.name &&
+                file.size === selectedFile.size &&
+                file.lastModified === selectedFile.lastModified
+            );
+            if (!isDuplicate) combinedFiles.push(selectedFile);
+        });
+
+        if (combinedFiles.length > 10) {
+            setFileError('You can attach up to 10 files.');
+            return;
         }
+
+        setFileError('');
+        setFiles(combinedFiles);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         const data = new FormData();
-        data.append('textContent', formData.textContent);
+        data.append('submissionContent', formData.textContent);
         data.append('isFinal', 'true'); // Always submit as final (pending), not draft
         if (formData.githubLink) data.append('githubLink', formData.githubLink);
-        if (file) data.append('file', file);
+        files.forEach(file => data.append('files', file));
 
         try {
             await submitMutation.mutateAsync({
@@ -142,9 +161,11 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                     <div className="relative">
                                         <input
                                             type="file"
+                                            ref={fileInputRef}
                                             onChange={handleFileChange}
                                             className="hidden"
                                             id="project-file"
+                                            multiple
                                         />
                                         <label
                                             htmlFor="project-file"
@@ -153,10 +174,27 @@ export default function ProjectSubmissionModal({ isOpen, onClose, assignment }) 
                                             <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 transition-transform group-hover:scale-110">
                                                 <Upload className="h-5 w-5 text-[#00B4D8]" />
                                             </div>
-                                            <span className="text-sm font-bold text-gray-900">{file ? file.name : "Choose files or drag & drop"}</span>
-                                            <span className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">PDF, ZIP, or Documentation</span>
+                                            <span className="text-sm font-bold text-gray-900">
+                                                {files.length ? `${files.length} file${files.length === 1 ? '' : 's'} selected` : "Choose files"}
+                                            </span>
+                                            {files.length > 0 && (
+                                                <span className="text-xs text-gray-500 mt-1 text-center">{files.map(file => file.name).join(', ')}</span>
+                                            )}
+                                            <span className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">Up to 10 files: PDF, ZIP, or documentation</span>
                                         </label>
                                     </div>
+                                    {files.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-[#00B4D8]/20 px-4 py-2 text-sm font-bold text-[#00B4D8] hover:bg-blue-50"
+                                        >
+                                            <Upload className="h-4 w-4" /> Add file
+                                        </button>
+                                    )}
+                                    {fileError && (
+                                        <p role="alert" className="text-sm font-bold text-red-600">{fileError}</p>
+                                    )}
                                 </div>
 
                                 {submitMutation.isPending && (

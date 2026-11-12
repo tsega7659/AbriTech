@@ -72,11 +72,11 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left Column: Active Courses */}
+                {/* Left Column: Enrolled Courses */}
                 <div className="lg:col-span-2 space-y-8">
                     <section>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">Active Courses</h2>
+                            <h2 className="text-xl font-bold text-gray-900">My Courses</h2>
                             <Link to="/dashboard/student/courses" className="text-sm font-bold text-gray-400 hover:text-[#00B4D8] flex items-center gap-1 group">
                                 View All <ArrowRight className="h-4 w-4" />
                             </Link>
@@ -125,11 +125,14 @@ export default function StudentDashboard() {
                                                         ></div>
                                                     </div>
                                                     <div className="flex justify-between items-center pt-2">
-                                                        <button
-                                                            className="text-sm font-bold text-gray-800 hover:text-[#00B4D8] transition-colors"
+                                                        <span
+                                                            className={cn(
+                                                                "text-sm font-bold transition-colors",
+                                                                Number(course.progress) >= 100 ? "text-green-600" : "text-gray-800"
+                                                            )}
                                                         >
-                                                            Resume Lesson
-                                                        </button>
+                                                            {Number(course.progress) >= 100 ? "Completed" : "Resume Lesson"}
+                                                        </span>
 
                                                         <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#00B4D8]/10 group-hover:text-[#00B4D8] transition-colors">
                                                             <ArrowRight className="h-4 w-4" />

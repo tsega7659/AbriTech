@@ -31,7 +31,7 @@ const getDashboard = async (req, res) => {
   try {
     const { userId } = req.user;
 
-    const [students] = await pool.execute('SELECT id, "courseLevel" FROM student WHERE "userId" = ?', [userId]);
+    const [students] = await pool.execute('SELECT id, "courseLevel", "referralCode" FROM student WHERE "userId" = ?', [userId]);
     if (students.length === 0) return res.status(404).json({ message: 'Student not found' });
     const studentId = students[0].id;
     const studentCourseLevel = students[0].courseLevel;
@@ -117,7 +117,8 @@ const getDashboard = async (req, res) => {
       upcomingQuizzes,
       pendingProjects,
       recommendedCourses: recommended,
-      achievements
+      achievements,
+      referralCode: students[0].referralCode
     });
   } catch (error) {
     console.error('Get Student Dashboard Error:', error);

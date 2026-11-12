@@ -174,7 +174,7 @@ const getLessons = async (req, res) => {
     let assignments = [];
     if (studentId) {
       [assignments] = await pool.execute(
-        `SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."textContent", s.score, s.feedback, s.result, s."submittedAt" 
+        `SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."fileUrls", s."textContent", s.score, s.feedback, s.result, s."submittedAt"
          FROM assignment a
          LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
          WHERE a."courseId" = ?`,

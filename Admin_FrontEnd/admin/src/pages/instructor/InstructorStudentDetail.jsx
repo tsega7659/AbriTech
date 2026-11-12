@@ -17,6 +17,22 @@ import { useStudentCourseDetail, useAssessSubmission } from '../../hooks/useInst
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
 
+const getSubmissionFiles = (submission) => {
+    let fileUrls = submission.fileUrls;
+    while (typeof fileUrls === 'string' && fileUrls) {
+        try {
+            fileUrls = JSON.parse(fileUrls);
+        } catch {
+            break;
+        }
+    }
+
+    if (!Array.isArray(fileUrls)) fileUrls = [];
+
+    const legacyFile = submission.fileUrl || (submission.submissionType === 'file' && submission.submissionContent);
+    return [...new Set([...fileUrls, legacyFile].filter(fileUrl => typeof fileUrl === 'string' && fileUrl.trim()))];
+};
+
 const InstructorStudentDetail = () => {
     const { courseId, studentId } = useParams();
     const navigate = useNavigate();
@@ -173,7 +189,10 @@ const InstructorStudentDetail = () => {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {submissions.map((sub) => (
+                                {submissions.map((sub) => {
+                                    const submissionFiles = getSubmissionFiles(sub);
+
+                                    return (
                                     <div key={sub.id} className="p-6 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all space-y-4 bg-slate-50/30">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
@@ -194,11 +213,28 @@ const InstructorStudentDetail = () => {
                                         </div>
 
                                         <div className="p-4 bg-white rounded-xl border border-slate-100 text-sm font-medium text-slate-600">
-                                            {sub.submissionType === 'file' ? (
-                                                <a href={sub.submissionContent} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline italic font-bold">
-                                                    <ExternalLink className="w-4 h-4" /> View File Submission
-                                                </a>
-                                            ) : (
+                                            {submissionFiles.length > 0 && (
+                                                <div className="mb-3 space-y-2">
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                                        {submissionFiles.length} attachment{submissionFiles.length === 1 ? '' : 's'}
+                                                    </p>
+                                                    {submissionFiles.map((fileUrl, index) => (
+                                                        <a
+                                                            key={`${fileUrl}-${index}`}
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-primary hover:underline italic font-bold"
+                                                        >
+                                                            <ExternalLink className="w-4 h-4" /> View Attachment {index + 1}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {sub.textContent && (
+                                                <p className="italic whitespace-pre-wrap">"{sub.textContent}"</p>
+                                            )}
+                                            {!sub.textContent && submissionFiles.length === 0 && (
                                                 <p className="italic whitespace-pre-wrap">"{sub.submissionContent}"</p>
                                             )}
                                         </div>
@@ -279,7 +315,8 @@ const InstructorStudentDetail = () => {
                                             </div>
                                         )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

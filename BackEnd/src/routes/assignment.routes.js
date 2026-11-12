@@ -20,7 +20,10 @@ router.post(
     authenticateToken,
     authorizeRole('student'),
     assignmentController.requirePreviousLessonsCompleted,
-    upload('assignments').single('file'),
+    upload('assignments').fields([
+        { name: 'files', maxCount: 10 },
+        { name: 'file', maxCount: 1 }
+    ]),
     assignmentController.submitAssignment
 );
 

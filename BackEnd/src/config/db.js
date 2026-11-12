@@ -54,7 +54,7 @@ const CAMEL_CASE_COLUMNS = [
   "parentEmail", "referralCode", "studentId", "progressPercentage", "timeSpentSeconds",
   "finalGrade", "enrolledAt", "lessonId", "completedAt", "parentId",
   "teacherId", "dueDate", "requiresApproval", "maxPoints", "updatedAt",
-  "assignmentId", "submissionType", "submissionContent", "maxScore", "submittedAt",
+  "assignmentId", "submissionType", "submissionContent", "fileUrls", "maxScore", "submittedAt",
   "githubLink", "imageUrl", "videoUrl", "isPublished", "linkedIn",
   "enrollmentId", "verificationCode", "issuedAt", "transactionId", "transactionReference",
   "paymentMethod", "phoneNumber", "eventId", "registeredAt", "quizId",

@@ -2,6 +2,19 @@ const pool = require('../config/db');
 const fs = require('fs');
 const { updateStudentCourseProgress } = require('./lesson.controller');
 
+const parseFileUrls = (fileUrls, fileUrl) => {
+  if (Array.isArray(fileUrls)) return fileUrls;
+  if (typeof fileUrls === 'string' && fileUrls) {
+    try {
+      const parsed = JSON.parse(fileUrls);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return [fileUrls];
+    }
+  }
+  return fileUrl ? [fileUrl] : [];
+};
+
 // ----- ADMIN: Manage Assignments (Projects) -----
 
 const getAssignmentsByCourse = async (req, res) => {
@@ -40,7 +53,7 @@ const getAssignments = async (req, res) => {
       if (students.length > 0) {
         const studentId = students[0].id;
         query = `
-          SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."textContent", s.score, s.feedback, s.result, s."submittedAt" 
+          SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."fileUrls", s."textContent", s.score, s.feedback, s.result, s."submittedAt"
           FROM assignment a
           LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
           WHERE a."courseId" = ? 
@@ -71,7 +84,7 @@ const getAssignmentById = async (req, res) => {
       if (students.length > 0) {
         const studentId = students[0].id;
         query = `
-          SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."textContent", s.score, s.feedback, s.result, s."submittedAt" 
+          SELECT a.*, s.status, s."submissionType", s."submissionContent", s."fileUrl", s."fileUrls", s."textContent", s.score, s.feedback, s.result, s."submittedAt"
           FROM assignment a
           LEFT JOIN assignmentsubmission s ON a.id = s."assignmentId" AND s."studentId" = ?
           WHERE a.id = ?
@@ -266,13 +279,10 @@ const submitAssignment = async (req, res) => {
     const studentId = students[0].id;
 
     const textContent = submissionContent || '';
-    let fileUrl = null;
+    const uploadedFiles = req.files?.files || req.files?.file || [];
+    const uploadedFileUrls = uploadedFiles.map(file => file.path);
 
-    if (req.file) {
-      fileUrl = req.file.path;
-    }
-
-    if (!textContent && !fileUrl) {
+    if (!textContent && uploadedFileUrls.length === 0) {
       return res.status(400).json({ message: 'At least one form of submission (text or file) is required' });
     }
 
@@ -287,12 +297,17 @@ const submitAssignment = async (req, res) => {
 
     // Check for existing submission
     const [existing] = await pool.execute(
-      'SELECT id, status, "fileUrl", "textContent" FROM assignmentsubmission WHERE "assignmentId" = ? AND "studentId" = ?',
+      'SELECT id, status, "fileUrl", "fileUrls", "textContent" FROM assignmentsubmission WHERE "assignmentId" = ? AND "studentId" = ?',
       [assignmentId, studentId]
     );
 
     const newStatus = isFinal === 'true' ? 'pending' : 'draft';
 
+    const existingFileUrls = existing.length > 0
+      ? parseFileUrls(existing[0].fileUrls, existing[0].fileUrl)
+      : [];
+    const finalFileUrls = [...new Set([...existingFileUrls, ...uploadedFileUrls])];
+    const fileUrl = finalFileUrls[0] || null;
     const legacyType = fileUrl ? 'file' : 'text';
     const legacyContent = fileUrl || textContent;
 
@@ -304,7 +319,7 @@ const submitAssignment = async (req, res) => {
       const existingRecord = existing[0];
 
       // Cleanup ghost file to prevent storage leak
-      if (fileUrl && existingRecord.fileUrl && existingRecord.fileUrl !== fileUrl) {
+      if (uploadedFileUrls.length > 0 && existingRecord.fileUrl && existingRecord.fileUrl !== fileUrl) {
         try {
           if (fs.existsSync(existingRecord.fileUrl)) {
             fs.unlinkSync(existingRecord.fileUrl);
@@ -329,8 +344,8 @@ const submitAssignment = async (req, res) => {
       const resolvedLegacyContent = fileUrl || finalContent;
 
       await pool.execute(
-        'UPDATE assignmentsubmission SET "submissionType" = ?, "submissionContent" = ?, "fileUrl" = ?, "textContent" = ?, status = ?, "submittedAt" = NOW() WHERE id = ?',
-        [resolvedLegacyType, resolvedLegacyContent, fileUrl || existingRecord.fileUrl, finalContent, newStatus, existingRecord.id]
+        'UPDATE assignmentsubmission SET "submissionType" = ?, "submissionContent" = ?, "fileUrl" = ?, "fileUrls" = ?, "textContent" = ?, status = ?, "submittedAt" = NOW() WHERE id = ?',
+        [resolvedLegacyType, resolvedLegacyContent, fileUrl || existingRecord.fileUrl, JSON.stringify(finalFileUrls), finalContent, newStatus, existingRecord.id]
       );
 
       const [updated] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [existing[0].id]);
@@ -340,8 +355,8 @@ const submitAssignment = async (req, res) => {
       });
     } else {
       const [result] = await pool.execute(
-        'INSERT INTO assignmentsubmission ("assignmentId", "studentId", "submissionType", "submissionContent", "fileUrl", "textContent", status) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id',
-        [assignmentId, studentId, legacyType, legacyContent, fileUrl, textContent, newStatus]
+        'INSERT INTO assignmentsubmission ("assignmentId", "studentId", "submissionType", "submissionContent", "fileUrl", "fileUrls", "textContent", status) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id',
+        [assignmentId, studentId, legacyType, legacyContent, fileUrl, JSON.stringify(finalFileUrls), textContent, newStatus]
       );
 
       const [newSub] = await pool.execute('SELECT * FROM assignmentsubmission WHERE id = ?', [result[0].id]);

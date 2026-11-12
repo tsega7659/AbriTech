@@ -4,6 +4,22 @@ import { useInstructorSubmissions, useAssessSubmission } from '../../hooks/useIn
 import Loading from '../../components/Loading';
 import FeedbackModal from '../../components/FeedbackModal';
 
+const getSubmissionFiles = (submission) => {
+    let fileUrls = submission.fileUrls;
+    while (typeof fileUrls === 'string' && fileUrls) {
+        try {
+            fileUrls = JSON.parse(fileUrls);
+        } catch {
+            break;
+        }
+    }
+
+    if (!Array.isArray(fileUrls)) fileUrls = [];
+
+    const legacyFile = submission.fileUrl || (submission.submissionType === 'file' && submission.submissionContent);
+    return [...new Set([...fileUrls, legacyFile].filter(fileUrl => typeof fileUrl === 'string' && fileUrl.trim()))];
+};
+
 const InstructorProjects = () => {
     const { data: submissions = [], isLoading: loading } = useInstructorSubmissions();
     const assessMutation = useAssessSubmission();
@@ -118,7 +134,10 @@ const InstructorProjects = () => {
                         <p className="text-slate-400 mt-1">Try switching tabs or adjusting your search.</p>
                     </div>
                 ) : (
-                    filtered.map((sub) => (
+                    filtered.map((sub) => {
+                        const submissionFiles = getSubmissionFiles(sub);
+
+                        return (
                         <div key={sub.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                             <div className="p-8">
                                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -147,16 +166,22 @@ const InstructorProjects = () => {
                                             </button>
                                         )}
 
-                                        {(sub.fileUrl || (sub.submissionType === 'file' && sub.submissionContent)) && (
+                                        {submissionFiles.length > 0 && (
+                                            <span className="w-full text-xs font-bold uppercase tracking-wider text-slate-400">
+                                                {submissionFiles.length} attachment{submissionFiles.length === 1 ? '' : 's'}
+                                            </span>
+                                        )}
+                                        {submissionFiles.map((fileUrl, index) => (
                                             <a
-                                                href={sub.fileUrl || sub.submissionContent}
+                                                key={`${fileUrl}-${index}`}
+                                                href={fileUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 px-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl font-black text-xs uppercase tracking-widest transition-colors border border-amber-100"
                                             >
-                                                View Attachment <ExternalLink className="w-4 h-4" />
+                                                View Attachment {submissionFiles.length > 1 ? index + 1 : ''} <ExternalLink className="w-4 h-4" />
                                             </a>
-                                        )}
+                                        ))}
 
                                         {sub.status === 'pending' && (
                                             <button
@@ -256,7 +281,8 @@ const InstructorProjects = () => {
                                 )}
                             </div>
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
             <FeedbackModal

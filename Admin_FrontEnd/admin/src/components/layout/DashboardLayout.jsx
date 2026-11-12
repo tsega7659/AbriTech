@@ -89,7 +89,7 @@ const DashboardLayout = ({ role }) => {
         { to: '/instructor/courses', icon: BookOpen, label: 'My Courses' },
         { to: '/instructor/projects', icon: CheckSquare, label: 'Project Reviews' },
         { to: '/instructor/students', icon: Users, label: 'Students' },
-        { to: '/instructor/analytics', icon: TrendingUp, label: 'Performance' },
+        // { to: '/instructor/analytics', icon: TrendingUp, label: 'Performance' },
         { to: '/instructor/settings', icon: Settings, label: 'Settings' },
     ];
 
