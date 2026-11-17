@@ -10,12 +10,16 @@ import {
 } from 'lucide-react';
 import Loading from '../../components/Loading';
 import { useAuth } from '../../context/AuthContext';
+import { useProfile } from '../../hooks/useAdminQueries';
 
 const Settings = () => {
     const navigate = useNavigate();
-    const { user, loading } = useAuth();
+    const { user: authUser, loading: authLoading } = useAuth();
+    const { data: profileUser, isLoading: profileLoading } = useProfile();
 
-    if (loading) return <Loading fullScreen={false} message="Loading profile..." />;
+    const user = profileUser || authUser;
+
+    if (authLoading && profileLoading) return <Loading fullScreen={false} message="Loading profile..." />;
 
     const settingsSections = [
         {

@@ -18,7 +18,11 @@ import {
     ExternalLink,
     Printer,
     Edit3,
-    Link
+    Link,
+    Copy,
+    Check,
+    ShieldAlert,
+    RotateCcw
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE_URL, getAuthHeaders } from '../../config/apiConfig';
@@ -60,6 +64,147 @@ export default function AdminKits() {
 
     // Feedback banner
     const [feedback, setFeedback] = useState(null);
+
+    // Key Management (Deactivate & Regenerate)
+    const [manageKeyInput, setManageKeyInput] = useState('');
+    const [lookedUpKey, setLookedUpKey] = useState(null);
+    const [lookupLoading, setLookupLoading] = useState(false);
+    const [deactivateLoading, setDeactivateLoading] = useState(false);
+    const [regenerateLoading, setRegenerateLoading] = useState(false);
+    const [regeneratedResult, setRegeneratedResult] = useState(null);
+    const [copiedKey, setCopiedKey] = useState(false);
+    const [copiedLink, setCopiedLink] = useState(false);
+    const [recentActions, setRecentActions] = useState([]);
+
+    const handleLookupKey = async (keyToLookup) => {
+        const target = (keyToLookup || manageKeyInput).trim().toUpperCase();
+        if (!target) {
+            showFeedback('error', 'Please enter an activation key to check');
+            return;
+        }
+
+        try {
+            setLookupLoading(true);
+            const headers = getAuthHeaders();
+            const res = await fetch(`${API_BASE_URL}/kits/keys/${encodeURIComponent(target)}`, { headers });
+            const data = await res.json();
+
+            if (res.ok) {
+                setLookedUpKey(data);
+            } else {
+                setLookedUpKey(null);
+                showFeedback('error', data.message || 'Key not found. Please verify the code.');
+            }
+        } catch (err) {
+            console.error('Error looking up key:', err);
+            showFeedback('error', 'Failed to look up key');
+        } finally {
+            setLookupLoading(false);
+        }
+    };
+
+    const handleDeactivateKey = async () => {
+        const target = manageKeyInput.trim().toUpperCase();
+        if (!target) {
+            showFeedback('error', 'Please enter an activation key to deactivate');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to deactivate key "${target}"? It will no longer be redeemable.`)) {
+            return;
+        }
+
+        try {
+            setDeactivateLoading(true);
+            const headers = getAuthHeaders();
+            const res = await fetch(`${API_BASE_URL}/kits/keys/deactivate`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ key: target })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showFeedback('success', data.message);
+                if (lookedUpKey && lookedUpKey.key === target) {
+                    setLookedUpKey({ ...lookedUpKey, status: 'revoked' });
+                }
+                setRecentActions(prev => [{
+                    type: 'deactivated',
+                    oldKey: target,
+                    kitName: data.key?.kitName || lookedUpKey?.kit?.name || 'N/A',
+                    courseName: data.key?.courseName || lookedUpKey?.kit?.courseName || 'N/A',
+                    timestamp: new Date()
+                }, ...prev.slice(0, 9)]);
+                fetchData();
+            } else {
+                showFeedback('error', data.message || 'Failed to deactivate key');
+            }
+        } catch (err) {
+            console.error('Error deactivating key:', err);
+            showFeedback('error', 'Server error while deactivating key');
+        } finally {
+            setDeactivateLoading(false);
+        }
+    };
+
+    const handleRegenerateKey = async () => {
+        const target = manageKeyInput.trim().toUpperCase();
+        if (!target) {
+            showFeedback('error', 'Please enter the activation key to replace');
+            return;
+        }
+
+        try {
+            setRegenerateLoading(true);
+            const headers = getAuthHeaders();
+            const res = await fetch(`${API_BASE_URL}/kits/keys/regenerate`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ key: target })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showFeedback('success', data.message);
+                setRegeneratedResult(data);
+                if (lookedUpKey && lookedUpKey.key === target) {
+                    setLookedUpKey({ ...lookedUpKey, status: 'revoked' });
+                }
+                setRecentActions(prev => [{
+                    type: 'regenerated',
+                    oldKey: data.oldKey.key,
+                    newKey: data.newKey.key,
+                    kitName: data.newKey.kitName,
+                    courseName: data.newKey.courseName,
+                    timestamp: new Date()
+                }, ...prev.slice(0, 9)]);
+                fetchData();
+            } else {
+                showFeedback('error', data.message || 'Failed to regenerate key');
+            }
+        } catch (err) {
+            console.error('Error regenerating key:', err);
+            showFeedback('error', 'Server error while regenerating key');
+        } finally {
+            setRegenerateLoading(false);
+        }
+    };
+
+    const handleCopyKey = (text) => {
+        navigator.clipboard.writeText(text);
+        setCopiedKey(true);
+        setTimeout(() => setCopiedKey(false), 2000);
+    };
+
+    const handleCopyLink = (keyStr) => {
+        const url = `https://www.abritechet.com/activate?code=${keyStr}`;
+        navigator.clipboard.writeText(url);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+    };
 
     const showFeedback = (type, message) => {
         setFeedback({ type, message });
@@ -337,6 +482,15 @@ export default function AdminKits() {
                         }`}
                 >
                     <Download className="w-4 h-4" /> Batch Management & Export ({batches.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('manage')}
+                    className={`pb-4 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'manage'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
+                >
+                    <KeyRound className="w-4 h-4" /> Manage
                 </button>
             </div>
 
@@ -648,6 +802,323 @@ export default function AdminKits() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* TAB 4: KEY MANAGEMENT & REPLACEMENT */}
+            {activeTab === 'manage' && (
+                <div className="space-y-8">
+                    {/* Info Header */}
+                    <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-slate-50 border border-blue-100/80 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <KeyRound className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight">Key Management & Replacement</h3>
+                                <p className="text-slate-500 text-sm mt-1 max-w-2xl leading-relaxed">
+                                    Resolve student issues where an activation code was lost, damaged, or not working. Enter the old code to deactivate it and immediately generate a fresh replacement key for the same kit.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* The Two Main Interactive Sections */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* FIELD 1: Activation Key to Deactivate */}
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6 flex flex-col justify-between">
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-7 h-7 rounded-full bg-rose-50 text-rose-600 font-black text-xs flex items-center justify-center ring-1 ring-rose-200">
+                                        1
+                                    </span>
+                                    <div>
+                                        <h4 className="text-base font-black text-slate-900">Activation Key to Deactivate</h4>
+                                        <p className="text-xs text-slate-400 font-medium">Enter the existing code reported as lost, invalid, or malfunctioning</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                                        Enter Activation Key *
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. ATK1-7K9M-X2PQ"
+                                            value={manageKeyInput}
+                                            onChange={(e) => {
+                                                setManageKeyInput(e.target.value.toUpperCase());
+                                                setLookedUpKey(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleLookupKey();
+                                                }
+                                            }}
+                                            className="w-full py-4 pl-4 pr-28 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-base font-bold text-slate-800 tracking-wider uppercase focus:outline-none focus:border-primary focus:bg-white transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:font-sans placeholder:text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleLookupKey()}
+                                            disabled={lookupLoading || !manageKeyInput.trim()}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all"
+                                        >
+                                            {lookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                                            Check
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Looked Up Key Preview */}
+                                {lookedUpKey && (
+                                    <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Key Details</span>
+                                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                                                lookedUpKey.status === 'unused'
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : lookedUpKey.status === 'redeemed'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'bg-rose-100 text-rose-700'
+                                            }`}>
+                                                {lookedUpKey.status}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            <div>
+                                                <p className="text-slate-400 font-medium">Physical Kit:</p>
+                                                <p className="font-bold text-slate-800 truncate">{lookedUpKey.kit?.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-slate-400 font-medium">Course:</p>
+                                                <p className="font-bold text-slate-800 truncate">{lookedUpKey.kit?.courseName}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-slate-400 font-medium">Batch:</p>
+                                                <p className="font-bold text-slate-800 truncate">{lookedUpKey.batch?.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-slate-400 font-medium">Created:</p>
+                                                <p className="font-bold text-slate-800">
+                                                    {lookedUpKey.createdAt ? new Date(lookedUpKey.createdAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {lookedUpKey.redeemedBy && (
+                                            <div className="pt-2 border-t border-slate-200/60 text-xs">
+                                                <p className="text-slate-400 font-medium">Redeemed by Student:</p>
+                                                <p className="font-bold text-slate-800">
+                                                    {lookedUpKey.redeemedBy.fullName} ({lookedUpKey.redeemedBy.email})
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-3 pt-4 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={handleRegenerateKey}
+                                    disabled={regenerateLoading || deactivateLoading || !manageKeyInput.trim()}
+                                    className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                >
+                                    {regenerateLoading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deactivating & Generating New Key...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw className="w-4 h-4" />
+                                            Deactivate & Regenerate New Code
+                                        </>
+                                    )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDeactivateKey}
+                                    disabled={deactivateLoading || regenerateLoading || !manageKeyInput.trim()}
+                                    className="w-full bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-200 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all"
+                                >
+                                    {deactivateLoading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deactivating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ShieldAlert className="w-4 h-4" />
+                                            Deactivate Only (Revoke Without Replacement)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* FIELD 2: Regenerated Activation Code (In place of deactivated) */}
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6 flex flex-col justify-between">
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 font-black text-xs flex items-center justify-center ring-1 ring-emerald-200">
+                                        2
+                                    </span>
+                                    <div>
+                                        <h4 className="text-base font-black text-slate-900">Regenerated New Activation Code</h4>
+                                        <p className="text-xs text-slate-400 font-medium">New valid code issued in place of the deactivated key</p>
+                                    </div>
+                                </div>
+
+                                {regeneratedResult ? (
+                                    <div className="p-6 bg-emerald-50/50 border-2 border-emerald-200 rounded-3xl space-y-5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-100/80 px-3 py-1 rounded-full">
+                                                Active • Ready to Issue
+                                            </span>
+                                            <span className="text-xs text-slate-400 font-medium">
+                                                Replaced: <span className="font-mono line-through font-bold text-slate-500">{regeneratedResult.oldKey.key}</span>
+                                            </span>
+                                        </div>
+
+                                        {/* The Big Key Display */}
+                                        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">New Activation Code</p>
+                                                <p className="font-mono text-xl sm:text-2xl font-black text-slate-900 tracking-wider mt-1 select-all">
+                                                    {regeneratedResult.newKey.key}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyKey(regeneratedResult.newKey.key)}
+                                                className={`px-4 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                                                    copiedKey
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : 'bg-primary hover:bg-primary-dark text-white'
+                                                }`}
+                                            >
+                                                {copiedKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                                {copiedKey ? 'Copied Code!' : 'Copy Code'}
+                                            </button>
+                                        </div>
+
+                                        {/* Kit & Course Details */}
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div className="p-3 bg-white/80 rounded-xl border border-emerald-100">
+                                                <p className="text-slate-400 font-bold uppercase text-[10px]">Physical Kit</p>
+                                                <p className="font-bold text-slate-800 mt-0.5 truncate">{regeneratedResult.newKey.kitName}</p>
+                                            </div>
+                                            <div className="p-3 bg-white/80 rounded-xl border border-emerald-100">
+                                                <p className="text-slate-400 font-bold uppercase text-[10px]">Digital Course</p>
+                                                <p className="font-bold text-slate-800 mt-0.5 truncate">{regeneratedResult.newKey.courseName}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Share Link & QR Actions */}
+                                        <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyLink(regeneratedResult.newKey.key)}
+                                                className="flex-1 py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                            >
+                                                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Link className="w-3.5 h-3.5" />}
+                                                {copiedLink ? 'Redeem Link Copied!' : 'Copy Student Activation URL'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewKey({ key: regeneratedResult.newKey.key })}
+                                                className="py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                            >
+                                                <QrCode className="w-3.5 h-3.5 text-primary" />
+                                                View QR Code
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="h-64 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-3">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300">
+                                            <KeyRound className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-600 text-sm">No Key Regenerated Yet</p>
+                                            <p className="text-xs text-slate-400 max-w-xs mt-1">
+                                                Enter the activation key on the left to deactivate, then click "Deactivate & Regenerate New Code" to generate the replacement here.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Recent Management Actions Log */}
+                    {recentActions.length > 0 && (
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+                                    Recent Actions This Session ({recentActions.length})
+                                </h4>
+                                <span className="text-xs text-slate-400 font-medium">Session History</span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                                            <th className="pb-3">Action</th>
+                                            <th className="pb-3">Old Key</th>
+                                            <th className="pb-3">New Replacement Key</th>
+                                            <th className="pb-3">Kit / Course</th>
+                                            <th className="pb-3 text-right">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {recentActions.map((action, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50">
+                                                <td className="py-3">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                                        action.type === 'regenerated' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                                                    }`}>
+                                                        {action.type === 'regenerated' ? 'Replaced' : 'Deactivated'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 font-mono font-bold text-slate-500 line-through">
+                                                    {action.oldKey}
+                                                </td>
+                                                <td className="py-3 font-mono font-black text-slate-900">
+                                                    {action.newKey ? (
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            {action.newKey}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCopyKey(action.newKey)}
+                                                                className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-primary"
+                                                                title="Copy Code"
+                                                            >
+                                                                <Copy className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-400 italic">None</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 text-slate-600 font-medium">
+                                                    {action.kitName} <span className="text-slate-400">• {action.courseName}</span>
+                                                </td>
+                                                <td className="py-3 text-right text-slate-400">
+                                                    {new Date(action.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>

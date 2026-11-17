@@ -9,7 +9,10 @@ const {
     generateBatch,
     getAllBatches,
     getBatchKeys,
-    exportBatch
+    exportBatch,
+    lookupKey,
+    deactivateKey,
+    regenerateKey
 } = require('../controllers/kit.controller');
 const { authenticateToken, authorizeRole } = require('../middleware/auth.middleware');
 
@@ -46,5 +49,10 @@ router.post('/batches/generate', generateBatch);
 router.get('/batches', getAllBatches);
 router.get('/batches/:id/keys', getBatchKeys);
 router.get('/batches/:id/export', exportBatch);
+
+// Key Management (Deactivate & Regenerate)
+router.get('/keys/:key', lookupKey);
+router.post('/keys/deactivate', deactivateKey);
+router.post('/keys/regenerate', regenerateKey);
 
 module.exports = router;

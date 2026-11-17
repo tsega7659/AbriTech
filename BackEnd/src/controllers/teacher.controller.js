@@ -184,7 +184,7 @@ const getEnrolledStudents = async (req, res) => {
                 u.id,
                 u."fullName",
                 u.email,
-                json_agg(c.name) as "enrolledCourses",
+                json_agg(DISTINCT json_build_object('id', c.id, 'name', c.name)) as "enrolledCourses",
                 json_agg(DISTINCT c.id) as "courseIds",
                 AVG(e."progressPercentage") as "avgProgress"
             FROM "user" u

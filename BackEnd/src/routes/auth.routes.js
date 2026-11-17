@@ -14,6 +14,7 @@ const {
 } = require('../schemas/user.schema');
 
 // Auth endpoints protected by 5 attempts / 15 min rate limiter
+router.get('/me', authenticateToken, authController.getMe);
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
 router.post('/logout', authController.logout);
 router.post('/register/student', registerLimiter, validate(studentRegisterSchema), authController.registerStudent);

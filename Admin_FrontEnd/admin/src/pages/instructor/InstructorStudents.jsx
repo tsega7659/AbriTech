@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Search, Users, ChevronRight, BookOpen, AlertCircle, X } from 'lucide-react';
 import Loading from '../../components/Loading';
 import { useInstructorStudents } from '../../hooks/useInstructorQueries';
 
@@ -8,11 +8,23 @@ const InstructorStudents = () => {
     const navigate = useNavigate();
     const { data: students = [], isLoading: loading } = useInstructorStudents();
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedStudentForCourse, setSelectedStudentForCourse] = useState(null);
 
     const filteredStudents = students.filter(student =>
-        student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (student.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleStudentClick = (student) => {
+        const courses = student.enrolledCourses || [];
+        if (courses.length === 1 && courses[0]?.id) {
+            navigate(`/instructor/courses/${courses[0].id}/students/${student.id}`);
+        } else if (courses.length > 1) {
+            setSelectedStudentForCourse(student);
+        } else if (student.primaryCourseId) {
+            navigate(`/instructor/courses/${student.primaryCourseId}/students/${student.id}`);
+        }
+    };
 
     if (loading) {
         return <Loading fullScreen={false} message="Loading your students..." />;
@@ -47,7 +59,7 @@ const InstructorStudents = () => {
                         <Users className="w-5 h-5 text-slate-400" />
                         <h3 className="text-lg font-bold text-slate-800">All Students ({students.length})</h3>
                     </div>
-                    <p className="text-xs font-bold text-slate-400">Students enrolled in your courses</p>
+                    <p className="text-xs font-bold text-slate-400">Click on any student to view their detailed course progress and submissions</p>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -57,12 +69,13 @@ const InstructorStudents = () => {
                                 <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Student</th>
                                 <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Enrolled Courses</th>
                                 <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Average Progress</th>
+                                <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredStudents.length === 0 ? (
                                 <tr>
-                                    <td colSpan="3" className="px-8 py-12 text-center text-slate-500 font-bold">
+                                    <td colSpan="4" className="px-8 py-12 text-center text-slate-500 font-bold">
                                         No students found.
                                     </td>
                                 </tr>
@@ -70,50 +83,49 @@ const InstructorStudents = () => {
                                 filteredStudents.map((student) => {
                                     const enrolledCourses = Array.isArray(student.enrolledCourses)
                                         ? student.enrolledCourses
-                                        : (typeof student.enrolledCourses === 'string' ? JSON.parse(student.enrolledCourses) : []);
-                                    const courseId = student.courseIds?.[0];
+                                        : [];
 
                                     return (
                                         <tr
                                             key={student.id}
-                                            className={`hover:bg-slate-50/50 transition-colors ${courseId != null ? 'cursor-pointer' : ''}`}
-                                            onClick={() => {
-                                                if (courseId != null) {
-                                                    navigate(`/instructor/courses/${courseId}/students/${student.id}`);
-                                                }
-                                            }}
-                                            onKeyDown={(event) => {
-                                                if (courseId != null && (event.key === 'Enter' || event.key === ' ')) {
-                                                    event.preventDefault();
-                                                    navigate(`/instructor/courses/${courseId}/students/${student.id}`);
-                                                }
-                                            }}
-                                            tabIndex={courseId != null ? 0 : undefined}
+                                            onClick={() => handleStudentClick(student)}
+                                            className="hover:bg-slate-50/70 transition-all cursor-pointer group"
                                         >
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-bold">
                                                         <img
-                                                            src={`https://ui-avatars.com/api/?name=${student.fullName.replace(' ', '+')}&background=4dbfec&color=fff`}
+                                                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(student.fullName || 'Student')}&background=4dbfec&color=fff`}
                                                             alt={student.fullName}
                                                         />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-800">{student.fullName}</p>
+                                                        <p className="font-bold text-slate-800 group-hover:text-primary transition-colors">{student.fullName}</p>
                                                         <p className="text-xs font-bold text-slate-400">{student.email}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-wrap gap-2">
-                                                    {enrolledCourses.map((course, i) => (
-                                                        <span
-                                                            key={i}
-                                                            className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold ring-1 ring-blue-100"
-                                                        >
-                                                            {course}
-                                                        </span>
-                                                    ))}
+                                                    {enrolledCourses.map((course, i) => {
+                                                        const courseName = typeof course === 'object' ? course.name : course;
+                                                        const courseId = typeof course === 'object' ? course.id : null;
+                                                        return (
+                                                            <button
+                                                                key={i}
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    if (courseId) {
+                                                                        e.stopPropagation();
+                                                                        navigate(`/instructor/courses/${courseId}/students/${student.id}`);
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold ring-1 ring-blue-100 hover:bg-blue-100 transition-colors"
+                                                            >
+                                                                {courseName}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
@@ -127,6 +139,11 @@ const InstructorStudents = () => {
                                                     <span className="text-xs font-black text-slate-800 w-10">{Math.round(student.avgProgress || 0)}%</span>
                                                 </div>
                                             </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="inline-flex items-center justify-center p-2.5 rounded-xl text-slate-400 group-hover:text-primary group-hover:bg-primary/5 transition-all">
+                                                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </td>
                                         </tr>
                                     );
                                 })
@@ -135,6 +152,54 @@ const InstructorStudents = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Course Selector Modal for students enrolled in multiple courses */}
+            {selectedStudentForCourse && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-6">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-lg">Select Course Progress</h3>
+                                <p className="text-xs font-medium text-slate-400 mt-0.5">
+                                    {selectedStudentForCourse.fullName} is enrolled in multiple courses
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedStudentForCourse(null)}
+                                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {(selectedStudentForCourse.enrolledCourses || []).map((course, idx) => {
+                                const courseName = typeof course === 'object' ? course.name : course;
+                                const courseId = typeof course === 'object' ? course.id : null;
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            if (courseId) {
+                                                navigate(`/instructor/courses/${courseId}/students/${selectedStudentForCourse.id}`);
+                                            }
+                                        }}
+                                        className="w-full p-4 rounded-2xl border border-slate-100 hover:border-primary hover:bg-primary/5 text-left flex items-center justify-between group transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                                                <BookOpen className="w-5 h-5" />
+                                            </div>
+                                            <span className="font-bold text-slate-800 text-sm">{courseName}</span>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

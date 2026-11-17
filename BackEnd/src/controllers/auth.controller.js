@@ -616,7 +616,28 @@ const resetPassword = async (req, res) => {
   }
 };
 
+
+const getMe = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const [users] = await pool.execute(
+      'SELECT u.id, u."fullName", u.username, u.email, u."phoneNumber", u."parentPhone", u.address, u.gender, r.name as role FROM "user" u JOIN role r ON u."roleId" = r.id WHERE u.id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(users[0]);
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Server error fetching profile', error: error.message });
+  }
+};
+
 module.exports = {
+  getMe,
   login,
   registerStudent,
   registerParent,

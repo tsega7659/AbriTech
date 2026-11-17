@@ -482,6 +482,193 @@ const exportBatch = async (req, res) => {
     }
 };
 
+
+/**
+ * ADMIN: Lookup an activation key
+ * GET /api/kits/keys/:key
+ */
+const lookupKey = async (req, res) => {
+    try {
+        const { key } = req.params;
+        if (!key) return res.status(400).json({ message: 'Key is required' });
+
+        const cleanKey = key.trim().toUpperCase();
+        const keyRecord = await prisma.activationKey.findUnique({
+            where: { key: cleanKey },
+            include: {
+                kit: { include: { course: true } },
+                batch: { include: { course: true } },
+                redeemedByStudent: {
+                    include: {
+                        user: { select: { fullName: true, email: true, username: true } }
+                    }
+                }
+            }
+        });
+
+        if (!keyRecord) {
+            return res.status(404).json({ message: `Activation key "${cleanKey}" not found. Please verify the code.` });
+        }
+
+        return res.status(200).json({
+            id: keyRecord.id.toString(),
+            key: keyRecord.key,
+            status: keyRecord.status,
+            expiresAt: keyRecord.expiresAt,
+            createdAt: keyRecord.createdAt,
+            redeemedAt: keyRecord.redeemedAt,
+            kit: {
+                id: keyRecord.kit?.id.toString(),
+                name: keyRecord.kit?.name || 'N/A',
+                courseName: keyRecord.kit?.course?.name || keyRecord.batch?.course?.name || 'N/A'
+            },
+            batch: {
+                id: keyRecord.batch?.id.toString(),
+                name: keyRecord.batch?.name || 'N/A'
+            },
+            redeemedBy: keyRecord.redeemedByStudent ? {
+                id: keyRecord.redeemedByStudent.id.toString(),
+                fullName: keyRecord.redeemedByStudent.user?.fullName,
+                email: keyRecord.redeemedByStudent.user?.email
+            } : null
+        });
+    } catch (error) {
+        console.error('Error looking up key:', error);
+        return res.status(500).json({ message: 'Failed to look up key', error: error.message });
+    }
+};
+
+/**
+ * ADMIN: Deactivate an activation key (Revoke)
+ * POST /api/kits/keys/deactivate
+ */
+const deactivateKey = async (req, res) => {
+    try {
+        const { key } = req.body;
+        if (!key) return res.status(400).json({ message: 'Activation key to deactivate is required' });
+
+        const cleanKey = key.trim().toUpperCase();
+        const keyRecord = await prisma.activationKey.findUnique({
+            where: { key: cleanKey },
+            include: { kit: { include: { course: true } }, batch: true }
+        });
+
+        if (!keyRecord) {
+            return res.status(404).json({ message: `Activation key "${cleanKey}" not found.` });
+        }
+
+        if (keyRecord.status === 'revoked') {
+            return res.status(400).json({ message: `Activation key "${cleanKey}" is already deactivated (revoked).` });
+        }
+
+        const updated = await prisma.activationKey.update({
+            where: { id: keyRecord.id },
+            data: { status: 'revoked' },
+            include: {
+                kit: { include: { course: true } }
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: `Key "${cleanKey}" has been successfully deactivated.`,
+            key: {
+                id: updated.id.toString(),
+                key: updated.key,
+                status: updated.status,
+                kitName: updated.kit?.name || 'N/A',
+                courseName: updated.kit?.course?.name || 'N/A'
+            }
+        });
+    } catch (error) {
+        console.error('Error deactivating key:', error);
+        return res.status(500).json({ message: 'Failed to deactivate key', error: error.message });
+    }
+};
+
+/**
+ * ADMIN: Deactivate existing key and regenerate a new code in place
+ * POST /api/kits/keys/regenerate
+ */
+const regenerateKey = async (req, res) => {
+    try {
+        const { key } = req.body;
+        if (!key) return res.status(400).json({ message: 'Activation key to replace is required' });
+
+        const cleanKey = key.trim().toUpperCase();
+
+        const result = await prisma.$transaction(async (tx) => {
+            const oldKey = await tx.activationKey.findUnique({
+                where: { key: cleanKey },
+                include: {
+                    kit: { include: { course: true } },
+                    batch: true
+                }
+            });
+
+            if (!oldKey) {
+                throw { status: 404, message: `Activation key "${cleanKey}" not found.` };
+            }
+
+            // 1. Deactivate old key
+            await tx.activationKey.update({
+                where: { id: oldKey.id },
+                data: { status: 'revoked' }
+            });
+
+            // 2. Generate a fresh unique key
+            let newKeyStr = generateFormattedKey();
+            let attempts = 0;
+            while (attempts < 10) {
+                const existing = await tx.activationKey.findUnique({ where: { key: newKeyStr } });
+                if (!existing) break;
+                newKeyStr = generateFormattedKey();
+                attempts++;
+            }
+
+            // 3. Create the new replacement key
+            const newKey = await tx.activationKey.create({
+                data: {
+                    key: newKeyStr,
+                    kitId: oldKey.kitId,
+                    batchId: oldKey.batchId,
+                    status: 'unused',
+                    expiresAt: oldKey.expiresAt
+                },
+                include: {
+                    kit: { include: { course: true } },
+                    batch: true
+                }
+            });
+
+            return { oldKey, newKey };
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: `Key "${cleanKey}" was deactivated and new replacement key "${result.newKey.key}" generated successfully!`,
+            oldKey: {
+                id: result.oldKey.id.toString(),
+                key: result.oldKey.key,
+                status: 'revoked'
+            },
+            newKey: {
+                id: result.newKey.id.toString(),
+                key: result.newKey.key,
+                status: result.newKey.status,
+                kitName: result.newKey.kit?.name || 'N/A',
+                courseName: result.newKey.kit?.course?.name || 'N/A',
+                batchName: result.newKey.batch?.name || 'N/A',
+                createdAt: result.newKey.createdAt,
+                expiresAt: result.newKey.expiresAt
+            }
+        });
+    } catch (error) {
+        console.error('Error regenerating key:', error);
+        return res.status(error.status || 500).json({ message: error.message || 'Failed to regenerate key' });
+    }
+};
+
 module.exports = {
     activateKey,
     createKit,
@@ -490,5 +677,9 @@ module.exports = {
     generateBatch,
     getAllBatches,
     getBatchKeys,
-    exportBatch
+    exportBatch,
+    lookupKey,
+    deactivateKey,
+    regenerateKey
 };
+
